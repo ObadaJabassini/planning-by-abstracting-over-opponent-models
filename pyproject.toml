@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "planning-by-abstracting-over-opponent-models"
+version = "0.1.0"
+description = ""
+authors = ["Obada Aljabasini <obada.jabassini@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+torch = "^1.8.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
