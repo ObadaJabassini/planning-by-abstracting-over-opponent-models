@@ -18,8 +18,7 @@ class AgentModel(nn.Module):
         self.agent_policy_layer = nn.Linear(nb_units, agent_nb_actions)
         self.agent_value_layer = nn.Sequential(
             nn.Linear(nb_units, 1),
-            # should replace it by a different activation function (e.g. absolute)
-            nn.ELU()
+            # should add a activation function (e.g. absolute)
         )
         self.opponents_latent_layers = [nn.Sequential(nn.Linear(features_size, nb_units), nn.ELU())] * nb_opponents
         self.opponents_head_layers = [nn.Sequential(nn.Linear(nb_units, nb_units), nn.ELU())] * nb_opponents
