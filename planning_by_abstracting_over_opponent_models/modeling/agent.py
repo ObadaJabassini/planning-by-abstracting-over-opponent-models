@@ -19,5 +19,4 @@ class Agent(pommerman.agents.BaseAgent):
 
     def estimate(self, obs):
         obs = obs.unsqueeze(0).unsqueeze(0).to(gpu)
-        print(obs.shape)
         return self.agent_model(obs)

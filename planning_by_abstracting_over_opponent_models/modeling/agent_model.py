@@ -26,6 +26,7 @@ class AgentModel(nn.Module):
         # self.opponent_value_layers = [nn.Sequential(nn.Linear(nb_units, 1), nn.ELU())] * nb_opponents
 
     def forward(self, image):
+        print(image.shape)
         features = self.features_extractor(image)
         agent_latent = self.agent_latent_layer(features)
         opponent_latents = [self.opponents_latent_layers(features) for _ in range(len(self.opponents_latent_layers))]
