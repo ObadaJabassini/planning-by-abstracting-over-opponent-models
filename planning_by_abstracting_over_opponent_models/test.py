@@ -1,13 +1,17 @@
 import pandas as pd
 import altair as alt
 import pommerman
+import torch
+
 from planning_by_abstracting_over_opponent_models.utils import get_board
 from planning_by_abstracting_over_opponent_models.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 
 
 def load_agent_model():
-    return AgentModel(None, None, None, None, None)
+    agent_model = torch.load("models/agent_model.model")
+    agent_model.eval()
+    return agent_model
 
 
 def test():

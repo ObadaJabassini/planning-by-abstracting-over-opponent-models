@@ -127,7 +127,7 @@ def train():
         optimizer.step()
 
     env.close()
-
+    torch.save(agent_model, "models/agent_model.model")
 
 if __name__ == '__main__':
     train()
