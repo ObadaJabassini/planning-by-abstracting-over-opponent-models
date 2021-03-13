@@ -20,7 +20,7 @@ class AgentLoss(nn.Module):
     def agent_loss_func(self, R, agent_rewards, agent_values, agent_log_probs, agent_entropies):
         policy_loss = 0
         value_loss = 0
-        gae = torch.zeros(1, 1)
+        gae = torch.zeros(1, 1).to(agent_entropies[0].device)
         for i in reversed(range(len(agent_rewards))):
             R = self.gamma * R + agent_rewards[i]
             advantage = R - agent_values[i]

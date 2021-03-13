@@ -63,6 +63,7 @@ def train():
                           value_loss_coef=value_loss_coef).to(gpu)
 
     for episode in range(nb_episodes):
+        print(f"Episode {episode + 1}.")
         done = False
         agent_values = []
         agent_log_probs = []
@@ -70,7 +71,8 @@ def train():
         opponent_ground_truths = []
         agent_rewards = []
         agent_entropies = []
-        for step in range(nb_steps):
+        steps = 0
+        while steps <= nb_steps:
             board = get_board(state)
             agent_policy, agent_value, opponent_policies = agent.estimate(board)
             agent_prob = F.softmax(agent_policy, dim=-1)
@@ -81,8 +83,9 @@ def train():
             agent_log_prob = agent_log_prob.gather(1, agent_action)
             opponent_moves = [opponent.act(state, action_space) for opponent in agents[1:]]
             actions = [agent_action.item(), *opponent_moves]
-            state, reward, done, info = env.step(actions)
-            agent_rewards.append(reward)
+            state, rewards, done, info = env.step(actions)
+            agent_reward = rewards[0]
+            agent_rewards.append(agent_reward)
             # only one step, no need for an additional dimension
             agent_entropies.append(agent_entropy.squeeze(0))
             agent_log_probs.append(agent_log_prob.squeeze(0))
@@ -90,6 +93,7 @@ def train():
             agent_values.append(agent_value.squeeze(0))
             opponent_moves = torch.LongTensor(opponent_moves)
             opponent_ground_truths.append(opponent_moves)
+            steps += 1
             if done:
                 state = env.reset()
                 break
@@ -98,21 +102,22 @@ def train():
             board = get_board(state)
             _, agent_value, _ = agent.estimate(board)
             R = agent_value.detach()
+        R = R.to(gpu)
         agent_values.append(R)
         optimizer.zero_grad()
         # transform everything
         # (nb_steps, nb_opponents, nb_actions)
         opponent_log_probs = torch.stack(opponent_log_probs)
-        assert opponent_log_probs.shape == (nb_steps, nb_opponents, action_space_size)
+        assert opponent_log_probs.shape == (steps, nb_opponents, action_space_size), f"{opponent_log_probs.shape}"
         # (nb_opponents, nb_actions, nb_steps)
         opponent_log_probs = opponent_log_probs.permute(1, 2, 0)
-        assert opponent_log_probs.shape == (nb_opponents, action_space_size, nb_steps)
+        assert opponent_log_probs.shape == (nb_opponents, action_space_size, steps), f"{opponent_log_probs.shape}"
         # (nb_steps, nb_opponents)
         opponent_ground_truths = torch.stack(opponent_ground_truths)
-        assert opponent_ground_truths.shape == (nb_steps, nb_opponents)
+        assert opponent_ground_truths.shape == (steps, nb_opponents), f"{opponent_ground_truths.shape}"
         # (nb_opponents, nb_steps)
         opponent_ground_truths = opponent_ground_truths.permute(1, 0)
-        assert opponent_ground_truths.shape == (nb_opponents, nb_steps)
+        assert opponent_ground_truths.shape == (nb_opponents, steps), f"{opponent_ground_truths.shape}"
         opponent_ground_truths = opponent_ground_truths.to(gpu)
         # backward step
         loss = criterion.forward(R,
@@ -123,10 +128,8 @@ def train():
                                  opponent_log_probs,
                                  opponent_ground_truths,
                                  opponent_coef)
-        print("arrived")
-        # loss.backward()
-    #     # optimization step
-    #     optimizer.step()
+        loss.backward()
+        optimizer.step()
 
     env.close()
 
