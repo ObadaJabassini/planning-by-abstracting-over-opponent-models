@@ -1,10 +1,9 @@
+# partially inspired from https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-# inspired from https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
-from planning_by_abstracting_over_opponent_models.config import gpu
 
 
 class AgentLoss(nn.Module):
@@ -32,8 +31,8 @@ class AgentLoss(nn.Module):
         loss = policy_loss + self.value_loss_coef * value_loss
         return loss
 
-    def opponent_loss_func(self, opponent_coef, opponent_log_probs, opponent_ground_truths):
-        opponent_coef = torch.FloatTensor(opponent_coef).to(opponent_log_probs.device)
+    def opponent_loss_func(self, opponent_coefs, opponent_log_probs, opponent_ground_truths):
+        opponent_coef = torch.FloatTensor(opponent_coefs).to(opponent_log_probs.device)
         loss = F.cross_entropy(opponent_log_probs, opponent_ground_truths, reduction='none')
         loss = opponent_coef * loss
         loss = loss.mean()
@@ -47,8 +46,8 @@ class AgentLoss(nn.Module):
                 agent_entropies,
                 opponent_log_probs,
                 opponent_ground_truths,
-                opponent_coef):
+                opponent_coefs):
         agent_loss = self.agent_loss_func(R, agent_rewards, agent_values, agent_log_probs, agent_entropies)
-        opponent_loss = self.opponent_loss_func(opponent_coef, opponent_log_probs, opponent_ground_truths)
+        opponent_loss = self.opponent_loss_func(opponent_coefs, opponent_log_probs, opponent_ground_truths)
         total_loss = agent_loss + opponent_loss
         return total_loss

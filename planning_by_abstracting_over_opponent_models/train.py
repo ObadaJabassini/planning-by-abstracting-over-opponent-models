@@ -1,23 +1,18 @@
 # partially inspired from https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
 
+import pommerman
 import torch
 import torch.nn.functional as F
-import pommerman
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.config import gpu, cpu
-from planning_by_abstracting_over_opponent_models.modeling.agent import Agent
-from planning_by_abstracting_over_opponent_models.modeling.agent_loss import AgentLoss
-from planning_by_abstracting_over_opponent_models.modeling.agent_model import AgentModel
-from planning_by_abstracting_over_opponent_models.modeling.features_extractor import FeaturesExtractor
+from planning_by_abstracting_over_opponent_models.utils import gpu, get_board
+from planning_by_abstracting_over_opponent_models.agent import Agent
+from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
+from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
+from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
 
 
-def get_board(state):
-    board = state[0]['board']
-    board = torch.FloatTensor(board)
-    board = board.unsqueeze(0).unsqueeze(0)
-    board = board.to(gpu)
-    return board
+
 
 
 def train():
@@ -48,13 +43,13 @@ def train():
     state = env.reset()
     # RL
     nb_episodes = 10000
-    nb_steps = 10
+    nb_steps = 100
     gamma = 0.9
     entropy_coef = 0.01
     value_coef = 0.5
     gae_lambda = 0.5
     value_loss_coef = 0.5
-    opponent_coef = [0.1]
+    opponent_coefs = [0.1]
     optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
                           value_coef=value_coef,
@@ -104,7 +99,6 @@ def train():
             R = agent_value.detach()
         R = R.to(gpu)
         agent_values.append(R)
-        optimizer.zero_grad()
         # transform everything
         # (nb_steps, nb_opponents, nb_actions)
         opponent_log_probs = torch.stack(opponent_log_probs)
@@ -120,14 +114,15 @@ def train():
         assert opponent_ground_truths.shape == (nb_opponents, steps), f"{opponent_ground_truths.shape}"
         opponent_ground_truths = opponent_ground_truths.to(gpu)
         # backward step
-        loss = criterion.forward(R,
-                                 agent_rewards,
-                                 agent_log_probs,
-                                 agent_values,
-                                 agent_entropies,
-                                 opponent_log_probs,
-                                 opponent_ground_truths,
-                                 opponent_coef)
+        optimizer.zero_grad()
+        loss = criterion(R,
+                         agent_rewards,
+                         agent_log_probs,
+                         agent_values,
+                         agent_entropies,
+                         opponent_log_probs,
+                         opponent_ground_truths,
+                         opponent_coefs)
         loss.backward()
         optimizer.step()
 
