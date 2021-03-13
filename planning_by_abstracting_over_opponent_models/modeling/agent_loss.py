@@ -4,6 +4,8 @@ import torch.nn.functional as F
 
 
 # inspired from https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+from planning_by_abstracting_over_opponent_models.config import gpu
+
 
 class AgentLoss(nn.Module):
 
@@ -31,11 +33,10 @@ class AgentLoss(nn.Module):
         return loss
 
     def opponent_loss_func(self, opponent_coef, opponent_log_probs, opponent_ground_truths):
-        nb_opponents = opponent_log_probs.shape[0]
-        loss = torch.zeros(1)
-        for i in range(nb_opponents):
-            loss += opponent_coef * F.cross_entropy(opponent_log_probs[i], opponent_ground_truths[i])
-        loss /= nb_opponents
+        opponent_coef = torch.FloatTensor(opponent_coef).to(opponent_log_probs.device)
+        loss = F.cross_entropy(opponent_log_probs, opponent_ground_truths, reduction='none')
+        loss = opponent_coef * loss
+        loss = loss.mean()
         return loss
 
     def forward(self,
