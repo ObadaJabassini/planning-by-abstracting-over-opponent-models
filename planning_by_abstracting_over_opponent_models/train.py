@@ -12,9 +12,6 @@ from planning_by_abstracting_over_opponent_models.learning.agent_model import Ag
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
 
 
-
-
-
 def train():
     # pommerman
     features_extractor = FeaturesExtractor(image_size=11,
@@ -128,6 +125,7 @@ def train():
 
     env.close()
     torch.save(agent_model, "models/agent_model.model")
+
 
 if __name__ == '__main__':
     train()
