@@ -51,7 +51,7 @@ class SMMCTS:
         self.reward_model = reward_model
         self.exploration_coefs = exploration_coefs
         value_estimate = reward_model(initial_state)
-        self.root = TreeNode(initial_state, None, value_estimate, nb_players, action_space_size, exploration_coefs)
+        self.root = TreeNode(initial_state, None, False, value_estimate, nb_players, action_space_size, exploration_coefs)
         self.root.visit_count = 0
 
     def update(self, current_node: TreeNode):
