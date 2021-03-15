@@ -5,11 +5,11 @@ import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.utils import gpu, get_board
 from planning_by_abstracting_over_opponent_models.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
+from planning_by_abstracting_over_opponent_models.utils import gpu, get_board
 
 
 def train():

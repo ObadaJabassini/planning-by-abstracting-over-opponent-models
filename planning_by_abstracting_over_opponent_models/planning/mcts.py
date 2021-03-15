@@ -1,19 +1,30 @@
-import numpy as np
+import math
+
+import torch
 
 
 class TreeNode:
-    def __init__(self, state, parent, is_terminal, value_estimate, nb_players, action_space_size, exploration_coefs):
+    def __init__(self,
+                 state,
+                 parent,
+                 is_terminal,
+                 value_estimate,
+                 action_prob_estimate,
+                 nb_players,
+                 action_space_size,
+                 exploration_coefs):
         self.state = state
         self.parent = parent
         self.is_terminal = is_terminal
         self.value_estimate = value_estimate
+        self.action_prob_estimate = action_prob_estimate
         self.exploration_coefs = exploration_coefs
         self.visit_count = 1
         self.children = dict()
         self.player_estimations = [self.init_estimations(action_space_size)] * nb_players
 
     def init_estimations(self, action_space_size):
-        init = np.zeros((action_space_size, 2), np.float)
+        init = torch.zeros((action_space_size, 2)).float()
         return init
 
     def select_best_actions(self):
@@ -25,15 +36,16 @@ class TreeNode:
 
     def uct(self, player):
         estimations = self.player_estimations[player]
+        prob = self.action_prob_estimate[player]
         exploration_coef = self.exploration_coefs[player]
         x, n = estimations[0], estimations[1]
-        uct = x / n + exploration_coef * np.sqrt(np.log(self.visit_count) / n)
+        uct = x / n + exploration_coef * prob * torch.sqrt(math.log(self.visit_count) / n)
         return uct
 
-    def update_actions_estimates(self, actions, value_estimate):
+    def update_actions_estimates(self, actions, action_value_estimate):
         for i in range(len(actions)):
             a = actions[i]
-            self.player_estimations[i][a, 0] += value_estimate[i]
+            self.player_estimations[i][a, 0] += action_value_estimate[i]
             self.player_estimations[i][a, 1] += 1
 
 
@@ -51,7 +63,15 @@ class SMMCTS:
         self.reward_model = reward_model
         self.exploration_coefs = exploration_coefs
         value_estimate = reward_model(initial_state)
-        self.root = TreeNode(initial_state, None, False, value_estimate, nb_players, action_space_size, exploration_coefs)
+        action_probs_estimate = transition_model.probability(initial_state)
+        self.root = TreeNode(initial_state,
+                             None,
+                             False,
+                             value_estimate,
+                             action_probs_estimate,
+                             nb_players,
+                             action_space_size,
+                             exploration_coefs)
         self.root.visit_count = 0
 
     def update(self, current_node: TreeNode):
@@ -62,10 +82,12 @@ class SMMCTS:
         new_state, is_terminal, ground_truth_reward = self.transition_model(current_node.state, actions)
         if actions not in current_node.children:
             value_estimate = self.reward_model(new_state) if not is_terminal else ground_truth_reward
+            action_probs_estimate = self.transition_model.probability(new_state)
             current_node.children[actions] = TreeNode(new_state,
                                                       current_node,
                                                       is_terminal,
                                                       value_estimate,
+                                                      action_probs_estimate,
                                                       self.nb_players,
                                                       self.action_space_size,
                                                       self.exploration_coefs)
@@ -76,13 +98,15 @@ class SMMCTS:
         current_node.visit_count += 1
         current_node.value_estimate += value_estimate
         current_node.update_actions_estimates(actions, value_estimate)
+        return value_estimate
 
-    def select(self):
+    def select_best_actions(self):
         best_actions = self.root.select_best_actions()
         return best_actions
 
     def simulate(self, iterations=100):
         for _ in range(iterations):
             self.update(self.root)
-        best_actions = self.select()
-        return best_actions
+        best_actions = self.select_best_actions()
+        best_action = best_actions[0]
+        return best_action
