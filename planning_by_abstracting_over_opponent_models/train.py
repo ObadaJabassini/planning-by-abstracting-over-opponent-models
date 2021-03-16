@@ -12,6 +12,89 @@ from planning_by_abstracting_over_opponent_models.learning.features_extractor im
 from planning_by_abstracting_over_opponent_models.utils import gpu, get_board
 
 
+def collect_samples(env, state, action_space, agents, nb_opponents, nb_steps):
+    agent_rewards = []
+    agent_values = []
+    agent_log_probs = []
+    agent_entropies = []
+    opponent_log_probs = []
+    opponent_actions_ground_truths = []
+    opponent_rewards = []
+    opponent_values = []
+    steps = 0
+    done = False
+    agent = agents[0]
+    while steps <= nb_steps:
+        board = get_board(state)
+        agent_policy, agent_value, opponent_policies, opponent_value = agent.estimate(board)
+        agent_prob = F.softmax(agent_policy, dim=-1)
+        agent_log_prob = F.log_softmax(agent_policy, dim=-1)
+        opponent_log_prob = F.log_softmax(opponent_policies, dim=-1)
+        agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
+        agent_action = agent_prob.multinomial(num_samples=1).detach()
+        agent_log_prob = agent_log_prob.gather(1, agent_action)
+        opponent_moves = [opponent.act(state, action_space) for opponent in agents[1:]]
+        actions = [agent_action.item(), *opponent_moves]
+        state, rewards, done, info = env.step(actions)
+        agent_rewards.append(rewards[0])
+        opponent_reward = torch.FloatTensor(rewards[1:]).to(gpu)
+        opponent_rewards.append(opponent_reward)
+        agent_entropies.append(agent_entropy.squeeze(0))
+        agent_log_probs.append(agent_log_prob.squeeze(0))
+        agent_values.append(agent_value.squeeze(0))
+        opponent_log_probs.append(opponent_log_prob.squeeze(0))
+        opponent_moves = torch.LongTensor(opponent_moves)
+        opponent_actions_ground_truths.append(opponent_moves)
+        opponent_values.append(opponent_value.squeeze(0).view(-1))
+        steps += 1
+        if done:
+            state = env.reset()
+            break
+    R = torch.zeros(1, 1)
+    opponent_value = torch.zeros(nb_opponents)
+    if not done:
+        board = get_board(state)
+        _, agent_value, _, opponent_value = agent.estimate(board)
+        R = agent_value.detach()
+        opponent_value = opponent_value.detach()
+    R = R.to(gpu)
+    opponent_value = opponent_value.to(gpu)
+    agent_values.append(R)
+    opponent_values.append(opponent_value)
+    return steps, state, done, R, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
+
+
+def prepare_tensors_for_loss_func(steps,
+                                  nb_opponents,
+                                  action_space_size,
+                                  opponent_log_probs,
+                                  opponent_actions_ground_truths,
+                                  opponent_rewards,
+                                  opponent_values):
+    # (nb_steps, nb_opponents, nb_actions)
+    opponent_log_probs = torch.stack(opponent_log_probs)
+    assert opponent_log_probs.shape == (steps, nb_opponents, action_space_size), f"{opponent_log_probs.shape}"
+    # (nb_opponents, nb_actions, nb_steps)
+    opponent_log_probs = opponent_log_probs.permute(1, 2, 0)
+    assert opponent_log_probs.shape == (nb_opponents, action_space_size, steps), f"{opponent_log_probs.shape}"
+    # (nb_steps, nb_opponents)
+    opponent_actions_ground_truths = torch.stack(opponent_actions_ground_truths)
+    assert opponent_actions_ground_truths.shape == (steps, nb_opponents), f"{opponent_actions_ground_truths.shape}"
+    # (nb_opponents, nb_steps)
+    opponent_actions_ground_truths = opponent_actions_ground_truths.permute(1, 0)
+    assert opponent_actions_ground_truths.shape == (nb_opponents, steps), f"{opponent_actions_ground_truths.shape}"
+    opponent_actions_ground_truths = opponent_actions_ground_truths.to(gpu)
+
+    # (nb_steps, nb_opponents)
+    opponent_rewards = torch.stack(opponent_rewards)
+    assert opponent_rewards.shape == (steps, nb_opponents), f"{opponent_rewards.shape}"
+    # (nb_steps + 1, nb_opponents), not sure!
+    opponent_values = torch.stack(opponent_values)
+    assert opponent_values.shape == (steps + 1, nb_opponents), f"{opponent_values.shape}"
+
+    return opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
+
+
 def train():
     # pommerman
     features_extractor = FeaturesExtractor(image_size=11,
@@ -53,78 +136,26 @@ def train():
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda,
                           value_loss_coef=value_loss_coef).to(gpu)
+    episode = 1
+    while episode <= nb_episodes:
+        print(f"Episode {episode}.")
+        steps, state, done, R, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
+        opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
+                                                                                            state,
+                                                                                            action_space,
+                                                                                            agents,
+                                                                                            nb_opponents,
+                                                                                            nb_steps)
 
-    for episode in range(nb_episodes):
-        print(f"Episode {episode + 1}.")
-        done = False
-        agent_rewards = []
-        agent_values = []
-        agent_log_probs = []
-        agent_entropies = []
-        opponent_log_probs = []
-        opponent_actions_ground_truths = []
-        opponent_rewards = []
-        opponent_values = []
-        steps = 0
-        while steps <= nb_steps:
-            board = get_board(state)
-            agent_policy, agent_value, opponent_policies, opponent_value = agent.estimate(board)
-            agent_prob = F.softmax(agent_policy, dim=-1)
-            agent_log_prob = F.log_softmax(agent_policy, dim=-1)
-            opponent_log_prob = F.log_softmax(opponent_policies, dim=-1)
-            agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
-            agent_action = agent_prob.multinomial(num_samples=1).detach()
-            agent_log_prob = agent_log_prob.gather(1, agent_action)
-            opponent_moves = [opponent.act(state, action_space) for opponent in agents[1:]]
-            actions = [agent_action.item(), *opponent_moves]
-            state, rewards, done, info = env.step(actions)
-            agent_rewards.append(rewards[0])
-            opponent_reward = torch.FloatTensor(rewards[1:]).to(gpu)
-            opponent_rewards.append(opponent_reward)
-            agent_entropies.append(agent_entropy.squeeze(0))
-            agent_log_probs.append(agent_log_prob.squeeze(0))
-            agent_values.append(agent_value.squeeze(0))
-            opponent_log_probs.append(opponent_log_prob.squeeze(0))
-            opponent_moves = torch.LongTensor(opponent_moves)
-            opponent_actions_ground_truths.append(opponent_moves)
-            opponent_values.append(opponent_value.squeeze(0).view(-1))
-            steps += 1
-            if done:
-                state = env.reset()
-                break
-
-        R = torch.zeros(1, 1)
-        opponent_value = torch.zeros(nb_opponents)
-        if not done:
-            board = get_board(state)
-            _, agent_value, _, opponent_value = agent.estimate(board)
-            R = agent_value.detach()
-            opponent_value = opponent_value.detach()
-        R = R.to(gpu)
-        opponent_value = opponent_value.to(gpu)
-        agent_values.append(R)
-        opponent_values.append(opponent_value)
-        # reshape tensors for loss
-        # (nb_steps, nb_opponents, nb_actions)
-        opponent_log_probs = torch.stack(opponent_log_probs)
-        assert opponent_log_probs.shape == (steps, nb_opponents, action_space_size), f"{opponent_log_probs.shape}"
-        # (nb_opponents, nb_actions, nb_steps)
-        opponent_log_probs = opponent_log_probs.permute(1, 2, 0)
-        assert opponent_log_probs.shape == (nb_opponents, action_space_size, steps), f"{opponent_log_probs.shape}"
-        # (nb_steps, nb_opponents)
-        opponent_actions_ground_truths = torch.stack(opponent_actions_ground_truths)
-        assert opponent_actions_ground_truths.shape == (steps, nb_opponents), f"{opponent_actions_ground_truths.shape}"
-        # (nb_opponents, nb_steps)
-        opponent_actions_ground_truths = opponent_actions_ground_truths.permute(1, 0)
-        assert opponent_actions_ground_truths.shape == (nb_opponents, steps), f"{opponent_actions_ground_truths.shape}"
-        opponent_actions_ground_truths = opponent_actions_ground_truths.to(gpu)
-
-        # (nb_steps, nb_opponents)
-        opponent_rewards = torch.stack(opponent_rewards)
-        assert opponent_rewards.shape == (steps, nb_opponents), f"{opponent_rewards.shape}"
-        # (nb_steps + 1, nb_opponents), not sure!
-        opponent_values = torch.stack(opponent_values)
-        assert opponent_values.shape == (steps + 1, nb_opponents), f"{opponent_values.shape}"
+        opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values = prepare_tensors_for_loss_func(
+            steps,
+            nb_opponents,
+            action_space_size,
+            opponent_log_probs,
+            opponent_actions_ground_truths,
+            opponent_rewards,
+            opponent_values
+        )
         # backward step
         optimizer.zero_grad()
         loss = criterion(R,
@@ -139,6 +170,8 @@ def train():
                          opponent_coefs)
         loss.backward()
         optimizer.step()
+        if done:
+            episode += 1
 
     env.close()
     torch.save(agent_model, "models/agent_model.model")
