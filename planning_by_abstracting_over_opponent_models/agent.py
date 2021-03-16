@@ -11,7 +11,7 @@ class Agent(pommerman.agents.BaseAgent):
         self.agent_model = agent_model
 
     def act(self, obs, action_space):
-        agent_policy, _, _ = self.estimate(obs)
+        agent_policy, _, _, _ = self.estimate(obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_action = agent_prob.multinomial(num_samples=1).detach()
         agent_action = agent_action.item()

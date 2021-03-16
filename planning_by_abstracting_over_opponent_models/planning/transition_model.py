@@ -17,7 +17,7 @@ class TransitionModel:
 
     def probability(self, state):
         board = get_board(state)
-        agent_policy, _, opponent_policies = self.agent_model(board)
+        agent_policy, _, opponent_policies, _ = self.agent_model(board)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_prob = agent_prob.squeeze(0).to(cpu)
         agent_prob = agent_prob.reshape((1, -1))

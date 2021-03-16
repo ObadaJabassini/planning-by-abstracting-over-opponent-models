@@ -1,3 +1,5 @@
+import torch
+
 from planning_by_abstracting_over_opponent_models.utils import get_board, cpu
 
 
@@ -7,7 +9,7 @@ class RewardModel:
 
     def __call__(self, state):
         board = get_board(state)
-        _, agent_value, _ = self.agent_model(board)
-        agent_value = agent_value.to(cpu).item()
-        # assume it is a zero-sum game
-        return [agent_value, -agent_value]
+        _, agent_value, _, opponent_values = self.agent_model(board)
+        agent_value = agent_value.squeeze(0).view(-1).to(cpu)
+        opponent_values = opponent_values.squeeze(0).view(-1).to(cpu)
+        return torch.cat((agent_value, opponent_values))

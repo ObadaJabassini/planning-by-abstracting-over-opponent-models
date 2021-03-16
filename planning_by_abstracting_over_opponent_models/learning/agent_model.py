@@ -23,7 +23,7 @@ class AgentModel(nn.Module):
         self.opponent_latent_layers = nn.ModuleList([nn.Sequential(nn.Linear(features_size, nb_units), nn.ELU())] * nb_opponents)
         self.opponent_head_layers = nn.ModuleList([nn.Sequential(nn.Linear(nb_units, nb_units), nn.ELU())] * nb_opponents)
         self.opponent_policies_layers = nn.ModuleList([nn.Linear(nb_units, opponent_nb_actions)] * nb_opponents)
-        # self.opponent_value_layers = nn.ModuleList([nn.Sequential(nn.Linear(nb_units, 1), nn.ELU())] * nb_opponents)
+        self.opponent_values_layers = nn.ModuleList([nn.Sequential(nn.Linear(nb_units, 1))] * nb_opponents)
 
     def forward(self, image):
         features = self.features_extractor(image)
@@ -37,5 +37,6 @@ class AgentModel(nn.Module):
         opponents_heads = [self.opponent_head_layers[i](opponent_latents[i]) for i in range(len(opponent_latents))]
         opponents_policies = [self.opponent_policies_layers[i](opponents_heads[i]) for i in range(len(opponents_heads))]
         opponents_policies = torch.stack(opponents_policies, 1)
-        # opponents_values = [self.opponents_value_layers[i](opponents_heads[i]) for i in range(len(opponents_heads))]
-        return agent_policy, agent_value, opponents_policies
+        opponents_values = [self.opponent_values_layers[i](opponents_heads[i]) for i in range(len(opponents_heads))]
+        opponents_values = torch.stack(opponents_values, 1)
+        return agent_policy, agent_value, opponents_policies, opponents_values
