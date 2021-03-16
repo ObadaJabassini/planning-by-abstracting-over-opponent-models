@@ -10,6 +10,6 @@ class RewardModel:
     def __call__(self, state):
         board = get_board(state)
         _, agent_value, _, opponent_values = self.agent_model(board)
-        agent_value = agent_value.squeeze(0).view(-1).to(cpu)
-        opponent_values = opponent_values.squeeze(0).view(-1).to(cpu)
+        agent_value = agent_value.view(-1).to(cpu)
+        opponent_values = opponent_values.view(-1).to(cpu)
         return torch.cat((agent_value, opponent_values))
