@@ -61,7 +61,11 @@ class AgentLoss(nn.Module):
                 opponent_values,
                 opponent_rewards,
                 opponent_coefs):
-        agent_loss = self.agent_loss_func(R, agent_rewards, agent_values, agent_log_probs, agent_entropies)
+        agent_loss = self.agent_loss_func(R,
+                                          agent_rewards,
+                                          agent_values,
+                                          agent_log_probs,
+                                          agent_entropies)
         opponent_loss = self.opponent_loss_func(opponent_log_probs,
                                                 opponent_actions_ground_truths,
                                                 opponent_values,
