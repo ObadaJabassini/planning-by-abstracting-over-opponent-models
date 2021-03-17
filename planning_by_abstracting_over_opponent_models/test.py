@@ -30,19 +30,19 @@ def test():
     episode_range = range(nb_episodes)
     for episode in episode_range:
         print(f"Episode {episode}")
-        done = False
         state = env.reset()
         episode_reward = 0
-        steps = 0
+        done = False
         while not done:
+            env.render()
             board = get_board(state)
             agent_action = agent.act(board, action_space)
             opponent_moves = [opponent.act(state, action_space) for opponent in agents[1:]]
-            actions = [agent_action.item(), *opponent_moves]
+            actions = [agent_action, *opponent_moves]
             state, rewards, done, info = env.step(actions)
+            print(rewards)
             agent_reward = rewards[0]
             episode_reward += agent_reward
-            steps += 1
         episode_rewards.append(episode_reward)
     rewards_df = pd.DataFrame({"Episode": episode_range, "Reward": episode_rewards})
     chart = alt.Chart(rewards_df).mark_line().encode(

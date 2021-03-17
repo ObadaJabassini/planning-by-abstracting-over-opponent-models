@@ -3,6 +3,7 @@
 import pommerman
 import torch
 import torch.nn.functional as F
+from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
 from planning_by_abstracting_over_opponent_models.agent import Agent
@@ -40,12 +41,12 @@ def collect_samples(env, state, action_space, agents, nb_opponents, nb_steps):
         opponent_reward = torch.FloatTensor(rewards[1:]).to(gpu)
         opponent_rewards.append(opponent_reward)
         agent_entropies.append(agent_entropy.squeeze(0))
-        agent_log_probs.append(agent_log_prob.squeeze(0))
-        agent_values.append(agent_value.squeeze(0))
+        agent_log_probs.append(agent_log_prob.view(-1))
+        agent_values.append(agent_value.item())
         opponent_log_probs.append(opponent_log_prob.squeeze(0))
         opponent_moves = torch.LongTensor(opponent_moves)
         opponent_actions_ground_truths.append(opponent_moves)
-        opponent_values.append(opponent_value.squeeze(0).view(-1))
+        opponent_values.append(opponent_value.view(-1))
         steps += 1
         if done:
             state = env.reset()
@@ -56,7 +57,7 @@ def collect_samples(env, state, action_space, agents, nb_opponents, nb_steps):
         board = get_board(state)
         _, agent_value, _, opponent_value = agent.estimate(board)
         R = agent_value.detach()
-        opponent_value = opponent_value.detach()
+        opponent_value = opponent_value.view(-1)
     R = R.to(gpu)
     opponent_value = opponent_value.to(gpu)
     agent_values.append(R)
@@ -103,7 +104,6 @@ def train():
                                            filter_size=3,
                                            filter_stride=1,
                                            filter_padding=1)
-    features_extractor = features_extractor.to(gpu)
     action_space_size = 6
     nb_opponents = 1
     nb_units = 64
@@ -122,14 +122,15 @@ def train():
     action_space = env.action_space
     state = env.reset()
     # RL
-    nb_episodes = 10000
-    nb_steps = 100
+    nb_episodes = 1000
+    nb_steps = 20
+    max_grad_norm = 50
     gamma = 0.9
     entropy_coef = 0.01
     value_coef = 0.5
-    gae_lambda = 0.5
+    gae_lambda = 1.0
     value_loss_coef = 0.5
-    opponent_coefs = [0.1]
+    opponent_coefs = [0.1] * nb_opponents
     optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
                           value_coef=value_coef,
@@ -138,7 +139,6 @@ def train():
                           value_loss_coef=value_loss_coef).to(gpu)
     episode = 1
     while episode <= nb_episodes:
-        print(f"Episode {episode}.")
         steps, state, done, R, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
                                                                                             state,
@@ -169,10 +169,11 @@ def train():
                          opponent_rewards,
                          opponent_coefs)
         loss.backward()
+        clip_grad_norm_(agent_model.parameters(), max_grad_norm)
         optimizer.step()
         if done:
+            print(f"Episode {episode} finished.")
             episode += 1
-
     env.close()
     torch.save(agent_model, "models/agent_model.model")
 
