@@ -3,8 +3,10 @@
 import pommerman
 import torch
 import torch.nn.functional as F
+from pommerman.agents import BaseAgent
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
+from typing import List
 
 from planning_by_abstracting_over_opponent_models.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
@@ -13,7 +15,7 @@ from planning_by_abstracting_over_opponent_models.learning.features_extractor im
 from planning_by_abstracting_over_opponent_models.utils import gpu, get_board
 
 
-def collect_samples(env, state, action_space, agents, nb_opponents, nb_steps):
+def collect_samples(env, state, action_space, agent_index, agents, nb_opponents, nb_steps):
     agent_rewards = []
     agent_values = []
     agent_log_probs = []
@@ -24,9 +26,10 @@ def collect_samples(env, state, action_space, agents, nb_opponents, nb_steps):
     opponent_values = []
     steps = 0
     done = False
-    agent = agents[0]
+    agent = agents[agent_index]
+    opponent_agents = agents[:agent_index] + agents[agent_index + 1:]
     while steps <= nb_steps:
-        board = get_board(state)
+        board = get_board(state, agent_index=agent_index)
         agent_policy, agent_value, opponent_policies, opponent_value = agent.estimate(board)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
@@ -34,16 +37,20 @@ def collect_samples(env, state, action_space, agents, nb_opponents, nb_steps):
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
         agent_action = agent_prob.multinomial(num_samples=1).detach()
         agent_log_prob = agent_log_prob.gather(1, agent_action)
-        opponent_moves = [opponent.act(state, action_space) for opponent in agents[1:]]
-        actions = [agent_action.item(), *opponent_moves]
+
+        actions = [opponent.act(state, action_space) for opponent in opponent_agents]
+        actions.insert(agent_index, agent_action.item())
         state, rewards, done, info = env.step(actions)
-        agent_rewards.append(rewards[0])
-        opponent_reward = torch.FloatTensor(rewards[1:]).to(gpu)
+
+        agent_rewards.append(rewards[agent_index])
+        rewards = rewards[:agent_index] + rewards[agent_index + 1:]
+        opponent_reward = torch.FloatTensor(rewards).to(gpu)
         opponent_rewards.append(opponent_reward)
         agent_entropies.append(agent_entropy.squeeze(0))
         agent_log_probs.append(agent_log_prob.view(-1))
         agent_values.append(agent_value.item())
         opponent_log_probs.append(opponent_log_prob.squeeze(0))
+        opponent_moves = actions[:agent_index] + actions[agent_index + 1:]
         opponent_moves = torch.LongTensor(opponent_moves)
         opponent_actions_ground_truths.append(opponent_moves)
         opponent_values.append(opponent_value.view(-1))
@@ -54,7 +61,7 @@ def collect_samples(env, state, action_space, agents, nb_opponents, nb_steps):
     R = torch.zeros(1, 1)
     opponent_value = torch.zeros(nb_opponents)
     if not done:
-        board = get_board(state)
+        board = get_board(state, agent_index=agent_index)
         _, agent_value, _, opponent_value = agent.estimate(board)
         R = agent_value.detach()
         opponent_value = opponent_value.view(-1)
@@ -75,9 +82,9 @@ def prepare_tensors_for_loss_func(steps,
     # (nb_steps, nb_opponents, nb_actions)
     opponent_log_probs = torch.stack(opponent_log_probs)
     assert opponent_log_probs.shape == (steps, nb_opponents, action_space_size), f"{opponent_log_probs.shape}"
-    # (nb_opponents, nb_actions, nb_steps)
-    opponent_log_probs = opponent_log_probs.permute(1, 2, 0)
-    assert opponent_log_probs.shape == (nb_opponents, action_space_size, steps), f"{opponent_log_probs.shape}"
+    # (nb_opponents, nb_steps, nb_actions)
+    opponent_log_probs = opponent_log_probs.permute(1, 0, 2)
+    assert opponent_log_probs.shape == (nb_opponents, steps, action_space_size), f"{opponent_log_probs.shape}"
     # (nb_steps, nb_opponents)
     opponent_actions_ground_truths = torch.stack(opponent_actions_ground_truths)
     assert opponent_actions_ground_truths.shape == (steps, nb_opponents), f"{opponent_actions_ground_truths.shape}"
@@ -89,9 +96,11 @@ def prepare_tensors_for_loss_func(steps,
     # (nb_steps, nb_opponents)
     opponent_rewards = torch.stack(opponent_rewards)
     assert opponent_rewards.shape == (steps, nb_opponents), f"{opponent_rewards.shape}"
+    opponent_rewards = opponent_rewards.T
     # (nb_steps + 1, nb_opponents), not sure!
     opponent_values = torch.stack(opponent_values)
     assert opponent_values.shape == (steps + 1, nb_opponents), f"{opponent_values.shape}"
+    opponent_values = opponent_values.T
 
     return opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
 
@@ -105,6 +114,7 @@ def train():
                                            filter_stride=1,
                                            filter_padding=1)
     action_space_size = 6
+    agent_index = 1
     nb_opponents = 1
     nb_units = 64
     agent_model = AgentModel(features_extractor=features_extractor,
@@ -114,10 +124,8 @@ def train():
                              nb_units=nb_units)
     agent_model = agent_model.to(gpu)
     agent = Agent(agent_model)
-    agents = [
-        agent,
-        pommerman.agents.RandomAgent(),
-    ]
+    agents: List[BaseAgent] = [pommerman.agents.RandomAgent() for _ in range(nb_opponents)]
+    agents.insert(agent_index, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)
     action_space = env.action_space
     state = env.reset()
@@ -130,7 +138,7 @@ def train():
     value_coef = 0.5
     gae_lambda = 1.0
     value_loss_coef = 0.5
-    opponent_coefs = [0.1] * nb_opponents
+    opponent_coefs = torch.tensor([0.1] * nb_opponents).to(gpu)
     optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
                           value_coef=value_coef,
@@ -143,6 +151,7 @@ def train():
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
                                                                                             state,
                                                                                             action_space,
+                                                                                            agent_index,
                                                                                             agents,
                                                                                             nb_opponents,
                                                                                             nb_steps)

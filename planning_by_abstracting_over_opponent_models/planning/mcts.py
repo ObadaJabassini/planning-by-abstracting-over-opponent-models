@@ -18,35 +18,32 @@ class TreeNode:
         self.is_terminal = is_terminal
         self.value_estimate = value_estimate
         self.action_prob_estimate = action_prob_estimate
+        self.nb_players = nb_players
         self.exploration_coefs = exploration_coefs
         self.visit_count = 1
         self.children = dict()
-        self.player_estimations = [self.init_estimations(action_space_size)] * nb_players
-
-    def init_estimations(self, action_space_size):
-        init = torch.zeros((action_space_size, 2)).float()
-        return init
+        self.average_estimations = torch.zeros((nb_players, action_space_size))
+        self.nb_action_visits = torch.zeros((nb_players, action_space_size))
 
     def select_best_actions(self):
-        return tuple([self.select_best_action_player(player) for player in range(len(self.player_estimations))])
+        return tuple([self.select_best_action_player(player) for player in range(self.nb_players)])
 
     def select_best_action_player(self, player):
         uct = self.uct(player)
         return uct.argmax()
 
     def uct(self, player):
-        estimations = self.player_estimations[player]
         prob = self.action_prob_estimate[player]
         exploration_coef = self.exploration_coefs[player]
-        x, n = estimations[0], estimations[1]
+        x, n = self.average_estimations[player], self.nb_action_visits[player]
         uct = x / n + exploration_coef * prob * torch.sqrt(math.log(self.visit_count) / n)
         return uct
 
     def update_actions_estimates(self, actions, action_value_estimate):
         for i in range(len(actions)):
             a = actions[i]
-            self.player_estimations[i][a, 0] += action_value_estimate[i]
-            self.player_estimations[i][a, 1] += 1
+            self.average_estimations[i][a] += action_value_estimate[i]
+            self.nb_action_visits[i][a] += 1
 
 
 class SMMCTS:

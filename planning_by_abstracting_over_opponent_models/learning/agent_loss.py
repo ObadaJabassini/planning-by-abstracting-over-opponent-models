@@ -37,16 +37,23 @@ class AgentLoss(nn.Module):
                            opponent_values,
                            opponent_rewards,
                            opponent_coefs):
-        opponent_coef = torch.FloatTensor(opponent_coefs).to(opponent_log_probs.device)
-        policy_loss = F.cross_entropy(opponent_log_probs, opponent_actions_ground_truths, reduction='none')
-        policy_loss = opponent_coef * policy_loss
-        policy_loss = policy_loss.mean()
-        shifted_dim = opponent_values.shape[0] - 1
-        shifted_values = torch.roll(opponent_values, -1, 0)
-        shifted_values = shifted_values[:shifted_dim]
-        predicted_values = opponent_rewards + self.gamma * shifted_values
-        opponent_values = opponent_values[:shifted_dim]
-        value_loss = F.smooth_l1_loss(opponent_values, predicted_values)
+        nb_opponents = opponent_log_probs.shape[0]
+        policy_loss = torch.zeros(1).to(opponent_log_probs.device)
+        value_loss = torch.zeros(1).to(opponent_log_probs.device)
+        for i in range(nb_opponents):
+            # policy loss
+            policy_loss += opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i], opponent_actions_ground_truths[i])
+
+            # value loss
+            opponent_value = opponent_values[i]
+            opponent_reward = opponent_rewards[i]
+            shifted_value = torch.roll(opponent_value, -1)
+            shifted_dim = opponent_value.shape[0] - 1
+            opponent_value = opponent_value[:shifted_dim]
+            shifted_value = shifted_value[:shifted_dim]
+            predicted_values = opponent_reward + self.gamma * shifted_value
+            value_loss += opponent_coefs[i] * F.smooth_l1_loss(opponent_value, predicted_values)
+
         total_loss = policy_loss + self.value_loss_coef * value_loss
         return total_loss
 

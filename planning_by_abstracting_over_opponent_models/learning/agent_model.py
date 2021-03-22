@@ -20,10 +20,14 @@ class AgentModel(nn.Module):
             nn.Linear(nb_units, 1),
             # should add a activation function (e.g. absolute)
         )
-        self.opponent_latent_layers = nn.ModuleList([nn.Sequential(nn.Linear(features_size, nb_units), nn.ELU())] * nb_opponents)
-        self.opponent_head_layers = nn.ModuleList([nn.Sequential(nn.Linear(nb_units, nb_units), nn.ELU())] * nb_opponents)
-        self.opponent_policies_layers = nn.ModuleList([nn.Linear(nb_units, opponent_nb_actions)] * nb_opponents)
-        self.opponent_values_layers = nn.ModuleList([nn.Sequential(nn.Linear(nb_units, 1))] * nb_opponents)
+        opponent_latent_layers = [nn.Sequential(nn.Linear(features_size, nb_units), nn.ELU()) for _ in range(nb_opponents)]
+        self.opponent_latent_layers = nn.ModuleList(opponent_latent_layers)
+        opponent_head_layers = [nn.Sequential(nn.Linear(nb_units, nb_units), nn.ELU()) for _ in range(nb_opponents)]
+        self.opponent_head_layers = nn.ModuleList(opponent_head_layers)
+        opponent_policies_layers = [nn.Linear(nb_units, opponent_nb_actions) for _ in range(nb_opponents)]
+        self.opponent_policies_layers = nn.ModuleList(opponent_policies_layers)
+        opponent_values_layers = [nn.Sequential(nn.Linear(nb_units, 1)) for _ in range(nb_opponents)]
+        self.opponent_values_layers = nn.ModuleList(opponent_values_layers)
 
     def forward(self, image):
         features = self.features_extractor(image)
