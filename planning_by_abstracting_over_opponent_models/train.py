@@ -30,7 +30,6 @@ def collect_samples(env, state, action_space, agent_index, agents, nb_opponents,
     done = False
     episode_reward = 0
     agent = agents[agent_index]
-    opponent_agents = agents[:agent_index] + agents[agent_index + 1:]
     while steps <= nb_steps:
         agent_obs = state[agent_index]
         agent_policy, agent_value, opponent_policies, opponent_value = agent.estimate(agent_obs)
@@ -41,7 +40,7 @@ def collect_samples(env, state, action_space, agent_index, agents, nb_opponents,
         agent_action = agent_prob.multinomial(num_samples=1).detach()
         agent_log_prob = agent_log_prob.gather(1, agent_action)
 
-        actions = [opponent.act(state, action_space) for opponent in opponent_agents]
+        actions = env.act(state)
         actions.insert(agent_index, agent_action.item())
         state, rewards, done, info = env.step(actions)
         agent_reward = rewards[agent_index]
@@ -118,7 +117,7 @@ def train():
                                            filter_stride=1,
                                            filter_padding=1)
     action_space_size = 6
-    agent_index = 1
+    agent_index = 0
     nb_opponents = 1
     nb_units = 64
     agent_model = AgentModel(features_extractor=features_extractor,
@@ -128,9 +127,10 @@ def train():
                              nb_units=nb_units)
     agent_model = agent_model.to(gpu)
     agent = Agent(agent_model)
-    agents: List[BaseAgent] = [pommerman.agents.RandomAgent() for _ in range(nb_opponents)]
+    agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
     agents.insert(agent_index, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)
+    env.set_training_agent(agent_index)
     action_space = env.action_space
     state = env.reset()
     # RL

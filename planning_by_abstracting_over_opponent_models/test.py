@@ -36,6 +36,7 @@ def test():
         while not done:
             env.render()
             actions = env.act(state)
+            print(actions)
             state, rewards, done, info = env.step(actions)
             episode_reward = rewards[agent_index]
         episode_rewards.append(episode_reward)
