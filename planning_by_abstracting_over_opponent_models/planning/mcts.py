@@ -48,7 +48,6 @@ class TreeNode:
 
 class SMMCTS:
     def __init__(self,
-                 initial_state,
                  nb_players,
                  action_space_size,
                  transition_model,
@@ -59,17 +58,6 @@ class SMMCTS:
         self.transition_model = transition_model
         self.reward_model = reward_model
         self.exploration_coefs = exploration_coefs
-        value_estimate = reward_model(initial_state)
-        action_probs_estimate = transition_model.probability(initial_state)
-        self.root = TreeNode(initial_state,
-                             None,
-                             False,
-                             value_estimate,
-                             action_probs_estimate,
-                             nb_players,
-                             action_space_size,
-                             exploration_coefs)
-        self.root.visit_count = 0
 
     def update(self, current_node: TreeNode):
         if current_node.is_terminal:
@@ -97,13 +85,20 @@ class SMMCTS:
         current_node.update_actions_estimates(actions, value_estimate)
         return value_estimate
 
-    def select_best_actions(self):
-        best_actions = self.root.select_best_actions()
-        return best_actions
-
-    def simulate(self, iterations=100):
+    def simulate(self, initial_state, iterations=100):
+        value_estimate = self.reward_model(initial_state)
+        action_probs_estimate = self.transition_model.probability(initial_state)
+        root = TreeNode(initial_state,
+                        None,
+                        False,
+                        value_estimate,
+                        action_probs_estimate,
+                        self.nb_players,
+                        self.action_space_size,
+                        self.exploration_coefs)
+        root.visit_count = 0
         for _ in range(iterations):
-            self.update(self.root)
-        best_actions = self.select_best_actions()
+            self.update(root)
+        best_actions = root.select_best_actions()
         best_action = best_actions[0]
         return best_action

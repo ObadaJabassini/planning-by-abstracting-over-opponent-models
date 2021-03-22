@@ -74,10 +74,12 @@ class AgentLoss(nn.Module):
                                           agent_values,
                                           agent_log_probs,
                                           agent_entropies)
+
+        device = opponent_log_probs.device
         opponent_loss = self.opponent_loss_func(opponent_log_probs,
                                                 opponent_actions_ground_truths,
                                                 opponent_values,
                                                 opponent_rewards,
-                                                opponent_coefs) if self.use_opponent_model else torch.zeros(1).to(agent_rewards.device)
+                                                opponent_coefs) if self.use_opponent_model else torch.zeros(1).to(device)
         total_loss = agent_loss + opponent_loss
         return total_loss

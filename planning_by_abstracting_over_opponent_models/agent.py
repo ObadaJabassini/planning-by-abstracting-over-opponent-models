@@ -1,7 +1,7 @@
 import pommerman
 import torch.nn.functional as F
 
-from planning_by_abstracting_over_opponent_models.utils import gpu, cpu, get_board
+from planning_by_abstracting_over_opponent_models.utils import get_board
 
 
 class Agent(pommerman.agents.BaseAgent):

@@ -26,24 +26,21 @@ def test():
     env = pommerman.make('PommeFFACompetition-v0', agents)
     # RL
     nb_episodes = 100
-    episode_rewards = []
+    wins = []
     episode_range = range(nb_episodes)
     for episode in episode_range:
         print(f"Episode {episode}")
         state = env.reset()
-        episode_reward = 0
         done = False
         while not done:
             env.render()
             actions = env.act(state)
-            print(actions)
             state, rewards, done, info = env.step(actions)
-            episode_reward = rewards[agent_index]
-        episode_rewards.append(episode_reward)
-    rewards_df = pd.DataFrame({"Episode": episode_range, "Reward": episode_rewards})
+        wins.append(info['winners'][agent_index] if info['result'].name == 'Win' else -1)
+    rewards_df = pd.DataFrame({"Episode": episode_range, "Win": wins})
     chart = alt.Chart(rewards_df).mark_line().encode(
         x="Episode",
-        y="Reward"
+        y="Win"
     )
     chart.save("figures/test_rewards.png")
 

@@ -17,7 +17,7 @@ from planning_by_abstracting_over_opponent_models.learning.features_extractor im
 from planning_by_abstracting_over_opponent_models.utils import gpu
 
 
-def collect_samples(env, state, action_space, agent_index, agents, nb_opponents, nb_steps):
+def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     agent_rewards = []
     agent_values = []
     agent_log_probs = []
@@ -27,6 +27,7 @@ def collect_samples(env, state, action_space, agent_index, agents, nb_opponents,
     opponent_rewards = []
     opponent_values = []
     steps = 0
+    nb_agents = len(agents)
     done = False
     episode_reward = 0
     agent = agents[agent_index]
@@ -43,10 +44,12 @@ def collect_samples(env, state, action_space, agent_index, agents, nb_opponents,
         actions = env.act(state)
         actions.insert(agent_index, agent_action.item())
         state, rewards, done, info = env.step(actions)
+        # for a very strange reason, the env sometimes returns the wrong number of rewards
+        rewards = rewards[:nb_agents]
         agent_reward = rewards[agent_index]
+        opponent_reward = rewards[:agent_index] + rewards[agent_index + 1:]
+        opponent_reward = torch.FloatTensor(opponent_reward).to(gpu)
         agent_rewards.append(agent_reward)
-        rewards = rewards[:agent_index] + rewards[agent_index + 1:]
-        opponent_reward = torch.FloatTensor(rewards).to(gpu)
         opponent_rewards.append(opponent_reward)
         agent_entropies.append(agent_entropy.squeeze(0))
         agent_log_probs.append(agent_log_prob.view(-1))
@@ -131,11 +134,10 @@ def train():
     agents.insert(agent_index, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)
     env.set_training_agent(agent_index)
-    action_space = env.action_space
     state = env.reset()
     # RL
-    nb_episodes = 1000
-    nb_steps = 20
+    nb_episodes = 10000
+    nb_steps = 16
     max_grad_norm = 50
     gamma = 0.9
     entropy_coef = 0.01
@@ -148,14 +150,15 @@ def train():
                           value_coef=value_coef,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda,
-                          value_loss_coef=value_loss_coef).to(gpu)
+                          value_loss_coef=value_loss_coef,
+                          use_opponent_model=False
+                          ).to(gpu)
     episode = 1
     rewards = []
     while episode <= nb_episodes:
         steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
                                                                                             state,
-                                                                                            action_space,
                                                                                             agent_index,
                                                                                             agents,
                                                                                             nb_opponents,
