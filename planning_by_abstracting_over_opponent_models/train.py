@@ -1,18 +1,20 @@
 # partially inspired from https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+from typing import List
 
+import altair as alt
+import pandas as pd
 import pommerman
 import torch
 import torch.nn.functional as F
 from pommerman.agents import BaseAgent
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
-from typing import List
 
 from planning_by_abstracting_over_opponent_models.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
-from planning_by_abstracting_over_opponent_models.utils import gpu, get_board
+from planning_by_abstracting_over_opponent_models.utils import gpu
 
 
 def collect_samples(env, state, action_space, agent_index, agents, nb_opponents, nb_steps):
@@ -26,11 +28,12 @@ def collect_samples(env, state, action_space, agent_index, agents, nb_opponents,
     opponent_values = []
     steps = 0
     done = False
+    episode_reward = 0
     agent = agents[agent_index]
     opponent_agents = agents[:agent_index] + agents[agent_index + 1:]
     while steps <= nb_steps:
-        board = get_board(state, agent_index=agent_index)
-        agent_policy, agent_value, opponent_policies, opponent_value = agent.estimate(board)
+        agent_obs = state[agent_index]
+        agent_policy, agent_value, opponent_policies, opponent_value = agent.estimate(agent_obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
         opponent_log_prob = F.log_softmax(opponent_policies, dim=-1)
@@ -41,8 +44,8 @@ def collect_samples(env, state, action_space, agent_index, agents, nb_opponents,
         actions = [opponent.act(state, action_space) for opponent in opponent_agents]
         actions.insert(agent_index, agent_action.item())
         state, rewards, done, info = env.step(actions)
-
-        agent_rewards.append(rewards[agent_index])
+        agent_reward = rewards[agent_index]
+        agent_rewards.append(agent_reward)
         rewards = rewards[:agent_index] + rewards[agent_index + 1:]
         opponent_reward = torch.FloatTensor(rewards).to(gpu)
         opponent_rewards.append(opponent_reward)
@@ -56,20 +59,21 @@ def collect_samples(env, state, action_space, agent_index, agents, nb_opponents,
         opponent_values.append(opponent_value.view(-1))
         steps += 1
         if done:
+            episode_reward = agent_reward
             state = env.reset()
             break
     R = torch.zeros(1, 1)
     opponent_value = torch.zeros(nb_opponents)
     if not done:
-        board = get_board(state, agent_index=agent_index)
-        _, agent_value, _, opponent_value = agent.estimate(board)
+        agent_obs = state[agent_index]
+        _, agent_value, _, opponent_value = agent.estimate(agent_obs)
         R = agent_value.detach()
         opponent_value = opponent_value.view(-1)
     R = R.to(gpu)
     opponent_value = opponent_value.to(gpu)
     agent_values.append(R)
     opponent_values.append(opponent_value)
-    return steps, state, done, R, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
+    return steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
 
 
 def prepare_tensors_for_loss_func(steps,
@@ -146,8 +150,9 @@ def train():
                           gae_lambda=gae_lambda,
                           value_loss_coef=value_loss_coef).to(gpu)
     episode = 1
+    rewards = []
     while episode <= nb_episodes:
-        steps, state, done, R, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
+        steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
                                                                                             state,
                                                                                             action_space,
@@ -181,10 +186,17 @@ def train():
         clip_grad_norm_(agent_model.parameters(), max_grad_norm)
         optimizer.step()
         if done:
+            rewards.append(episode_reward)
             print(f"Episode {episode} finished.")
             episode += 1
     env.close()
     torch.save(agent_model, "models/agent_model.model")
+    rewards_df = pd.DataFrame({"Episode": range(nb_episodes), "Reward": rewards})
+    chart = alt.Chart(rewards_df).mark_line().encode(
+        x="Episode",
+        y="Reward"
+    )
+    chart.save("figures/train_rewards.png")
 
 
 if __name__ == '__main__':
