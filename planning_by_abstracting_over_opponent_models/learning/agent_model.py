@@ -51,7 +51,7 @@ class AgentModel(nn.Module):
                                                                     opponent_latents_stacked,
                                                                     opponent_latents_stacked)
         # (batch_size, nb_opponents), will be used later for planning
-        attn_output_weights = attn_output_weights.squeeze(1)
+        opponents_influences = attn_output_weights.squeeze(1)
         # back to (batch_size, latent_dim)
         attn_output = attn_output.squeeze(0)
         # (batch_size, latent_dim * 2)
@@ -66,4 +66,4 @@ class AgentModel(nn.Module):
         opponents_policies = torch.stack(opponents_policies, 1)
         opponents_values = [self.opponent_values_layers[i](opponents_heads[i]) for i in range(len(opponents_heads))]
         opponents_values = torch.stack(opponents_values, 1)
-        return agent_policy, agent_value, opponents_policies, opponents_values
+        return agent_policy, agent_value, opponents_policies, opponents_values, opponents_influences

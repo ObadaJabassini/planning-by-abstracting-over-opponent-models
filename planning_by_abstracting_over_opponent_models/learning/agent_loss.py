@@ -8,14 +8,13 @@ import torch.nn.functional as F
 
 class AgentLoss(nn.Module):
 
-    def __init__(self, gamma, value_coef, entropy_coef, gae_lambda, value_loss_coef, use_opponent_model=True):
+    def __init__(self, gamma, value_coef, entropy_coef, gae_lambda, value_loss_coef):
         super().__init__()
         self.gamma = gamma
         self.entropy_coef = entropy_coef
         self.value_coef = value_coef
         self.gae_lambda = gae_lambda
         self.value_loss_coef = value_loss_coef
-        self.use_opponent_model = use_opponent_model
 
     def agent_loss_func(self, R, agent_rewards, agent_values, agent_log_probs, agent_entropies):
         policy_loss = 0
@@ -75,11 +74,10 @@ class AgentLoss(nn.Module):
                                           agent_log_probs,
                                           agent_entropies)
 
-        device = opponent_log_probs.device
         opponent_loss = self.opponent_loss_func(opponent_log_probs,
                                                 opponent_actions_ground_truths,
                                                 opponent_values,
                                                 opponent_rewards,
-                                                opponent_coefs) if self.use_opponent_model else torch.zeros(1).to(device)
+                                                opponent_coefs)
         total_loss = agent_loss + opponent_loss
         return total_loss

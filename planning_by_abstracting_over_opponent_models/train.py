@@ -33,7 +33,7 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     agent = agents[agent_index]
     while steps <= nb_steps:
         agent_obs = state[agent_index]
-        agent_policy, agent_value, opponent_policies, opponent_value = agent.estimate(agent_obs)
+        agent_policy, agent_value, opponent_policies, opponent_value, opponent_influence = agent.estimate(agent_obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
         opponent_log_prob = F.log_softmax(opponent_policies, dim=-1)
@@ -68,7 +68,7 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     opponent_value = torch.zeros(nb_opponents)
     if not done:
         agent_obs = state[agent_index]
-        _, agent_value, _, opponent_value = agent.estimate(agent_obs)
+        _, agent_value, _, opponent_value, _ = agent.estimate(agent_obs)
         R = agent_value.detach()
         opponent_value = opponent_value.view(-1)
     R = R.to(gpu)
@@ -150,8 +150,7 @@ def train():
                           value_coef=value_coef,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda,
-                          value_loss_coef=value_loss_coef,
-                          use_opponent_model=False
+                          value_loss_coef=value_loss_coef
                           ).to(gpu)
     episode = 1
     rewards = []
