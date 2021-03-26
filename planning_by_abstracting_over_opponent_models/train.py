@@ -136,7 +136,7 @@ def train():
     env.set_training_agent(agent_index)
     state = env.reset()
     # RL
-    nb_episodes = 10000
+    nb_episodes = 200
     nb_steps = 16
     max_grad_norm = 50
     gamma = 0.9
@@ -155,6 +155,10 @@ def train():
                           ).to(gpu)
     episode = 1
     rewards = []
+    losses = []
+    running_loss = 0
+    running_steps = 0
+    nb_batches = 0
     while episode <= nb_episodes:
         steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
@@ -188,18 +192,25 @@ def train():
         loss.backward()
         clip_grad_norm_(agent_model.parameters(), max_grad_norm)
         optimizer.step()
+        running_loss += loss.item()
+        running_steps += steps
+        nb_batches += 1
         if done:
             rewards.append(episode_reward)
+            losses.append(running_loss // nb_batches)
+            nb_batches = 0
+            running_loss = 0
+            running_steps = 0
             print(f"Episode {episode} finished.")
             episode += 1
     env.close()
     torch.save(agent_model, "models/agent_model.model")
-    rewards_df = pd.DataFrame({"Episode": range(nb_episodes), "Reward": rewards})
-    chart = alt.Chart(rewards_df).mark_line().encode(
+    losses_df = pd.DataFrame({"Episode": range(nb_episodes), "Loss": losses})
+    chart = alt.Chart(losses_df).mark_line().encode(
         x="Episode",
-        y="Reward"
+        y="Loss"
     )
-    chart.save("figures/train_rewards.png")
+    chart.save("figures/train_loss.png")
 
 
 if __name__ == '__main__':

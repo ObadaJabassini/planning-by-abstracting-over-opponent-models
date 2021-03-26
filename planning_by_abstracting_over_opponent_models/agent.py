@@ -1,7 +1,7 @@
 import pommerman
 import torch.nn.functional as F
 
-from planning_by_abstracting_over_opponent_models.utils import get_board
+from planning_by_abstracting_over_opponent_models.utils import get_observation
 
 
 class Agent(pommerman.agents.BaseAgent):
@@ -20,5 +20,5 @@ class Agent(pommerman.agents.BaseAgent):
         return agent_action
 
     def estimate(self, obs):
-        obs = get_board(obs)
+        obs = get_observation(obs)
         return self.agent_model(obs)

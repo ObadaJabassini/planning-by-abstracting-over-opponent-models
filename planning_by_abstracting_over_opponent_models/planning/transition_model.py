@@ -1,7 +1,7 @@
 import gym
 import torch
 import torch.nn.functional as F
-from planning_by_abstracting_over_opponent_models.utils import get_board, cpu
+from planning_by_abstracting_over_opponent_models.utils import get_observation, cpu
 
 
 class TransitionModel:
@@ -16,7 +16,7 @@ class TransitionModel:
         return state, not done, rewards
 
     def probability(self, state):
-        board = get_board(state)
+        board = get_observation(state)
         agent_policy, _, opponent_policies, _ = self.agent_model(board)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_prob = agent_prob.squeeze(0).to(cpu)
