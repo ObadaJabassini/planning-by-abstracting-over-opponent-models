@@ -82,7 +82,7 @@ class AgentModel(nn.Module):
             hard_attention_mask = hard_attention.bool()
         else:
             # attend everything
-            hard_attention_mask = torch.zeros((batch_size * self.nb_attention_heads, 1, nb_opponents),
+            hard_attention_mask = torch.zeros((1, nb_opponents),
                                               dtype=torch.bool,
                                               device=agent_latent.device)
 
