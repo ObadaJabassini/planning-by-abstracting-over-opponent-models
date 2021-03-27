@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class AgentModel(nn.Module):
@@ -9,14 +10,22 @@ class AgentModel(nn.Module):
                  nb_opponents,
                  opponent_nb_actions,
                  nb_units,
-                 nb_attention_heads=4):
+                 nb_attention_heads=4,
+                 use_hard_attention=False):
         super().__init__()
         self.features_extractor = features_extractor
+        self.nb_attention_heads = nb_attention_heads
+        self.use_hard_attention = use_hard_attention
         features_size = self.features_extractor.output_size
         self.agent_latent_layer = nn.Sequential(
             nn.Linear(features_size, nb_units),
             nn.ELU()
         )
+
+        if use_hard_attention:
+            self.lstm = nn.LSTM(nb_units * 2, nb_units)
+            self.hard_attention_layer = nn.Linear(nb_units, 2)
+
         self.multihead_attention = nn.MultiheadAttention(embed_dim=nb_units, num_heads=nb_attention_heads)
         self.agent_head_layer = nn.Sequential(
             nn.Linear(nb_units * 2, nb_units),
@@ -38,18 +47,50 @@ class AgentModel(nn.Module):
 
     def forward(self, image):
         features = self.features_extractor(image)
+        batch_size = features.shape[0]
         agent_latent = self.agent_latent_layer(features)
         opponent_latents = [opponent_latent_layer(features) for opponent_latent_layer in self.opponent_latent_layers]
-
+        nb_opponents = len(opponent_latents)
         # attention mechanism
 
-        # (nb_opponents, batch_size, latent_dim)
-        opponent_latents_stacked = torch.stack(opponent_latents)
         # (1, batch_size, latent_dim)
         agent_latent_stacked = agent_latent.unsqueeze(0)
-        attn_output, attn_output_weights = self.multihead_attention(agent_latent_stacked,
-                                                                    opponent_latents_stacked,
-                                                                    opponent_latents_stacked)
+        # (nb_opponents, batch_size, latent_dim)
+        opponent_latents_stacked = torch.stack(opponent_latents)
+
+        # hard attention
+
+        if self.use_hard_attention:
+            # (nb_opponents, batch_size, latent_dim)
+            agent_latent_stacked_repeated = agent_latent_stacked.repeat(nb_opponents, 1, 1)
+            # (nb_opponents, batch_size, latent_dim * 2)
+            agent_opponent_stacked = torch.cat((agent_latent_stacked_repeated, opponent_latents_stacked), dim=2)
+            # (nb_opponents, batch_size, latent_dim)
+            lstm_output, _ = self.lstm(agent_opponent_stacked)
+            # (nb_opponents, batch_size, 2)
+            hard_attention = self.hard_attention_layer(lstm_output)
+            # (nb_opponents, batch_size, 2)
+            hard_attention = F.gumbel_softmax(hard_attention, tau=1, hard=True, dim=-1)
+            # (nb_opponents, batch_size)
+            hard_attention = hard_attention[..., 0]
+            # (batch_size, nb_opponents)
+            hard_attention = hard_attention.T
+            # (batch_size * nb_attention_heads, nb_opponents)
+            hard_attention = hard_attention.repeat(self.nb_attention_heads, 1)
+            # (batch_size * nb_attention_heads, 1, nb_opponents)
+            hard_attention = hard_attention.unsqueeze(1)
+            hard_attention_mask = hard_attention.bool()
+        else:
+            # attend everything
+            hard_attention_mask = torch.zeros((batch_size * self.nb_attention_heads, 1, nb_opponents),
+                                              dtype=torch.bool,
+                                              device=agent_latent.device)
+
+        # soft attention
+        attn_output, attn_output_weights = self.multihead_attention(query=agent_latent_stacked,
+                                                                    key=opponent_latents_stacked,
+                                                                    value=opponent_latents_stacked,
+                                                                    attn_mask=hard_attention_mask)
         # (batch_size, nb_opponents), will be used later for planning
         opponents_influences = attn_output_weights.squeeze(1)
         # back to (batch_size, latent_dim)
