@@ -75,7 +75,8 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     opponent_value = opponent_value.to(gpu)
     agent_values.append(R)
     opponent_values.append(opponent_value)
-    return steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
+    return steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, \
+           opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
 
 
 def prepare_tensors_for_loss_func(steps,
@@ -122,12 +123,17 @@ def train():
     action_space_size = 6
     agent_index = 0
     nb_opponents = 1
-    nb_units = 64
+    latent_dim = 64
+    layer_dim = 64
+    rnn_hidden_size = None
     agent_model = AgentModel(features_extractor=features_extractor,
                              nb_opponents=nb_opponents,
                              agent_nb_actions=action_space_size,
                              opponent_nb_actions=action_space_size,
-                             nb_units=nb_units)
+                             layer_dim=layer_dim,
+                             latent_dim=latent_dim,
+                             nb_soft_attention_heads=4,
+                             rnn_hidden_size=rnn_hidden_size)
     agent_model = agent_model.to(gpu)
     agent = Agent(agent_model)
     agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
@@ -195,12 +201,12 @@ def train():
         running_steps += steps
         nb_batches += 1
         if done:
+            print(f"Episode {episode} finished. Steps = {running_steps}")
             rewards.append(episode_reward)
             losses.append(running_loss // nb_batches)
             nb_batches = 0
             running_loss = 0
             running_steps = 0
-            print(f"Episode {episode} finished.")
             episode += 1
     env.close()
     torch.save(agent_model, "models/agent_model.model")
