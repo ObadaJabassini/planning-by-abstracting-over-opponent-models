@@ -46,14 +46,17 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
         state, rewards, done, info = env.step(actions)
         # for a very strange reason, the env sometimes returns the wrong number of rewards
         rewards = rewards[:nb_agents]
+        # agent
         agent_reward = rewards[agent_index]
+        agent_rewards.append(agent_reward)
+        agent_entropies.append(agent_entropy.view(1, -1))
+        agent_log_probs.append(agent_log_prob.view(1, -1))
+        agent_values.append(agent_value.view(1, -1))
+
+        # opponents
         opponent_reward = rewards[:agent_index] + rewards[agent_index + 1:]
         opponent_reward = torch.FloatTensor(opponent_reward).to(gpu)
-        agent_rewards.append(agent_reward)
         opponent_rewards.append(opponent_reward)
-        agent_entropies.append(agent_entropy.squeeze(0))
-        agent_log_probs.append(agent_log_prob.view(-1))
-        agent_values.append(agent_value.item())
         opponent_log_probs.append(opponent_log_prob.squeeze(0))
         opponent_moves = actions[:agent_index] + actions[agent_index + 1:]
         opponent_moves = torch.LongTensor(opponent_moves)
@@ -64,18 +67,19 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
             episode_reward = agent_reward
             state = env.reset()
             break
-    R = torch.zeros(1, 1)
+    r = torch.zeros(1, 1)
     opponent_value = torch.zeros(nb_opponents)
     if not done:
         agent_obs = state[agent_index]
         _, agent_value, _, opponent_value, _ = agent.estimate(agent_obs)
-        R = agent_value.detach()
+        r = agent_value.view(1, 1)
+        # r = r.detach()
         opponent_value = opponent_value.view(-1)
-    R = R.to(gpu)
+    r = r.to(gpu)
     opponent_value = opponent_value.to(gpu)
-    agent_values.append(R)
+    agent_values.append(r)
     opponent_values.append(opponent_value)
-    return steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, \
+    return steps, state, done, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, \
            opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
 
 
@@ -165,7 +169,7 @@ def train():
     running_steps = 0
     nb_batches = 0
     while episode <= nb_episodes:
-        steps, state, done, R, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
+        steps, state, done, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
                                                                                             state,
                                                                                             agent_index,
@@ -184,8 +188,7 @@ def train():
         )
         # backward step
         optimizer.zero_grad()
-        loss = criterion(R,
-                         agent_rewards,
+        loss = criterion(agent_rewards,
                          agent_log_probs,
                          agent_values,
                          agent_entropies,

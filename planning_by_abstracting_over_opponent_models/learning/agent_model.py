@@ -114,8 +114,6 @@ class AgentModel(nn.Module):
         # (batch_size, latent_dim * 2)
         agent_latent = torch.cat((agent_latent, attn_output), dim=1)
         # replace nan with zero, happens when there is no need to attend anything
-        agent_latent = torch.where(torch.isnan(agent_latent), torch.zeros_like(agent_latent), agent_latent)
-        opponent_influence = torch.where(torch.isnan(opponent_influence),
-                                         torch.zeros_like(opponent_influence),
-                                         opponent_influence)
+        agent_latent = torch.nan_to_num(agent_latent)
+        opponent_influence = torch.nan_to_num(opponent_influence)
         return agent_latent, opponent_influence
