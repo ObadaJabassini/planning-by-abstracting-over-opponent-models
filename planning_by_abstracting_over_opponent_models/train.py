@@ -49,9 +49,9 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
         # agent
         agent_reward = rewards[agent_index]
         agent_rewards.append(agent_reward)
-        agent_entropies.append(agent_entropy.view(1, -1))
-        agent_log_probs.append(agent_log_prob.view(1, -1))
-        agent_values.append(agent_value.view(1, -1))
+        agent_entropies.append(agent_entropy.view(-1))
+        agent_log_probs.append(agent_log_prob.view(-1))
+        agent_values.append(agent_value.view(-1))
 
         # opponents
         opponent_reward = rewards[:agent_index] + rewards[agent_index + 1:]
@@ -67,12 +67,12 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
             episode_reward = agent_reward
             state = env.reset()
             break
-    r = torch.zeros(1, 1)
+    r = torch.zeros(1)
     opponent_value = torch.zeros(nb_opponents)
     if not done:
         agent_obs = state[agent_index]
         _, agent_value, _, opponent_value, _ = agent.estimate(agent_obs)
-        r = agent_value.view(1, 1)
+        r = agent_value.view(1)
         # r = r.detach()
         opponent_value = opponent_value.view(-1)
     r = r.to(gpu)
