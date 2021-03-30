@@ -93,7 +93,7 @@ class SMMCTS:
         obs = self.extract_observation_func(state)
         agent_action_log, agent_value, opponents_action_log, opponent_values, opponent_influence = self.agent_model(obs)
         value_estimate = self.estimate_values(agent_value, opponent_values)
-        action_probs_estimate = self.estimate_probabilities(agent_action_log, opponents_action_log)
+        action_probs_estimate = self.estimate_action_probabilities(agent_action_log, opponents_action_log)
         return value_estimate, action_probs_estimate
 
     def estimate_values(self, agent_value, opponent_values):
@@ -102,11 +102,11 @@ class SMMCTS:
         value_estimate = torch.cat((agent_value, opponent_values))
         return value_estimate
 
-    def estimate_probabilities(self, agent_action_log, opponent_action_log):
+    def estimate_action_probabilities(self, agent_action_log, opponent_action_log):
         agent_action_probs = F.softmax(agent_action_log, dim=-1)
         agent_action_probs = agent_action_probs.view((1, -1)).to(cpu)
         opponent_action_probs = F.softmax(opponent_action_log, dim=-1)
-        opponent_action_probs = opponent_action_probs.view(self.nb_opponents, -1).to(cpu)
+        opponent_action_probs = opponent_action_probs.view(self.nb_players - 1, -1).to(cpu)
         probs = torch.vstack((agent_action_probs, opponent_action_probs))
         return probs
 
