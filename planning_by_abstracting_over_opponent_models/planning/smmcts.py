@@ -34,7 +34,7 @@ class TreeNode:
 
     def select_best_action_player(self, player):
         uct = self.uct(player)
-        return uct.argmax()
+        return uct.argmax().item()
 
     def uct(self, player):
         prob = self.action_prob_estimate[player]
@@ -122,7 +122,7 @@ class SMMCTS:
                         self.exploration_coefs)
         for _ in range(iterations):
             snapshot = deepcopy(env)
-            self.update(snapshot, root)
+            self.update(env, root)
             env = snapshot
         best_actions = root.select_best_actions()
         best_action = best_actions[0]
