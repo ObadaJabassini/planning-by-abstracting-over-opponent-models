@@ -18,6 +18,7 @@ from planning_by_abstracting_over_opponent_models.config import gpu
 
 torch.autograd.set_detect_anomaly(True)
 
+
 def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     agent_rewards = []
     agent_values = []

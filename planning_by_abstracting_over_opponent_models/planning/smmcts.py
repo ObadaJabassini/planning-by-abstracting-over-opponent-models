@@ -66,11 +66,10 @@ class SMMCTS:
     def update(self, env, current_node: TreeNode):
         if current_node.is_terminal:
             return current_node.value_estimate
-        actions = current_node.select_best_actions()
         current_node.visit_count += 1
-
+        actions = current_node.select_best_actions()
+        state, rewards, is_terminal, _ = env.step(actions)
         if actions not in current_node.children:
-            state, rewards, is_terminal, _ = env.step(actions)
             expected_value, action_probs = self.estimate_node(state)
             value_estimate = expected_value if not is_terminal else rewards
             current_node.children[actions] = TreeNode(state,
