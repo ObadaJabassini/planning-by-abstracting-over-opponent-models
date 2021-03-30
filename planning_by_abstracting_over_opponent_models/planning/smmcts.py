@@ -120,10 +120,10 @@ class SMMCTS:
                         self.nb_players,
                         self.action_space_size,
                         self.exploration_coefs)
+        snapshot = deepcopy(env)
         for _ in range(iterations):
-            snapshot = deepcopy(env)
-            self.update(env, root)
-            env = snapshot
+            temp = deepcopy(snapshot)
+            self.update(temp, root)
         best_actions = root.select_best_actions()
         best_action = best_actions[0]
         return best_action
