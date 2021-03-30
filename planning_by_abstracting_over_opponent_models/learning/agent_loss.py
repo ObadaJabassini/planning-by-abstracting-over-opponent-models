@@ -1,4 +1,4 @@
-# partially inspired from https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+# partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
 
 
 import torch
@@ -39,6 +39,15 @@ class AgentLoss(nn.Module):
                            opponent_values,
                            opponent_rewards,
                            opponent_coefs):
+        """
+
+        :param opponent_log_probs: (nb_opponents, nb_steps, nb_actions)
+        :param opponent_actions_ground_truths: (nb_opponents, nb_steps)
+        :param opponent_values: (nb_opponents, nb_steps)
+        :param opponent_rewards: (nb_opponents, nb_steps)
+        :param opponent_coefs: (nb_opponents)
+        :return:
+        """
         nb_opponents = opponent_log_probs.shape[0]
         policy_loss = 0
         value_loss = 0

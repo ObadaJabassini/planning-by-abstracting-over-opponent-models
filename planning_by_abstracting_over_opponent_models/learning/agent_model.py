@@ -12,20 +12,20 @@ class AgentModel(nn.Module):
                  layer_dim,
                  latent_dim,
                  nb_soft_attention_heads=4,
-                 rnn_hidden_size=None):
+                 hard_attention_rnn_hidden_size=None):
         super().__init__()
         self.features_extractor = features_extractor
+        self.nb_opponents = nb_opponents
         self.nb_soft_attention_heads = nb_soft_attention_heads
-        self.use_hard_attention = rnn_hidden_size is not None
+        self.use_hard_attention = hard_attention_rnn_hidden_size is not None
         features_size = self.features_extractor.output_size
         self.agent_latent_layer = nn.Sequential(
             nn.Linear(features_size, latent_dim),
             nn.ELU()
         )
         if self.use_hard_attention:
-            # should make it bidirectional
-            self.lstm = nn.LSTM(latent_dim * 2, rnn_hidden_size, bidirectional=True)
-            self.hard_attention_layer = nn.Linear(rnn_hidden_size * 2, 2)
+            self.lstm = nn.LSTM(latent_dim * 2, hard_attention_rnn_hidden_size, bidirectional=True)
+            self.hard_attention_layer = nn.Linear(hard_attention_rnn_hidden_size * 2, 2)
 
         self.multihead_attention = nn.MultiheadAttention(embed_dim=latent_dim, num_heads=nb_soft_attention_heads)
         self.agent_head_layer = nn.Sequential(
@@ -50,7 +50,7 @@ class AgentModel(nn.Module):
         features = self.features_extractor(image)
         agent_latent = self.agent_latent_layer(features)
         opponent_latents = [opponent_latent_layer(features) for opponent_latent_layer in self.opponent_latent_layers]
-        nb_opponents = len(opponent_latents)
+
         # use attention mechanism
         agent_latent, opponent_influence = self.attend(agent_latent, opponent_latents)
 
@@ -58,15 +58,14 @@ class AgentModel(nn.Module):
         agent_head = self.agent_head_layer(agent_latent)
         agent_policy = self.agent_policy_layer(agent_head)
         agent_value = self.agent_value_layer(agent_head)
-        opponents_heads = [self.opponent_head_layers[i](opponent_latents[i]) for i in range(nb_opponents)]
-        opponents_policies = [self.opponent_policies_layers[i](opponents_heads[i]) for i in range(nb_opponents)]
+        opponents_heads = [self.opponent_head_layers[i](opponent_latents[i]) for i in range(self.nb_opponents)]
+        opponents_policies = [self.opponent_policies_layers[i](opponents_heads[i]) for i in range(self.nb_opponents)]
         opponents_policies = torch.stack(opponents_policies, 1)
-        opponents_values = [self.opponent_values_layers[i](opponents_heads[i]) for i in range(nb_opponents)]
-        opponents_values = torch.stack(opponents_values, 1)
-        return agent_policy, agent_value, opponents_policies, opponents_values, opponent_influence
+        opponent_values = [self.opponent_values_layers[i](opponents_heads[i]) for i in range(self.nb_opponents)]
+        opponent_values = torch.stack(opponent_values, 1)
+        return agent_policy, agent_value, opponents_policies, opponent_values, opponent_influence
 
     def attend(self, agent_latent, opponent_latents):
-        nb_opponents = len(opponent_latents)
         # attention mechanism
 
         # (1, batch_size, latent_dim)
@@ -78,7 +77,7 @@ class AgentModel(nn.Module):
 
         if self.use_hard_attention:
             # (nb_opponents, batch_size, latent_dim)
-            agent_latent_stacked_repeated = agent_latent_stacked.repeat(nb_opponents, 1, 1)
+            agent_latent_stacked_repeated = agent_latent_stacked.repeat(self.nb_opponents, 1, 1)
             # (nb_opponents, batch_size, latent_dim * 2)
             agent_opponent_stacked = torch.cat((agent_latent_stacked_repeated, opponent_latents_stacked), dim=2)
             # (nb_opponents, batch_size, latent_dim)
@@ -86,7 +85,7 @@ class AgentModel(nn.Module):
             # (nb_opponents, batch_size, 2)
             hard_attention = self.hard_attention_layer(lstm_output)
             # (nb_opponents, batch_size, 2)
-            hard_attention = F.gumbel_softmax(hard_attention, tau=1, hard=True, dim=-1)
+            hard_attention = F.gumbel_softmax(hard_attention, tau=0.01, hard=True, dim=-1)
             # (nb_opponents, batch_size)
             hard_attention = hard_attention[..., 0]
             # (batch_size, nb_opponents)
@@ -98,7 +97,7 @@ class AgentModel(nn.Module):
             hard_attention_mask = hard_attention.bool()
         else:
             # attend everything
-            hard_attention_mask = torch.zeros((1, nb_opponents),
+            hard_attention_mask = torch.zeros((1, self.nb_opponents),
                                               dtype=torch.bool,
                                               device=agent_latent.device)
 

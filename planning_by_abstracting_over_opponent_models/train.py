@@ -1,6 +1,6 @@
-# partially inspired from https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+# partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
 from typing import List
-
+import numpy as np
 import altair as alt
 import pandas as pd
 import pommerman
@@ -10,12 +10,13 @@ from pommerman.agents import BaseAgent
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.agent import Agent
+from planning_by_abstracting_over_opponent_models.agent import Agent, get_observation
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
-from planning_by_abstracting_over_opponent_models.utils import gpu
+from planning_by_abstracting_over_opponent_models.config import gpu
 
+torch.autograd.set_detect_anomaly(True)
 
 def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     agent_rewards = []
@@ -33,10 +34,9 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     agent = agents[agent_index]
     while steps <= nb_steps:
         agent_obs = state[agent_index]
-        agent_policy, agent_value, opponent_policies, opponent_value, opponent_influence = agent.estimate(agent_obs)
+        agent_policy, agent_value, opponent_log_prob, opponent_value, opponent_influence = agent.estimate(agent_obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
-        opponent_log_prob = F.log_softmax(opponent_policies, dim=-1)
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
         agent_action = agent_prob.multinomial(num_samples=1).detach()
         agent_log_prob = agent_log_prob.gather(1, agent_action)
@@ -67,14 +67,15 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
             episode_reward = agent_reward
             state = env.reset()
             break
-    r = torch.zeros(1)
-    opponent_value = torch.zeros(nb_opponents)
     if not done:
         agent_obs = state[agent_index]
         _, agent_value, _, opponent_value, _ = agent.estimate(agent_obs)
         r = agent_value.view(1)
         # r = r.detach()
         opponent_value = opponent_value.view(-1)
+    else:
+        r = torch.zeros(1, device=gpu)
+        opponent_value = torch.zeros(nb_opponents, device=gpu)
     r = r.to(gpu)
     opponent_value = opponent_value.to(gpu)
     agent_values.append(r)
@@ -118,8 +119,8 @@ def prepare_tensors_for_loss_func(steps,
 
 def train():
     # pommerman
-    features_extractor = FeaturesExtractor(image_size=11,
-                                           conv_nb_layers=4,
+    features_extractor = FeaturesExtractor(input_size=(11, 11, 1),
+                                           nb_conv_layers=4,
                                            nb_filters=32,
                                            filter_size=3,
                                            filter_stride=1,
@@ -128,8 +129,8 @@ def train():
     agent_index = 0
     nb_opponents = 1
     latent_dim = 64
-    layer_dim = 64
-    rnn_hidden_size = None
+    layer_dim = 256
+    hard_attention_rnn_hidden_size = None
     agent_model = AgentModel(features_extractor=features_extractor,
                              nb_opponents=nb_opponents,
                              agent_nb_actions=action_space_size,
@@ -137,7 +138,7 @@ def train():
                              layer_dim=layer_dim,
                              latent_dim=latent_dim,
                              nb_soft_attention_heads=4,
-                             rnn_hidden_size=rnn_hidden_size)
+                             hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size)
     agent_model = agent_model.to(gpu)
     agent = Agent(agent_model)
     agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
@@ -145,16 +146,20 @@ def train():
     env = pommerman.make('PommeFFACompetition-v0', agents)
     env.set_training_agent(agent_index)
     state = env.reset()
+    # s = state[0]
+    # obs = get_observation(s)
+    # print()
+    # print(obs.shape)
     # RL
     nb_episodes = 200
     nb_steps = 16
     max_grad_norm = 50
-    gamma = 0.9
+    gamma = 0.99
     entropy_coef = 0.01
     value_coef = 0.5
     gae_lambda = 1.0
     value_loss_coef = 0.5
-    opponent_coefs = torch.tensor([0.1] * nb_opponents).to(gpu)
+    opponent_coefs = torch.tensor([0.1] * nb_opponents, requires_grad=False, device=gpu)
     optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
                           value_coef=value_coef,
