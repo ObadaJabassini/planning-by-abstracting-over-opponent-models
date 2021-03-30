@@ -66,9 +66,10 @@ class SMMCTS:
     def update(self, env, current_node: TreeNode):
         if current_node.is_terminal:
             return current_node.value_estimate
-        current_node.visit_count += 1
         actions = current_node.select_best_actions()
+        current_node.visit_count += 1
         state, rewards, is_terminal, _ = env.step(actions)
+
         if actions not in current_node.children:
             expected_value, action_probs = self.estimate_node(state)
             value_estimate = expected_value if not is_terminal else rewards
@@ -103,10 +104,9 @@ class SMMCTS:
 
     def estimate_probabilities(self, agent_action_log, opponent_action_log):
         agent_action_probs = F.softmax(agent_action_log, dim=-1)
-        agent_action_probs = agent_action_probs.squeeze(0).to(cpu)
-        agent_action_probs = agent_action_probs.reshape((1, -1))
+        agent_action_probs = agent_action_probs.view((1, -1)).to(cpu)
         opponent_action_probs = F.softmax(opponent_action_log, dim=-1)
-        opponent_action_probs = opponent_action_probs.squeeze(0).to(cpu)
+        opponent_action_probs = opponent_action_probs.view(self.nb_opponents, -1).to(cpu)
         probs = torch.vstack((agent_action_probs, opponent_action_probs))
         return probs
 
