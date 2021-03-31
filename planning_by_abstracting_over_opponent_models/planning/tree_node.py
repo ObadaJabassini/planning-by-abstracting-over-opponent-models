@@ -61,7 +61,6 @@ class TreeNode:
         :param action_value_estimate: the estimated value function for each of those actions, shape: (nb_players)
         :return:
         """
-        for i in range(len(actions)):
-            a = actions[i]
-            self.average_estimations[i][a] += action_value_estimate[i]
-            self.nb_action_visits[i][a] += 1
+        r = range(len(actions))
+        self.average_estimations[r, actions] += action_value_estimate
+        self.nb_action_visits[r, actions] += 1
