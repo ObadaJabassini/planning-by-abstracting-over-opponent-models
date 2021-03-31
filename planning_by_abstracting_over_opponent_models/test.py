@@ -16,12 +16,11 @@ def load_agent_model():
 
 
 def test():
-    agent_index = 0
     nb_opponents = 1
     agent_model = load_agent_model()
     agent = Agent(agent_model)
     agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
-    agents.insert(agent_index, agent)
+    agents.insert(0, agent)
     # print(agents)
     env = pommerman.make('PommeFFACompetition-v0', agents)
     # RL
@@ -36,7 +35,7 @@ def test():
             env.render()
             actions = env.act(state)
             state, rewards, done, info = env.step(actions)
-        wins.append(info['winners'][agent_index] if info['result'].name == 'Win' else -1)
+        wins.append(info['winners'][0] if info['result'].name == 'Win' else -1)
     rewards_df = pd.DataFrame({"Episode": episode_range, "Win": wins})
     chart = alt.Chart(rewards_df).mark_line().encode(
         x="Episode",

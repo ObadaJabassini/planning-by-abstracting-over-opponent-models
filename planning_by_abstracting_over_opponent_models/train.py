@@ -19,7 +19,7 @@ from planning_by_abstracting_over_opponent_models.config import gpu
 torch.autograd.set_detect_anomaly(True)
 
 
-def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
+def collect_samples(env, state, agents, nb_opponents, nb_steps):
     agent_rewards = []
     agent_values = []
     agent_log_probs = []
@@ -32,9 +32,9 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
     nb_agents = len(agents)
     done = False
     episode_reward = 0
-    agent = agents[agent_index]
+    agent = agents[0]
     while steps <= nb_steps:
-        agent_obs = state[agent_index]
+        agent_obs = state[0]
         agent_policy, agent_value, opponent_log_prob, opponent_value, opponent_influence = agent.estimate(agent_obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
@@ -42,26 +42,26 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
         agent_action = agent_prob.multinomial(num_samples=1).detach()
         agent_log_prob = agent_log_prob.gather(1, agent_action)
 
-        actions = env.act(state)
-        actions.insert(agent_index, agent_action.item())
+        opponent_actions = env.act(state)
+        agent_action = agent_action.item()
+        actions = [agent_action, *opponent_actions]
         state, rewards, done, info = env.step(actions)
         # for a very strange reason, the env sometimes returns the wrong number of rewards
         rewards = rewards[:nb_agents]
         # agent
-        agent_reward = rewards[agent_index]
+        agent_reward = rewards[0]
         agent_rewards.append(agent_reward)
         agent_entropies.append(agent_entropy.view(-1))
         agent_log_probs.append(agent_log_prob.view(-1))
         agent_values.append(agent_value.view(-1))
 
         # opponents
-        opponent_reward = rewards[:agent_index] + rewards[agent_index + 1:]
+        opponent_reward = rewards[1:]
         opponent_reward = torch.FloatTensor(opponent_reward).to(gpu)
         opponent_rewards.append(opponent_reward)
         opponent_log_probs.append(opponent_log_prob.squeeze(0))
-        opponent_moves = actions[:agent_index] + actions[agent_index + 1:]
-        opponent_moves = torch.LongTensor(opponent_moves)
-        opponent_actions_ground_truths.append(opponent_moves)
+        opponent_actions = torch.LongTensor(opponent_actions)
+        opponent_actions_ground_truths.append(opponent_actions)
         opponent_values.append(opponent_value.view(-1))
         steps += 1
         if done:
@@ -69,7 +69,7 @@ def collect_samples(env, state, agent_index, agents, nb_opponents, nb_steps):
             state = env.reset()
             break
     if not done:
-        agent_obs = state[agent_index]
+        agent_obs = state[0]
         _, agent_value, _, opponent_value, _ = agent.estimate(agent_obs)
         r = agent_value.view(1)
         # r = r.detach()
@@ -127,7 +127,6 @@ def train():
                                            filter_stride=1,
                                            filter_padding=1)
     action_space_size = 6
-    agent_index = 0
     nb_opponents = 1
     latent_dim = 64
     layer_dim = 256
@@ -143,9 +142,9 @@ def train():
     agent_model = agent_model.to(gpu)
     agent = Agent(agent_model)
     agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
-    agents.insert(agent_index, agent)
+    agents.insert(0, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)
-    env.set_training_agent(agent_index)
+    env.set_training_agent(0)
     state = env.reset()
     # s = state[0]
     # obs = get_observation(s)
@@ -178,7 +177,6 @@ def train():
         steps, state, done, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
                                                                                             state,
-                                                                                            agent_index,
                                                                                             agents,
                                                                                             nb_opponents,
                                                                                             nb_steps)
