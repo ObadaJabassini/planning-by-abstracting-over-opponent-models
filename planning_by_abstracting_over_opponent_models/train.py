@@ -1,6 +1,7 @@
 # partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+
 from typing import List
-import numpy as np
+
 import altair as alt
 import pandas as pd
 import pommerman
@@ -10,11 +11,11 @@ from pommerman.agents import BaseAgent
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.agent import Agent, get_observation
+from planning_by_abstracting_over_opponent_models.agent import Agent
+from planning_by_abstracting_over_opponent_models.config import gpu
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
-from planning_by_abstracting_over_opponent_models.config import gpu
 
 torch.autograd.set_detect_anomaly(True)
 
