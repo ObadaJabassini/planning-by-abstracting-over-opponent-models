@@ -46,7 +46,12 @@ class TreeNode:
         c = self.exploration_coefs
         x, n = self.average_estimations, self.nb_action_visits
         x_bar = x / n
-        uct = x_bar + c * probs * torch.sqrt(math.log(self.visit_count) / n)
+        exploration_term = torch.sqrt(math.log(self.visit_count) / n)
+        # if there is no estimate for the action, assign zero
+        x_bar = torch.nan_to_num(x_bar, 0)
+        # when an action is not explored, assign a large value to ensure it will be explored
+        exploration_term = torch.nan_to_num(exploration_term, 10000)
+        uct = x_bar + c * probs * exploration_term
         return uct
 
     def update_actions_estimates(self, actions, action_value_estimate):
