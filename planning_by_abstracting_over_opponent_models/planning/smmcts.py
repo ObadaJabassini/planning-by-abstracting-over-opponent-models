@@ -39,10 +39,9 @@ class SMMCTS:
                                                       self.nb_players,
                                                       self.action_space_size,
                                                       self.exploration_coefs)
-            return value_estimate
-
-        child = current_node.children[actions]
-        value_estimate = self.update(env, child)
+        else:
+            child = current_node.children[actions]
+            value_estimate = self.update(env, child)
         # backpropagate
         current_node.value_estimate += value_estimate
         current_node.update_actions_estimates(actions, value_estimate)
