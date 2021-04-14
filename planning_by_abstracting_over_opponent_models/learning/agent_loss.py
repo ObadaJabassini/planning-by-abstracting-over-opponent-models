@@ -1,6 +1,6 @@
 # partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
 
-
+from icecream import ic
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -88,7 +88,7 @@ class AgentLoss(nn.Module):
                                                 opponent_values,
                                                 opponent_rewards,
                                                 opponent_coefs)
+
         total_loss = agent_loss + opponent_loss
-        # why :)
         total_loss = total_loss.sum()
         return total_loss

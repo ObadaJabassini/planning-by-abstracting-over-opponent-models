@@ -2,6 +2,7 @@
 
 from typing import List
 
+from icecream import ic
 import altair as alt
 import pandas as pd
 import pommerman
@@ -130,13 +131,13 @@ def train():
     action_space_size = 6
     nb_opponents = 1
     latent_dim = 64
-    layer_dim = 256
-    hard_attention_rnn_hidden_size = None
+    head_dim = 256
+    hard_attention_rnn_hidden_size = 64
     agent_model = AgentModel(features_extractor=features_extractor,
                              nb_opponents=nb_opponents,
                              agent_nb_actions=action_space_size,
                              opponent_nb_actions=action_space_size,
-                             layer_dim=layer_dim,
+                             head_dim=head_dim,
                              latent_dim=latent_dim,
                              nb_soft_attention_heads=4,
                              hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size)
@@ -147,10 +148,6 @@ def train():
     env = pommerman.make('PommeFFACompetition-v0', agents)
     env.set_training_agent(0)
     state = env.reset()
-    # s = state[0]
-    # obs = get_observation(s)
-    # print()
-    # print(obs.shape)
     # RL
     nb_episodes = 200
     nb_steps = 16
@@ -191,6 +188,12 @@ def train():
             opponent_rewards,
             opponent_values
         )
+        ic(agent_rewards)
+        ic(agent_log_probs)
+        ic(agent_values)
+        ic(opponent_log_probs)
+        ic(opponent_actions_ground_truths)
+        ic(opponent_values)
         # backward step
         optimizer.zero_grad()
         loss = criterion(agent_rewards,
@@ -202,7 +205,11 @@ def train():
                          opponent_values,
                          opponent_rewards,
                          opponent_coefs)
+        print(loss)
+        for name, param in agent_model.named_parameters():
+            print(name, torch.isfinite(param).all())
         loss.backward()
+        print("after backward")
         clip_grad_norm_(agent_model.parameters(), max_grad_norm)
         optimizer.step()
         running_loss += loss.item()

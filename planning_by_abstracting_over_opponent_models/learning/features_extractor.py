@@ -6,12 +6,11 @@ import torch.nn as nn
 class FeaturesExtractor(nn.Module):
     def __init__(self, input_size, nb_conv_layers, nb_filters, filter_size, filter_stride, filter_padding):
         super().__init__()
-        conv = nn.Sequential()
         output_width, output_height, input_channel = input_size
+        conv = nn.Sequential()
         for i in range(1, nb_conv_layers + 1):
-            input_shape = input_channel if i == 1 else nb_filters
-            conv.add_module(f"conv_{i}", nn.Conv2d(in_channels=input_shape,
-                                                   out_channels=nb_filters,
+            conv.add_module(f"conv_{i}", nn.Conv2d(in_channels=input_channel if i == 1 else nb_filters * (i - 1),
+                                                   out_channels=nb_filters * i,
                                                    kernel_size=filter_size,
                                                    stride=filter_stride,
                                                    padding=filter_padding))

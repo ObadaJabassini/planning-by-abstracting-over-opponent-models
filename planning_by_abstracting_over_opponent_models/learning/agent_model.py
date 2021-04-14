@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from icecream import ic
 
 
 class AgentModel(nn.Module):
@@ -9,7 +10,7 @@ class AgentModel(nn.Module):
                  agent_nb_actions,
                  nb_opponents,
                  opponent_nb_actions,
-                 layer_dim,
+                 head_dim,
                  latent_dim,
                  nb_soft_attention_heads=4,
                  hard_attention_rnn_hidden_size=None):
@@ -29,21 +30,22 @@ class AgentModel(nn.Module):
 
         self.multihead_attention = nn.MultiheadAttention(embed_dim=latent_dim, num_heads=nb_soft_attention_heads)
         self.agent_head_layer = nn.Sequential(
-            nn.Linear(latent_dim * 2, layer_dim),
+            nn.Linear(latent_dim * 2, head_dim),
             nn.ELU()
         )
-        self.agent_policy_layer = nn.Linear(layer_dim, agent_nb_actions)
+        self.agent_policy_layer = nn.Linear(head_dim, agent_nb_actions)
         self.agent_value_layer = nn.Sequential(
-            nn.Linear(layer_dim, 1),
+            nn.Linear(head_dim, 1),
+            nn.ELU()
         )
         opponent_latent_layers = [nn.Sequential(nn.Linear(features_size, latent_dim), nn.ELU()) for _ in
                                   range(nb_opponents)]
         self.opponent_latent_layers = nn.ModuleList(opponent_latent_layers)
-        opponent_head_layers = [nn.Sequential(nn.Linear(latent_dim, layer_dim), nn.ELU()) for _ in range(nb_opponents)]
+        opponent_head_layers = [nn.Sequential(nn.Linear(latent_dim, head_dim), nn.ELU()) for _ in range(nb_opponents)]
         self.opponent_head_layers = nn.ModuleList(opponent_head_layers)
-        opponent_policies_layers = [nn.Linear(layer_dim, opponent_nb_actions) for _ in range(nb_opponents)]
+        opponent_policies_layers = [nn.Linear(head_dim, opponent_nb_actions) for _ in range(nb_opponents)]
         self.opponent_policies_layers = nn.ModuleList(opponent_policies_layers)
-        opponent_values_layers = [nn.Sequential(nn.Linear(layer_dim, 1)) for _ in range(nb_opponents)]
+        opponent_values_layers = [nn.Sequential(nn.Linear(head_dim, 1), nn.ELU()) for _ in range(nb_opponents)]
         self.opponent_values_layers = nn.ModuleList(opponent_values_layers)
 
     def forward(self, image):
@@ -74,30 +76,26 @@ class AgentModel(nn.Module):
         opponent_latents_stacked = torch.stack(opponent_latents)
 
         # hard attention
-
         if self.use_hard_attention:
             # (nb_opponents, batch_size, latent_dim)
             agent_latent_stacked_repeated = agent_latent_stacked.repeat(self.nb_opponents, 1, 1)
             # (nb_opponents, batch_size, latent_dim * 2)
             agent_opponent_stacked = torch.cat((agent_latent_stacked_repeated, opponent_latents_stacked), dim=2)
-            # (nb_opponents, batch_size, latent_dim)
+            # (nb_opponents, batch_size, hard_attention_rnn_hidden_size)
             lstm_output, _ = self.lstm(agent_opponent_stacked)
             # (nb_opponents, batch_size, 2)
             hard_attention = self.hard_attention_layer(lstm_output)
             # (nb_opponents, batch_size, 2)
-            hard_attention = F.gumbel_softmax(hard_attention, tau=0.01, hard=True, dim=-1)
+            hard_attention = F.gumbel_softmax(hard_attention, tau=1, hard=True, dim=-1)
             # (nb_opponents, batch_size)
             hard_attention = hard_attention[..., 0]
             # (batch_size, nb_opponents)
             hard_attention = hard_attention.T
-            # (batch_size * nb_attention_heads, nb_opponents)
-            hard_attention = hard_attention.repeat(self.nb_soft_attention_heads, 1)
-            # (batch_size * nb_attention_heads, 1, nb_opponents)
-            hard_attention = hard_attention.unsqueeze(1)
             hard_attention_mask = hard_attention.bool()
         else:
             # attend everything
-            hard_attention_mask = torch.zeros((1, self.nb_opponents),
+            hard_attention_mask = torch.zeros(agent_latent.shape[0],
+                                              self.nb_opponents,
                                               dtype=torch.bool,
                                               device=agent_latent.device)
 
@@ -105,14 +103,14 @@ class AgentModel(nn.Module):
         attn_output, attn_output_weights = self.multihead_attention(query=agent_latent_stacked,
                                                                     key=opponent_latents_stacked,
                                                                     value=opponent_latents_stacked,
-                                                                    attn_mask=hard_attention_mask)
-        # (batch_size, nb_opponents), will be used later for planning
-        opponent_influence = attn_output_weights.squeeze(1)
+                                                                    key_padding_mask=hard_attention_mask)
         # back to (batch_size, latent_dim)
         attn_output = attn_output.squeeze(0)
         # (batch_size, latent_dim * 2)
-        agent_latent = torch.cat((agent_latent, attn_output), dim=1)
-        # replace nan with zero, happens when there is no need to attend anything
-        agent_latent = torch.nan_to_num(agent_latent)
-        opponent_influence = torch.nan_to_num(opponent_influence)
+        agent_latent = torch.cat((agent_latent, attn_output), dim=-1)
+        # (batch_size, nb_opponents), will be used later for planning
+        opponent_influence = attn_output_weights.squeeze(1)
+        # replace nan with zero
+        agent_latent = torch.nan_to_num(agent_latent, 0)
+        opponent_influence = torch.nan_to_num(opponent_influence, 0)
         return agent_latent, opponent_influence
