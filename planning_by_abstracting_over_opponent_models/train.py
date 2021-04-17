@@ -157,7 +157,7 @@ def train():
     value_coef = 0.5
     gae_lambda = 1.0
     value_loss_coef = 0.5
-    opponent_coefs = torch.tensor([0.1] * nb_opponents, requires_grad=False, device=gpu)
+    opponent_coefs = torch.tensor([0.1] * nb_opponents, device=gpu)
     optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
                           value_coef=value_coef,
@@ -188,12 +188,12 @@ def train():
             opponent_rewards,
             opponent_values
         )
-        ic(agent_rewards)
-        ic(agent_log_probs)
-        ic(agent_values)
-        ic(opponent_log_probs)
-        ic(opponent_actions_ground_truths)
-        ic(opponent_values)
+        # ic(agent_rewards)
+        # ic(agent_log_probs)
+        # ic(agent_values)
+        # ic(opponent_log_probs)
+        # ic(opponent_actions_ground_truths)
+        # ic(opponent_values)
         # backward step
         optimizer.zero_grad()
         loss = criterion(agent_rewards,
@@ -206,10 +206,9 @@ def train():
                          opponent_rewards,
                          opponent_coefs)
         print(loss)
-        for name, param in agent_model.named_parameters():
-            print(name, torch.isfinite(param).all())
+        # for name, param in agent_model.named_parameters():
+        #     print(name, torch.isfinite(param).all())
         loss.backward()
-        print("after backward")
         clip_grad_norm_(agent_model.parameters(), max_grad_norm)
         optimizer.step()
         running_loss += loss.item()

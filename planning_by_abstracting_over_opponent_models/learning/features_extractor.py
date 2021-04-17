@@ -19,7 +19,7 @@ class FeaturesExtractor(nn.Module):
             output_height = int(math.floor((output_height - filter_size + 2 * filter_padding) / filter_stride)) + 1
         conv.add_module("flatten", nn.Flatten())
         self.conv = conv
-        self.output_size = output_width * output_height * nb_filters
+        self.output_size = output_width * output_height * nb_filters * nb_conv_layers
 
     def forward(self, image):
         return self.conv(image)
