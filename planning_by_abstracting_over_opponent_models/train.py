@@ -122,24 +122,30 @@ def prepare_tensors_for_loss_func(steps,
 
 def train():
     # pommerman
-    features_extractor = FeaturesExtractor(input_size=(11, 11, 1),
-                                           nb_conv_layers=4,
-                                           nb_filters=32,
+    use_attention = False
+    nb_filters = [32, 32, 32]
+    board_size = 11
+    features_extractor = FeaturesExtractor(input_size=(board_size, board_size, 1),
+                                           nb_filters=nb_filters,
                                            filter_size=3,
                                            filter_stride=1,
                                            filter_padding=1)
     action_space_size = 6
     nb_opponents = 1
     latent_dim = 64
-    head_dim = 256
-    hard_attention_rnn_hidden_size = 64
+    head_dim = 64
+    nb_soft_attention_heads = None
+    hard_attention_rnn_hidden_size = None
+    if use_attention:
+        nb_soft_attention_heads = 4
+        hard_attention_rnn_hidden_size = 64
     agent_model = AgentModel(features_extractor=features_extractor,
                              nb_opponents=nb_opponents,
                              agent_nb_actions=action_space_size,
                              opponent_nb_actions=action_space_size,
                              head_dim=head_dim,
                              latent_dim=latent_dim,
-                             nb_soft_attention_heads=4,
+                             nb_soft_attention_heads=nb_soft_attention_heads,
                              hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size)
     agent_model = agent_model.to(gpu)
     agent = Agent(agent_model)
