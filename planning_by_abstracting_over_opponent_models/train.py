@@ -36,8 +36,7 @@ def collect_samples(env, state, agents, nb_opponents, nb_steps):
     episode_reward = 0
     agent = agents[0]
     while steps <= nb_steps:
-        agent_obs = state[0]
-        agent_policy, agent_value, opponent_log_prob, opponent_value, opponent_influence = agent.estimate(agent_obs)
+        agent_policy, agent_value, opponent_log_prob, opponent_value, opponent_influence = agent.estimate(state)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
@@ -71,8 +70,7 @@ def collect_samples(env, state, agents, nb_opponents, nb_steps):
             state = env.reset()
             break
     if not done:
-        agent_obs = state[0]
-        _, agent_value, _, opponent_value, _ = agent.estimate(agent_obs)
+        _, agent_value, _, opponent_value, _ = agent.estimate(state)
         r = agent_value.view(1)
         # r = r.detach()
         opponent_value = opponent_value.view(-1)
@@ -125,12 +123,13 @@ def train():
     use_attention = False
     nb_filters = [32, 32, 32]
     board_size = 11
-    features_extractor = FeaturesExtractor(input_size=(board_size, board_size, 1),
+    features_extractor = FeaturesExtractor(input_size=(board_size, board_size, 18),
                                            nb_filters=nb_filters,
                                            filter_size=3,
                                            filter_stride=1,
                                            filter_padding=1)
     action_space_size = 6
+    max_steps = 800
     nb_opponents = 1
     latent_dim = 64
     head_dim = 64
@@ -148,7 +147,7 @@ def train():
                              nb_soft_attention_heads=nb_soft_attention_heads,
                              hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size)
     agent_model = agent_model.to(gpu)
-    agent = Agent(agent_model)
+    agent = Agent(agent_model, nb_opponents, max_steps)
     agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)

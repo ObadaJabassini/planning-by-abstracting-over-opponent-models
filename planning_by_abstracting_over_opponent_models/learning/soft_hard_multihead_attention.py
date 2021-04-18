@@ -3,7 +3,6 @@ from typing import Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import Tensor
 from torch.nn.init import constant_, xavier_uniform_
 from torch.nn.modules.linear import _LinearWithBias
 
@@ -27,7 +26,7 @@ class SoftHardMultiheadAttention(nn.Module):
         constant_(self.in_proj_bias, 0.)
         constant_(self.out_proj.bias, 0.)
 
-    def forward(self, query: Tensor, key: Tensor, hard_attention=None) -> Tuple[Tensor, Tensor]:
+    def forward(self, query: torch.Tensor, key: torch.Tensor, hard_attention=None) -> Tuple[torch.Tensor, torch.Tensor]:
         tgt_len, bsz, embed_dim = query.size()
         head_dim = embed_dim // self.num_heads
         scaling = float(head_dim) ** -0.5
