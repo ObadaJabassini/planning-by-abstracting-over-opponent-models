@@ -9,11 +9,7 @@ from planning_by_abstracting_over_opponent_models.env import create_env
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 
 
-def dense_rewards(state, rewards):
-    return rewards
-
-
-def collect_samples(env, state, lock, counter, agents, nb_opponents, nb_steps, device):
+def collect_samples(env, state, lock, counter, agents, nb_opponents, nb_steps, device, dense_reward=True):
     agent_rewards = []
     agent_values = []
     agent_log_probs = []
@@ -34,14 +30,16 @@ def collect_samples(env, state, lock, counter, agents, nb_opponents, nb_steps, d
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
         agent_action = agent_prob.multinomial(num_samples=1).detach()
         agent_log_prob = agent_log_prob.gather(1, agent_action)
-
         opponent_actions = env.act(state)
         agent_action = agent_action.item()
         actions = [agent_action, *opponent_actions]
+        ammo_before = state[0]["ammo"]
         state, rewards, done, info = env.step(actions)
+        ammo_after = state[0]["ammo"]
         # for a very strange reason, the env sometimes returns the wrong number of rewards
         rewards = rewards[:nb_agents]
-        rewards = dense_rewards(state, rewards)
+        if dense_reward and rewards[0] == 0 and ammo_after > ammo_before:
+            rewards[0] = 0.1
         # agent
         agent_reward = rewards[0]
         agent_rewards.append(agent_reward)
@@ -126,6 +124,7 @@ def train(rank, seed, shared_model, counter, lock, device, action_space_size, nb
     agents, agent_model, env = create_env(seed, rank, device, action_space_size, nb_opponents, max_steps)
     state = env.reset()
     # RL
+    dense_reward = True
     nb_episodes = 200
     nb_steps = 16
     max_grad_norm = 50
@@ -155,8 +154,8 @@ def train(rank, seed, shared_model, counter, lock, device, action_space_size, nb
                                                                                             agents,
                                                                                             nb_opponents,
                                                                                             nb_steps,
-                                                                                            device)
-
+                                                                                            device,
+                                                                                            dense_reward)
         opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values = prepare_tensors_for_loss_func(
             steps,
             nb_opponents,
