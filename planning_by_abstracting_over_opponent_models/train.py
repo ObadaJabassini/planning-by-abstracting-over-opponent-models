@@ -119,7 +119,7 @@ def ensure_shared_grads(model, shared_model):
         shared_param._grad = param.grad
 
 
-def train(rank, seed, shared_model, counter, lock, device, action_space_size, nb_opponents, max_steps, optimizer=None):
+def train(rank, seed, shared_model, counter, lock, action_space_size, nb_opponents, max_steps, device, optimizer):
     torch.manual_seed(seed + rank)
     agents, agent_model, env = create_env(seed, rank, device, action_space_size, nb_opponents, max_steps)
     state = env.reset()

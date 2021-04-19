@@ -14,15 +14,14 @@ torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
-    device = cpu
     shared_optim = True
+    device = cpu
     seed = 32
     nb_processes = 4
     action_space_size = 6
     max_steps = 800
     nb_opponents = 1
-    # rank = nb_processes + 1
-    rank = 0
+    rank = nb_processes
     shared_model = create_agent_model(seed,
                                       rank,
                                       action_space_size,
@@ -43,14 +42,15 @@ if __name__ == '__main__':
     processes = []
     counter = mp.Value('i', 0)
     lock = mp.Lock()
-    args = (nb_processes, seed, shared_model, counter, device, action_space_size, nb_opponents, max_steps)
+    args = (nb_processes, seed, shared_model, counter, action_space_size, nb_opponents, max_steps, device)
     p = mp.Process(target=test, args=args)
     p.start()
     processes.append(p)
     for rank in range(nb_processes):
-        args = (rank, seed, shared_model, counter, lock, device, action_space_size, nb_opponents, max_steps, optimizer)
+        args = (rank, seed, shared_model, counter, lock, action_space_size, nb_opponents, max_steps, device, optimizer)
         p = mp.Process(target=train, args=args)
         p.start()
         processes.append(p)
+    print("Started training")
     for p in processes:
         p.join()

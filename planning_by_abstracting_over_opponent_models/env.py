@@ -40,7 +40,7 @@ def create_agent_model(seed,
                                            nb_filters=nb_filters,
                                            filter_size=3,
                                            filter_stride=1,
-                                           filter_padding=1)
+                                           filter_padding=1).to(device)
 
     agent_model = AgentModel(features_extractor=features_extractor,
                              nb_opponents=nb_opponents,
