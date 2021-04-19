@@ -2,16 +2,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from pommerman.agents import BaseAgent
-from pommerman.constants import Item
-
-from planning_by_abstracting_over_opponent_models.config import gpu
 
 
-def check_agent_existence(state, board_tuple, opponent_index):
+def check_agent_existence(state, board_tuple, index):
     result = np.zeros(board_tuple)
-    idd = 10 + opponent_index
+    idd = 10 + index
     if idd in state[0]["alive"]:
-        position = state[opponent_index]["position"]
+        position = state[index]["position"]
         result[position] = 1
     return result
 
@@ -22,10 +19,7 @@ def extract_features(state, nb_opponents, max_steps):
     board_size = bomb_blast_strength_map.shape[0]
     board_tuple = (board_size, board_size)
     bomb_life_map = agent_state["bomb_life"]
-    position_map = np.zeros(board_tuple)
-    if Item.Agent0 in agent_state["alive"]:
-        position = agent_state["position"]
-        position_map[position] = 1
+    agent_position_map = check_agent_existence(state, board_tuple, 0)
     ammo_map = np.full(board_tuple, agent_state["ammo"])
     blast_strength_map = np.full(board_tuple, agent_state["blast_strength"])
     can_kick_map = np.full(board_tuple, int(agent_state["can_kick"]))
@@ -38,7 +32,6 @@ def extract_features(state, nb_opponents, max_steps):
         opponents_position_map.extend([check_agent_existence(state, board_tuple, 1),
                                        check_agent_existence(state, board_tuple, 3)
                                        ])
-
     board = agent_state["board"]
     passage_position_map = (board == 0).astype(int)
     rigid_wall_position_map = (board == 1).astype(int)
@@ -50,7 +43,7 @@ def extract_features(state, nb_opponents, max_steps):
     current_step_map = np.full(board_tuple, agent_state["step_count"]).astype(float) / max_steps
     features = np.stack([bomb_blast_strength_map,
                          bomb_life_map,
-                         position_map,
+                         agent_position_map,
                          ammo_map,
                          blast_strength_map,
                          can_kick_map,
@@ -68,13 +61,13 @@ def extract_features(state, nb_opponents, max_steps):
     return features
 
 
-def get_observation(state, nb_opponents, max_steps):
+def get_observation(state, nb_opponents, max_steps, device):
     features = extract_features(state, nb_opponents, max_steps)
     # (18, 11, 11)
     obs = torch.from_numpy(features)
     # (18, 11, 11), swap width and height
     obs = obs.permute(0, 2, 1)
-    obs = obs.float().unsqueeze(0).to(gpu)
+    obs = obs.float().unsqueeze(0).to(device)
     return obs
 
 
@@ -96,5 +89,5 @@ class Agent(BaseAgent):
         return agent_action
 
     def estimate(self, obs):
-        obs = get_observation(obs, self.nb_opponents, self.max_steps)
+        obs = get_observation(obs, self.nb_opponents, self.max_steps, self.agent_model.device)
         return self.agent_model(obs)

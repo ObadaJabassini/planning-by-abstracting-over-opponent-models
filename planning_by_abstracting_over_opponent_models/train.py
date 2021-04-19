@@ -1,27 +1,19 @@
 # partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
 
-from typing import List
-
-from icecream import ic
-import altair as alt
-import pandas as pd
-import pommerman
 import torch
 import torch.nn.functional as F
-from pommerman.agents import BaseAgent
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.agent import Agent
-from planning_by_abstracting_over_opponent_models.config import gpu
+from planning_by_abstracting_over_opponent_models.env import create_env
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
-from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
-from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
-
-torch.autograd.set_detect_anomaly(True)
 
 
-def collect_samples(env, state, agents, nb_opponents, nb_steps):
+def dense_rewards(state, rewards):
+    return rewards
+
+
+def collect_samples(env, state, lock, counter, agents, nb_opponents, nb_steps, device):
     agent_rewards = []
     agent_values = []
     agent_log_probs = []
@@ -49,6 +41,7 @@ def collect_samples(env, state, agents, nb_opponents, nb_steps):
         state, rewards, done, info = env.step(actions)
         # for a very strange reason, the env sometimes returns the wrong number of rewards
         rewards = rewards[:nb_agents]
+        rewards = dense_rewards(state, rewards)
         # agent
         agent_reward = rewards[0]
         agent_rewards.append(agent_reward)
@@ -58,13 +51,15 @@ def collect_samples(env, state, agents, nb_opponents, nb_steps):
 
         # opponents
         opponent_reward = rewards[1:]
-        opponent_reward = torch.FloatTensor(opponent_reward).to(gpu)
+        opponent_reward = torch.FloatTensor(opponent_reward).to(device)
         opponent_rewards.append(opponent_reward)
         opponent_log_probs.append(opponent_log_prob.squeeze(0))
         opponent_actions = torch.LongTensor(opponent_actions)
         opponent_actions_ground_truths.append(opponent_actions)
         opponent_values.append(opponent_value.view(-1))
         steps += 1
+        with lock:
+            counter.value += 1
         if done:
             episode_reward = agent_reward
             state = env.reset()
@@ -72,13 +67,13 @@ def collect_samples(env, state, agents, nb_opponents, nb_steps):
     if not done:
         _, agent_value, _, opponent_value, _ = agent.estimate(state)
         r = agent_value.view(1)
-        # r = r.detach()
+        r = r.detach()
         opponent_value = opponent_value.view(-1)
     else:
-        r = torch.zeros(1, device=gpu)
-        opponent_value = torch.zeros(nb_opponents, device=gpu)
-    r = r.to(gpu)
-    opponent_value = opponent_value.to(gpu)
+        r = torch.zeros(1, device=device)
+        opponent_value = torch.zeros(nb_opponents, device=device)
+    r = r.to(device)
+    opponent_value = opponent_value.to(device)
     agent_values.append(r)
     opponent_values.append(opponent_value)
     return steps, state, done, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, \
@@ -91,7 +86,8 @@ def prepare_tensors_for_loss_func(steps,
                                   opponent_log_probs,
                                   opponent_actions_ground_truths,
                                   opponent_rewards,
-                                  opponent_values):
+                                  opponent_values,
+                                  device):
     # (nb_steps, nb_opponents, nb_actions)
     opponent_log_probs = torch.stack(opponent_log_probs)
     assert opponent_log_probs.shape == (steps, nb_opponents, action_space_size), f"{opponent_log_probs.shape}"
@@ -104,7 +100,7 @@ def prepare_tensors_for_loss_func(steps,
     # (nb_opponents, nb_steps)
     opponent_actions_ground_truths = opponent_actions_ground_truths.permute(1, 0)
     assert opponent_actions_ground_truths.shape == (nb_opponents, steps), f"{opponent_actions_ground_truths.shape}"
-    opponent_actions_ground_truths = opponent_actions_ground_truths.to(gpu)
+    opponent_actions_ground_truths = opponent_actions_ground_truths.to(device)
 
     # (nb_steps, nb_opponents)
     opponent_rewards = torch.stack(opponent_rewards)
@@ -118,40 +114,16 @@ def prepare_tensors_for_loss_func(steps,
     return opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values
 
 
-def train():
-    # pommerman
-    use_attention = False
-    nb_filters = [32, 32, 32]
-    board_size = 11
-    features_extractor = FeaturesExtractor(input_size=(board_size, board_size, 18),
-                                           nb_filters=nb_filters,
-                                           filter_size=3,
-                                           filter_stride=1,
-                                           filter_padding=1)
-    action_space_size = 6
-    max_steps = 800
-    nb_opponents = 1
-    latent_dim = 64
-    head_dim = 64
-    nb_soft_attention_heads = None
-    hard_attention_rnn_hidden_size = None
-    if use_attention:
-        nb_soft_attention_heads = 4
-        hard_attention_rnn_hidden_size = 64
-    agent_model = AgentModel(features_extractor=features_extractor,
-                             nb_opponents=nb_opponents,
-                             agent_nb_actions=action_space_size,
-                             opponent_nb_actions=action_space_size,
-                             head_dim=head_dim,
-                             latent_dim=latent_dim,
-                             nb_soft_attention_heads=nb_soft_attention_heads,
-                             hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size)
-    agent_model = agent_model.to(gpu)
-    agent = Agent(agent_model, nb_opponents, max_steps)
-    agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
-    agents.insert(0, agent)
-    env = pommerman.make('PommeFFACompetition-v0', agents)
-    env.set_training_agent(0)
+def ensure_shared_grads(model, shared_model):
+    for param, shared_param in zip(model.parameters(), shared_model.parameters()):
+        if shared_param.grad is not None:
+            return
+        shared_param._grad = param.grad
+
+
+def train(rank, seed, shared_model, counter, lock, device, action_space_size, nb_opponents, max_steps, optimizer=None):
+    torch.manual_seed(seed + rank)
+    agents, agent_model, env = create_env(seed, rank, device, action_space_size, nb_opponents, max_steps)
     state = env.reset()
     # RL
     nb_episodes = 200
@@ -162,27 +134,28 @@ def train():
     value_coef = 0.5
     gae_lambda = 1.0
     value_loss_coef = 0.5
-    opponent_coefs = torch.tensor([0.1] * nb_opponents, device=gpu)
-    optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
+    opponent_coefs = torch.tensor([0.1] * nb_opponents, device=device)
+    if optimizer is None:
+        optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
                           value_coef=value_coef,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda,
                           value_loss_coef=value_loss_coef
-                          ).to(gpu)
+                          ).to(device)
     episode = 1
-    rewards = []
-    losses = []
-    running_loss = 0
-    running_steps = 0
-    nb_batches = 0
     while episode <= nb_episodes:
+        # sync with the shared model
+        agent_model.load_state_dict(shared_model.state_dict())
         steps, state, done, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
         opponent_actions_ground_truths, opponent_rewards, opponent_values = collect_samples(env,
                                                                                             state,
+                                                                                            lock,
+                                                                                            counter,
                                                                                             agents,
                                                                                             nb_opponents,
-                                                                                            nb_steps)
+                                                                                            nb_steps,
+                                                                                            device)
 
         opponent_log_probs, opponent_actions_ground_truths, opponent_rewards, opponent_values = prepare_tensors_for_loss_func(
             steps,
@@ -191,7 +164,8 @@ def train():
             opponent_log_probs,
             opponent_actions_ground_truths,
             opponent_rewards,
-            opponent_values
+            opponent_values,
+            device
         )
         # ic(agent_rewards)
         # ic(agent_log_probs)
@@ -215,27 +189,6 @@ def train():
         #     print(name, torch.isfinite(param).all())
         loss.backward()
         clip_grad_norm_(agent_model.parameters(), max_grad_norm)
+        ensure_shared_grads(agent_model, shared_model)
         optimizer.step()
-        running_loss += loss.item()
-        running_steps += steps
-        nb_batches += 1
-        if done:
-            print(f"Episode {episode} finished. Steps = {running_steps}")
-            rewards.append(episode_reward)
-            losses.append(running_loss // nb_batches)
-            nb_batches = 0
-            running_loss = 0
-            running_steps = 0
-            episode += 1
     env.close()
-    torch.save(agent_model, "models/agent_model.model")
-    losses_df = pd.DataFrame({"Episode": range(nb_episodes), "Loss": losses})
-    chart = alt.Chart(losses_df).mark_line().encode(
-        x="Episode",
-        y="Loss"
-    )
-    chart.save("figures/train_loss.png")
-
-
-if __name__ == '__main__':
-    train()

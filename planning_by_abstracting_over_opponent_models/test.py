@@ -1,48 +1,45 @@
-from typing import List
+import time
+from collections import deque
 
-import altair as alt
-import pandas as pd
-import pommerman
 import torch
-from pommerman.agents import BaseAgent
 
-from planning_by_abstracting_over_opponent_models.agent import Agent
-
-
-def load_agent_model():
-    agent_model = torch.load("models/agent_model.model")
-    agent_model.eval()
-    return agent_model
+from planning_by_abstracting_over_opponent_models.env import create_env
 
 
-def test():
-    nb_opponents = 1
-    agent_model = load_agent_model()
-    agent = Agent(agent_model)
-    agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
-    agents.insert(0, agent)
-    # print(agents)
-    env = pommerman.make('PommeFFACompetition-v0', agents)
-    # RL
-    nb_episodes = 100
-    wins = []
-    episode_range = range(nb_episodes)
-    for episode in episode_range:
-        print(f"Episode {episode}")
-        state = env.reset()
-        done = False
-        while not done:
-            env.render()
-            actions = env.act(state)
-            state, rewards, done, info = env.step(actions)
-        wins.append(info['winners'][0] if info['result'].name == 'Win' else -1)
-    rewards_df = pd.DataFrame({"Episode": episode_range, "Win": wins})
-    chart = alt.Chart(rewards_df).mark_line().encode(
-        x="Episode",
-        y="Win"
-    )
-    chart.save("figures/test_rewards.png")
+def test(rank, seed, shared_model, counter, action_space_size, nb_opponents, max_steps, device):
+    agents, agent_model, env = create_env(seed, rank, device, action_space_size, nb_opponents, max_steps, train=False)
+    env.set_training_agent(0)
+    state = env.reset()
+    reward_sum = 0
+    done = True
+    start_time = time.time()
+    # a quick hack to prevent the agent from stucking
+    actions = deque(maxlen=100)
+    episode_length = 0
+    while True:
+        episode_length += 1
+        # Sync with the shared model
+        if done:
+            agent_model.load_state_dict(shared_model.state_dict())
 
+        actions = env.act(state)
+        with torch.no_grad():
+            state, rewards, done, _ = env.step(actions)
+        reward_sum += rewards[0]
 
-if __name__ == '__main__':
-    test()
+        # a quick hack to prevent the agent from stucking
+        actions.append(actions[0])
+        if actions.count(actions[0]) == actions.maxlen:
+            done = True
+        if done:
+            print("Time {}, num steps {}, FPS {:.0f}, episode reward {}, episode length {}".format(
+                time.strftime("%Hh %Mm %Ss",
+                              time.gmtime(time.time() - start_time)),
+                counter.value, counter.value / (time.time() - start_time),
+                reward_sum, episode_length))
+            reward_sum = 0
+            episode_length = 0
+            actions.clear()
+            state = env.reset()
+            time.sleep(60)
+
