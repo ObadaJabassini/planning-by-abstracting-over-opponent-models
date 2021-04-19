@@ -1,19 +1,21 @@
 import os
+
+import warnings
 import torch
 import torch.multiprocessing as mp
 
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.env import create_agent_model
-from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
-from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
 from planning_by_abstracting_over_opponent_models.test import test
 from planning_by_abstracting_over_opponent_models.train import train
 
+warnings.filterwarnings('ignore')
 torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
+    mp.set_start_method('spawn')
     shared_optim = True
     device = cpu
     seed = 32

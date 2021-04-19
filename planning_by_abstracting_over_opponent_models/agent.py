@@ -73,11 +73,12 @@ def get_observation(state, nb_opponents, max_steps, device):
 
 class Agent(BaseAgent):
 
-    def __init__(self, agent_model, nb_opponents, max_steps):
+    def __init__(self, agent_model, nb_opponents, max_steps, device):
         super().__init__()
         self.agent_model = agent_model
         self.nb_opponents = nb_opponents
         self.max_steps = max_steps
+        self.device = device
 
     def act(self, obs, action_space):
         agent_policy, _, _, _, _ = self.estimate(obs)
@@ -89,5 +90,5 @@ class Agent(BaseAgent):
         return agent_action
 
     def estimate(self, obs):
-        obs = get_observation(obs, self.nb_opponents, self.max_steps, self.agent_model.device)
+        obs = get_observation(obs, self.nb_opponents, self.max_steps, self.device)
         return self.agent_model(obs)

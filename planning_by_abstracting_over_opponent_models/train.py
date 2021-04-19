@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn.functional as F
+from icecream import ic
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
@@ -125,8 +126,7 @@ def train(rank, seed, shared_model, counter, lock, action_space_size, nb_opponen
     state = env.reset()
     # RL
     dense_reward = True
-    nb_episodes = 200
-    nb_steps = 16
+    nb_steps = 20
     max_grad_norm = 50
     gamma = 0.99
     entropy_coef = 0.01
@@ -142,8 +142,7 @@ def train(rank, seed, shared_model, counter, lock, action_space_size, nb_opponen
                           gae_lambda=gae_lambda,
                           value_loss_coef=value_loss_coef
                           ).to(device)
-    episode = 1
-    while episode <= nb_episodes:
+    while True:
         # sync with the shared model
         agent_model.load_state_dict(shared_model.state_dict())
         steps, state, done, episode_reward, agent_rewards, agent_values, agent_log_probs, agent_entropies, opponent_log_probs, \
@@ -183,11 +182,10 @@ def train(rank, seed, shared_model, counter, lock, action_space_size, nb_opponen
                          opponent_values,
                          opponent_rewards,
                          opponent_coefs)
-        print(loss)
+        # ic(loss)
         # for name, param in agent_model.named_parameters():
         #     print(name, torch.isfinite(param).all())
         loss.backward()
         clip_grad_norm_(agent_model.parameters(), max_grad_norm)
         ensure_shared_grads(agent_model, shared_model)
         optimizer.step()
-    env.close()

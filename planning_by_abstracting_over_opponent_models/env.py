@@ -53,6 +53,6 @@ def create_agent_model(seed,
     agent_model = agent_model.to(device)
     agent_model.train(train)
     if return_agent:
-        agent = Agent(agent_model, nb_opponents, max_steps)
+        agent = Agent(agent_model, nb_opponents, max_steps, device)
         return agent, agent_model
     return agent_model
