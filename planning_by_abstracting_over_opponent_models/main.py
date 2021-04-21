@@ -18,7 +18,7 @@ torch.autograd.set_detect_anomaly(True)
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=32)
 parser.add_argument('--nb-processes', type=int, default=12,
-                    help='how many training processes to use (default: 4)')
+                    help='how many training processes to use')
 parser.add_argument('--nb-episodes', type=int, default=int(1e6))
 parser.add_argument('--nb-opponents', type=int, default=1, choices=[1, 3])
 parser.add_argument('--nb-steps', type=int, default=20)
@@ -57,10 +57,9 @@ if __name__ == '__main__':
                                       nb_processes,
                                       action_space_size,
                                       nb_opponents,
-                                      max_steps,
                                       device,
-                                      return_agent=False,
-                                      **model_spec)
+                                      **model_spec,
+                                      train=True)
     shared_model.share_memory()
     optimizer = None
     if args.shared_opt:
@@ -106,4 +105,5 @@ if __name__ == '__main__':
     print("Started training")
     for p in processes:
         p.join()
+
     torch.save(shared_model.state_dict(), "models/agent_model.pt")

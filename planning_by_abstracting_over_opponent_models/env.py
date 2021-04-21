@@ -1,8 +1,5 @@
-from typing import List
-
 import pommerman
 import torch
-from pommerman.agents import BaseAgent
 
 from planning_by_abstracting_over_opponent_models.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
@@ -17,27 +14,26 @@ def create_env(seed,
                nb_opponents,
                max_steps,
                train=True):
-    agent, agent_model = create_agent_model(seed,
-                                            rank,
-                                            action_space_size,
-                                            nb_opponents,
-                                            max_steps,
-                                            device,
-                                            train=train,
-                                            **model_spec)
-    agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
+    agent_model = create_agent_model(seed,
+                                     rank,
+                                     action_space_size,
+                                     nb_opponents,
+                                     device,
+                                     train=train,
+                                     **model_spec)
+    agent = Agent(agent_model, nb_opponents, max_steps, device)
+    agents = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)
     env.seed(seed + rank)
     env.set_training_agent(0)
-    return agents, agent_model, env
+    return agents, env
 
 
 def create_agent_model(seed,
                        rank,
                        action_space_size,
                        nb_opponents,
-                       max_steps,
                        device,
                        nb_conv_layers,
                        nb_filters,
@@ -45,8 +41,7 @@ def create_agent_model(seed,
                        head_dim,
                        nb_soft_attention_heads,
                        hard_attention_rnn_hidden_size,
-                       train=True,
-                       return_agent=True):
+                       train=True):
     torch.manual_seed(seed + rank)
     nb_filters = [nb_filters] * nb_conv_layers
     features_extractor = FeaturesExtractor(input_size=(11, 11, 18),
@@ -65,7 +60,4 @@ def create_agent_model(seed,
                              hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size)
     agent_model = agent_model.to(device)
     agent_model.train(train)
-    if return_agent:
-        agent = Agent(agent_model, nb_opponents, max_steps, device)
-        return agent, agent_model
     return agent_model

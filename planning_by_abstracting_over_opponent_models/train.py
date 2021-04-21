@@ -97,6 +97,7 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, action_s
         opponent_actions = torch.LongTensor(opponent_actions)
         opponent_actions_ground_truths.append(opponent_actions)
         opponent_values.append(opponent_value.view(-1))
+
         with lock:
             counter.value += 1
     if done:
@@ -108,6 +109,7 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, action_s
         r = agent_value.view(1)
         r = r.detach()
         opponent_value = opponent_value.view(-1)
+
     r = r.to(device)
     opponent_value = opponent_value.to(device)
     agent_values.append(r)
@@ -146,14 +148,15 @@ def train(rank,
           device,
           optimizer):
     torch.manual_seed(seed + rank)
-    agents, agent_model, env = create_env(seed,
-                                          rank,
-                                          device,
-                                          model_spec,
-                                          action_space_size,
-                                          nb_opponents,
-                                          max_steps,
-                                          True)
+    agents, env = create_env(seed,
+                             rank,
+                             device,
+                             model_spec,
+                             action_space_size,
+                             nb_opponents,
+                             max_steps,
+                             True)
+    agent_model = agents[0].agent_model
     state = env.reset()
     # RL
     dense_reward = True

@@ -17,15 +17,16 @@ def test(rank,
          nb_opponents,
          max_steps,
          device):
-    agents, agent_model, env = create_env(seed,
-                                          rank,
-                                          device,
-                                          model_spec,
-                                          action_space_size,
-                                          nb_opponents,
-                                          max_steps,
-                                          False)
+    agents, env = create_env(seed,
+                             rank,
+                             device,
+                             model_spec,
+                             action_space_size,
+                             nb_opponents,
+                             max_steps,
+                             train=False)
     agent = agents[0]
+    agent_model = agent.agent_model
     action_space = env.action_space
     state = env.reset()
     reward_sum = 0
@@ -54,11 +55,11 @@ def test(rank,
         if done:
             t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
             t1 = counter.value / (time.time() - start_time)
-            print(f"Time {t}, num steps {counter.value}, FPS {t1:.0f}, episode reward {reward_sum}, episode length {episode_length}")
+            print(
+                f"Time {t}, num steps {counter.value}, FPS {t1:.0f}, episode reward {reward_sum}, episode length {episode_length}")
             reward_sum = 0
             episode_length = 0
             episodes += 1
             actions.clear()
             state = env.reset()
             # time.sleep(60)
-
