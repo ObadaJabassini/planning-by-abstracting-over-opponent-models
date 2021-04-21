@@ -49,11 +49,10 @@ class AgentLoss(nn.Module):
         :return:
         """
         nb_opponents = opponent_log_probs.shape[0]
-        policy_loss = 0
-        value_loss = 0
+        total_loss = 0
         for i in range(nb_opponents):
             # policy loss
-            policy_loss += opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i], opponent_actions_ground_truths[i])
+            policy_loss = opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i], opponent_actions_ground_truths[i])
 
             # value loss
             opponent_value = opponent_values[i]
@@ -63,9 +62,10 @@ class AgentLoss(nn.Module):
             opponent_value = opponent_value[:shifted_dim]
             shifted_value = shifted_value[:shifted_dim]
             predicted_values = opponent_reward + self.gamma * shifted_value
-            value_loss += opponent_coefs[i] * F.smooth_l1_loss(opponent_value, predicted_values)
+            value_loss = opponent_coefs[i] * F.smooth_l1_loss(opponent_value, predicted_values)
 
-        total_loss = policy_loss + self.value_loss_coef * value_loss
+            total_loss = total_loss + policy_loss + value_loss
+
         return total_loss
 
     def forward(self,

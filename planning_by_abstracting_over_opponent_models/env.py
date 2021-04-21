@@ -9,8 +9,22 @@ from planning_by_abstracting_over_opponent_models.learning.agent_model import Ag
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
 
 
-def create_env(seed, rank, device, action_space_size, nb_opponents, max_steps, train=True):
-    agent, agent_model = create_agent_model(seed, rank, action_space_size, nb_opponents, max_steps, device, train=train)
+def create_env(seed,
+               rank,
+               device,
+               model_spec,
+               action_space_size,
+               nb_opponents,
+               max_steps,
+               train=True):
+    agent, agent_model = create_agent_model(seed,
+                                            rank,
+                                            action_space_size,
+                                            nb_opponents,
+                                            max_steps,
+                                            device,
+                                            train=train,
+                                            **model_spec)
     agents: List[BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)
@@ -25,18 +39,17 @@ def create_agent_model(seed,
                        nb_opponents,
                        max_steps,
                        device,
-                       nb_filters=None,
-                       latent_dim=64,
-                       head_dim=64,
-                       nb_soft_attention_heads=None,
-                       hard_attention_rnn_hidden_size=None,
+                       nb_conv_layers,
+                       nb_filters,
+                       latent_dim,
+                       head_dim,
+                       nb_soft_attention_heads,
+                       hard_attention_rnn_hidden_size,
                        train=True,
                        return_agent=True):
     torch.manual_seed(seed + rank)
-    if nb_filters is None:
-        nb_filters = [32, 32, 32]
-    board_size = 11
-    features_extractor = FeaturesExtractor(input_size=(board_size, board_size, 18),
+    nb_filters = [nb_filters] * nb_conv_layers
+    features_extractor = FeaturesExtractor(input_size=(11, 11, 18),
                                            nb_filters=nb_filters,
                                            filter_size=3,
                                            filter_stride=1,
