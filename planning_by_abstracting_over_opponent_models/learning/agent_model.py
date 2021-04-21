@@ -52,13 +52,13 @@ class AgentModel(nn.Module):
         opponent_values_layers = [nn.Sequential(nn.Linear(head_dim, 1), nn.ELU()) for _ in range(nb_opponents)]
         self.opponent_values_layers = nn.ModuleList(opponent_values_layers)
 
-    def forward(self, image):
-        features = self.features_extractor(image)
+    def forward(self, obs):
+        features = self.features_extractor(obs)
         agent_latent = self.agent_latent_layer(features)
         opponent_latents = [opponent_latent_layer(features) for opponent_latent_layer in self.opponent_latent_layers]
 
         if self.use_attention:
-            # use attention mechanism
+            # use the attention mechanism
             agent_latent, opponent_influence = self.attend(agent_latent, opponent_latents)
         else:
             for opponent_latent in opponent_latents:
@@ -77,8 +77,6 @@ class AgentModel(nn.Module):
         return agent_policy, agent_value, opponents_policies, opponent_values, opponent_influence
 
     def attend(self, agent_latent, opponent_latents):
-        # attention mechanism
-
         # (1, batch_size, latent_dim)
         agent_latent_stacked = agent_latent.unsqueeze(0)
         # (nb_opponents, batch_size, latent_dim)
