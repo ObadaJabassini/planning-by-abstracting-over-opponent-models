@@ -66,7 +66,7 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, action_s
     agent = agents[0]
     while not done and steps < nb_steps:
         steps += 1
-        agent_policy, agent_value, opponent_log_prob, opponent_value, opponent_influence = agent.estimate(state)
+        agent_policy, agent_value, opponent_log_prob, opponent_value, _ = agent.estimate(state)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)

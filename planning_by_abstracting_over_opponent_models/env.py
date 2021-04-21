@@ -1,3 +1,5 @@
+from typing import List
+
 import pommerman
 import torch
 
@@ -22,7 +24,7 @@ def create_env(seed,
                                      train=train,
                                      **model_spec)
     agent = Agent(agent_model, nb_opponents, max_steps, device)
-    agents = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
+    agents: List[pommerman.agents.BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     env = pommerman.make('PommeFFACompetition-v0', agents)
     env.seed(seed + rank)

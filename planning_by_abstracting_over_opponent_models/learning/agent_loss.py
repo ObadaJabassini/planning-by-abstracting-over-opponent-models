@@ -19,10 +19,10 @@ class AgentLoss(nn.Module):
     def agent_loss_func(self, agent_rewards, agent_values, agent_log_probs, agent_entropies):
         policy_loss = 0
         value_loss = 0
-        idx = len(agent_values) - 1
-        R = agent_values[idx]
+        R = agent_values[-1]
         gae = torch.zeros(1).to(agent_entropies[0].device)
-        for i in reversed(range(len(agent_rewards))):
+        l = len(agent_rewards)
+        for i in reversed(range(l)):
             R = self.gamma * R + agent_rewards[i]
             advantage = R - agent_values[i]
             value_loss = value_loss + 0.5 * advantage.pow(2)
@@ -49,7 +49,7 @@ class AgentLoss(nn.Module):
         :return:
         """
         nb_opponents = opponent_log_probs.shape[0]
-        total_loss = 0
+        total_loss = torch.zeros(1)
         for i in range(nb_opponents):
             # policy loss
             policy_loss = opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i], opponent_actions_ground_truths[i])
