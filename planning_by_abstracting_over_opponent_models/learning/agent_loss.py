@@ -49,7 +49,7 @@ class AgentLoss(nn.Module):
         :return:
         """
         nb_opponents = opponent_log_probs.shape[0]
-        total_loss = torch.zeros(1)
+        total_loss = torch.zeros(1, device=opponent_log_probs.device)
         for i in range(nb_opponents):
             # policy loss
             policy_loss = opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i], opponent_actions_ground_truths[i])
