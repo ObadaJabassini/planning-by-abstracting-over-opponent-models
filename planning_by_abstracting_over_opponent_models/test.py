@@ -33,7 +33,7 @@ def test(rank,
     done = True
     start_time = time.time()
     # a quick hack to prevent the agent from stucking
-    actions = deque(maxlen=100)
+    actions = deque(maxlen=800)
     episode_length = 0
     episodes = 0
     while episodes < nb_episodes:
@@ -56,7 +56,7 @@ def test(rank,
             t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
             t1 = counter.value / (time.time() - start_time)
             print(
-                f"Time {t}, num steps {counter.value}, FPS {t1:.0f}, episode reward {reward_sum}, episode length {episode_length}")
+                f"Episode:{episodes}, Time {t}, num steps {counter.value}, FPS {t1:.0f}, episode reward {reward_sum}, episode length {episode_length}")
             reward_sum = 0
             episode_length = 0
             episodes += 1
