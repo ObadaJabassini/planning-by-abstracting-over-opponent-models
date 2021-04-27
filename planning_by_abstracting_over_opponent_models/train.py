@@ -217,3 +217,4 @@ def train(rank,
         optimizer.step()
         if done:
             episodes += 1
+            print(f"Worker {rank}, episode {episodes}")
