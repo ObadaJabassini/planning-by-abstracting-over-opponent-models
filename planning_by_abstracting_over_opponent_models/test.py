@@ -53,13 +53,13 @@ def test(rank,
         if actions.count(actions[0]) == actions.maxlen:
             done = True
         if done:
+            episodes += 1
             t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
             t1 = counter.value / (time.time() - start_time)
             print(
                 f"Episode:{episodes}, Time {t}, num steps {counter.value}, FPS {t1:.0f}, episode reward {reward_sum}, episode length {episode_length}")
             reward_sum = 0
             episode_length = 0
-            episodes += 1
             actions.clear()
             state = env.reset()
             # time.sleep(60)
