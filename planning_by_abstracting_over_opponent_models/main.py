@@ -71,19 +71,19 @@ if __name__ == '__main__':
     processes = []
     counter = mp.Value('i', 0)
     lock = mp.Lock()
-    args = (nb_processes,
-            seed,
-            shared_model,
-            counter,
-            model_spec,
-            nb_episodes,
-            action_space_size,
-            nb_opponents,
-            max_steps,
-            device)
-    p = mp.Process(target=test, args=args)
-    p.start()
-    processes.append(p)
+    # args = (nb_processes,
+    #         seed,
+    #         shared_model,
+    #         counter,
+    #         model_spec,
+    #         nb_episodes,
+    #         action_space_size,
+    #         nb_opponents,
+    #         max_steps,
+    #         device)
+    # p = mp.Process(target=test, args=args)
+    # p.start()
+    # processes.append(p)
     for rank in range(nb_processes):
         args = (rank,
                 seed,
