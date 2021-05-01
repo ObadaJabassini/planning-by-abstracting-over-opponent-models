@@ -10,6 +10,7 @@ class TreeNode:
                  is_terminal,
                  value_estimate,
                  action_prob_estimate,
+                 opponent_influence,
                  nb_players,
                  action_space_size,
                  exploration_coefs):
@@ -19,7 +20,7 @@ class TreeNode:
         :param parent: a pointer to the parent
         :param is_terminal: if the state is terminal
         :param value_estimate: the value estimate of the state, shape: (nb_players)
-        :param action_prob_estimate: the probabilities of each agent for each agent, shape: (nb_players, action_space_size)
+        :param action_prob_estimate: the probabilities of each action for each agent, shape: (nb_players, action_space_size)
         :param nb_players: the number of players
         :param action_space_size: the number of actions
         :param exploration_coefs: the exploration coefficient for each agent
@@ -29,12 +30,13 @@ class TreeNode:
         self.is_terminal = is_terminal
         self.value_estimate = value_estimate
         self.action_prob_estimate = action_prob_estimate
+        self.opponent_influence = opponent_influence
         self.nb_players = nb_players
         self.exploration_coefs = exploration_coefs
         self.visit_count = 1
         self.children = dict()
-        self.average_estimations = torch.zeros((nb_players, action_space_size))
-        self.nb_action_visits = torch.zeros((nb_players, action_space_size))
+        self.average_estimations = torch.zeros(nb_players, action_space_size)
+        self.nb_action_visits = torch.zeros(nb_players, action_space_size)
 
     def select_best_actions(self):
         uct = self.uct()
@@ -62,6 +64,8 @@ class TreeNode:
         :param action_value_estimate: the estimated value function for each of those actions, shape: (nb_players)
         :return:
         """
+        self.value_estimate += action_value_estimate
+        self.visit_count += 1
         r = range(len(actions))
         self.average_estimations[r, actions] += action_value_estimate
         self.nb_action_visits[r, actions] += 1
