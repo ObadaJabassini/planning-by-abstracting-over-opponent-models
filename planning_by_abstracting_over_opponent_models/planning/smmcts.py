@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import torch
 
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
@@ -43,7 +41,8 @@ class SMMCTS:
         current_node.update_actions_estimates(actions, value_estimate)
         return value_estimate
 
-    def simulate(self, env, initial_state, iterations=100):
+    def simulate(self, env, iterations=100):
+        initial_state = env.get_observations()
         value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
         root = TreeNode(initial_state,
                         None,
