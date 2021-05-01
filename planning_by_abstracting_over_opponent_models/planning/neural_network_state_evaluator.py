@@ -10,7 +10,8 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         self.agent_model = agent_model
         self.extract_observation_func = extract_observation_func
 
-    def evaluate(self, env, state):
+    def evaluate(self, env):
+        state = env.get_observations()
         obs = self.extract_observation_func(state)
         agent_action_log, agent_value, opponents_action_log, opponent_values, opponent_influence = self.agent_model(obs)
         value_estimate = self.estimate_values(agent_value, opponent_values)

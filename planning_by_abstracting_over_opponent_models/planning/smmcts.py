@@ -25,7 +25,7 @@ class SMMCTS:
         state, rewards, is_terminal, _ = env.step(actions)
         # expand
         if actions not in current_node.children:
-            expected_value, action_probs, opponent_influence = self.state_evaluator.evaluate(env, state)
+            expected_value, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
             value_estimate = expected_value if not is_terminal else rewards
             current_node.children[actions] = TreeNode(state,
                                                       current_node,
@@ -44,7 +44,7 @@ class SMMCTS:
         return value_estimate
 
     def simulate(self, env, initial_state, iterations=100):
-        value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env, initial_state)
+        value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
         root = TreeNode(initial_state,
                         None,
                         False,
@@ -54,9 +54,12 @@ class SMMCTS:
                         self.nb_players,
                         self.action_space_size,
                         self.exploration_coefs)
+        env._init_game_state = env.get_json_info()
         for _ in range(iterations):
-            temp = deepcopy(env)
-            self.update(temp, root)
+            env.reset()
+            self.update(env, root)
+        env.reset()
+        env._init_game_state = None
         best_actions = root.select_best_actions()
         best_action = best_actions[0]
         return best_action

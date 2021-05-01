@@ -1,5 +1,3 @@
-from copy import copy
-
 import torch.nn.functional as F
 from pommerman.agents import BaseAgent
 
@@ -27,7 +25,3 @@ class Agent(BaseAgent):
     def estimate(self, obs):
         obs = get_observation(obs, self.nb_opponents, self.max_steps, self.device)
         return self.agent_model(obs)
-
-    # we do not want to deep copy the agent class
-    def __deepcopy__(self, memo):
-        return copy(self)
