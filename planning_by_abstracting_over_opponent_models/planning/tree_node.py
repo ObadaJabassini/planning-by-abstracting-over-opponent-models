@@ -15,7 +15,6 @@ class TreeNode:
                  nb_actions,
                  exploration_coefs):
         """
-
         :param state: the associated state
         :param parent: a pointer to the parent
         :param is_terminal: if the state is terminal
@@ -39,11 +38,11 @@ class TreeNode:
         self.nb_action_visits = torch.zeros(nb_players, nb_actions)
 
     def select_best_actions(self):
-        uct = self.uct()
-        best_actions = torch.argmax(uct, dim=1)
+        uct = self.compute_uct()
+        best_actions = uct.argmax(dim=1)
         return tuple(best_actions.tolist())
 
-    def uct(self):
+    def compute_uct(self):
         probs = self.action_prob_estimate
         c = self.exploration_coefs
         x, n = self.average_estimations, self.nb_action_visits

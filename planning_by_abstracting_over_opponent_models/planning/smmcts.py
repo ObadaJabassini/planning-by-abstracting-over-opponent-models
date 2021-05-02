@@ -87,18 +87,20 @@ if __name__ == '__main__':
 
     nb_players = 2
     nb_actions = 6
-    smmcts = SMMCTS(nb_players,
-                    nb_actions,
-                    [math.sqrt(2)] * nb_players,
-                    RandomRolloutEvaluator(nb_players, nb_actions))
+    iterations = 1000
+    wait_time = 4
+    exploration_coefs = [math.sqrt(2)] * nb_players
+    state_evaluator = RandomRolloutEvaluator(nb_players, nb_actions)
+    smmcts = SMMCTS(nb_players=nb_players,
+                    nb_actions=nb_actions,
+                    exploration_coefs=[math.sqrt(2)] * nb_players,
+                    state_evaluator=state_evaluator)
     agents: List[pommerman.agents.BaseAgent] = [pommerman.agents.RandomAgent() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
     env = pommerman.make('PommeFFACompetition-v0', agents)
     env.set_training_agent(0)
-    iterations = 1000
     state = env.reset()
     done = False
-    rewards = []
     move_map = {
         0: "Nth",
         1: "Up",
@@ -111,9 +113,9 @@ if __name__ == '__main__':
         opponent_action = env.act(state)
         agent_action = smmcts.simulate(env, iterations=iterations)
         actions = [agent_action, *opponent_action]
-        moves = [move_map[action] for action in actions]
-        print(moves)
         state, rewards, done, _ = env.step(actions)
         env.render()
-        sleep(4)
+        moves = [move_map[action] for action in actions]
+        print(moves)
+        sleep(wait_time)
     print(rewards)

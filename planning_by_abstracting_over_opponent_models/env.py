@@ -103,7 +103,7 @@ def extract_features(state, nb_opponents, max_steps):
     incr_range_position_map = (board == 7).astype(int)
     kick_position_map = (board == 8).astype(int)
     current_step_map = np.full(board_tuple, agent_state["step_count"]).astype(float) / max_steps
-    maps = [
+    features_map = [
         bomb_blast_strength_map,
         bomb_life_map,
         agent_position_map,
@@ -121,8 +121,8 @@ def extract_features(state, nb_opponents, max_steps):
         kick_position_map,
         current_step_map
     ]
-    features = np.stack(maps, axis=0)
-    return features
+    features_map = np.stack(features_map, axis=0)
+    return features_map
 
 
 def get_observation(state, nb_opponents, max_steps, device):
