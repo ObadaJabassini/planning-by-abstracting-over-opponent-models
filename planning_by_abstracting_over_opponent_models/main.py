@@ -50,11 +50,11 @@ if __name__ == '__main__':
         "nb_soft_attention_heads": args.nb_soft_attention_heads,
         "hard_attention_rnn_hidden_size": args.hard_attention_rnn_hidden_size
     }
-    action_space_size = 6
+    nb_actions = 6
     max_steps = 800
     shared_model = create_agent_model(seed,
                                       nb_processes,
-                                      action_space_size,
+                                      nb_actions,
                                       nb_opponents,
                                       device,
                                       **model_spec,
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     #         counter,
     #         model_spec,
     #         nb_episodes,
-    #         action_space_size,
+    #         nb_actions,
     #         nb_opponents,
     #         max_steps,
     #         device)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
                 lock,
                 model_spec,
                 nb_episodes,
-                action_space_size,
+                nb_actions,
                 nb_opponents,
                 nb_steps,
                 max_steps,

@@ -12,7 +12,7 @@ from planning_by_abstracting_over_opponent_models.learning.agent_loss import Age
 
 def reshape_tensors_for_loss_func(steps,
                                   nb_opponents,
-                                  action_space_size,
+                                  nb_actions,
                                   opponent_log_probs,
                                   opponent_actions_ground_truths,
                                   opponent_rewards,
@@ -22,12 +22,12 @@ def reshape_tensors_for_loss_func(steps,
     opponent_log_probs = torch.stack(opponent_log_probs)
     assert opponent_log_probs.shape == (
         steps, nb_opponents,
-        action_space_size), f"{opponent_log_probs.shape} != {(steps, nb_opponents, action_space_size)}"
+        nb_actions), f"{opponent_log_probs.shape} != {(steps, nb_opponents, nb_actions)}"
     # (nb_opponents, nb_steps, nb_actions)
     opponent_log_probs = opponent_log_probs.permute(1, 0, 2)
     assert opponent_log_probs.shape == (
         nb_opponents, steps,
-        action_space_size), f"{opponent_log_probs.shape} != {(nb_opponents, steps, action_space_size)}"
+        nb_actions), f"{opponent_log_probs.shape} != {(nb_opponents, steps, nb_actions)}"
     # (nb_steps, nb_opponents)
     opponent_actions_ground_truths = torch.stack(opponent_actions_ground_truths).to(device)
     assert opponent_actions_ground_truths.shape == (
@@ -50,7 +50,7 @@ def reshape_tensors_for_loss_func(steps,
     return opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths
 
 
-def collect_trajectory(env, state, lock, counter, agents, nb_opponents, action_space_size, nb_steps, device,
+def collect_trajectory(env, state, lock, counter, agents, nb_opponents, nb_actions, nb_steps, device,
                        dense_reward=True):
     agent_rewards = []
     agent_values = []
@@ -118,7 +118,7 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, action_s
     agent_trajectory = (agent_rewards, agent_values, agent_log_probs, agent_entropies)
     opponent_trajectory = reshape_tensors_for_loss_func(steps,
                                                         nb_opponents,
-                                                        action_space_size,
+                                                        nb_actions,
                                                         opponent_log_probs,
                                                         opponent_actions_ground_truths,
                                                         opponent_rewards,
@@ -141,7 +141,7 @@ def train(rank,
           lock,
           model_spec,
           nb_episodes,
-          action_space_size,
+          nb_actions,
           nb_opponents,
           nb_steps,
           max_steps,
@@ -152,7 +152,7 @@ def train(rank,
                              rank,
                              device,
                              model_spec,
-                             action_space_size,
+                             nb_actions,
                              nb_opponents,
                              max_steps,
                              True)
@@ -185,7 +185,7 @@ def train(rank,
                                                                                        counter,
                                                                                        agents,
                                                                                        nb_opponents,
-                                                                                       action_space_size,
+                                                                                       nb_actions,
                                                                                        nb_steps,
                                                                                        device,
                                                                                        dense_reward)

@@ -12,7 +12,7 @@ class TreeNode:
                  action_prob_estimate,
                  opponent_influence,
                  nb_players,
-                 action_space_size,
+                 nb_actions,
                  exploration_coefs):
         """
 
@@ -20,10 +20,10 @@ class TreeNode:
         :param parent: a pointer to the parent
         :param is_terminal: if the state is terminal
         :param value_estimate: the value estimate of the state, shape: (nb_players)
-        :param action_prob_estimate: the probabilities of each action for each agent, shape: (nb_players, action_space_size)
+        :param action_prob_estimate: the probabilities of each action for each agent, shape: (nb_players, nb_actions)
         :param nb_players: the number of players
-        :param action_space_size: the number of actions
-        :param exploration_coefs: the exploration coefficient for each agent
+        :param nb_actions: the number of actions
+        :param exploration_coefs: the exploration coefficient for each agent, shape: (nb_players, nb_actions)
         """
         self.state = state
         self.parent = parent
@@ -35,8 +35,8 @@ class TreeNode:
         self.exploration_coefs = exploration_coefs
         self.visit_count = 1
         self.children = dict()
-        self.average_estimations = torch.zeros(nb_players, action_space_size)
-        self.nb_action_visits = torch.zeros(nb_players, action_space_size)
+        self.average_estimations = torch.zeros(nb_players, nb_actions)
+        self.nb_action_visits = torch.zeros(nb_players, nb_actions)
 
     def select_best_actions(self):
         uct = self.uct()
@@ -59,13 +59,12 @@ class TreeNode:
 
     def update_actions_estimates(self, actions, action_value_estimate):
         """
-
         :param actions: the indicies of the action that should be updated, shape: (nb_players)
         :param action_value_estimate: the estimated value function for each of those actions, shape: (nb_players)
         :return:
         """
         self.value_estimate += action_value_estimate
         self.visit_count += 1
-        r = range(len(actions))
+        r = range(self.nb_players)
         self.average_estimations[r, actions] += action_value_estimate
         self.nb_action_visits[r, actions] += 1
