@@ -1,4 +1,5 @@
 import math
+from functools import partial
 from time import sleep
 from typing import List
 
@@ -79,6 +80,24 @@ class SMMCTS:
         return best_action
 
 
+def heuristic_evaluator(initial_state, state):
+    result = []
+    # similar for all the agents
+    s, d = initial_state[0], state[0]
+    base_value = 0.17 * (len(s["alive"]) - len(d["alive"]))
+    s_nb_wooden = (s["board"] == 2).sum()
+    d_nb_wooden = (d["board"] == 2).sum()
+    base_value += 0.1 * (s_nb_wooden - d_nb_wooden)
+    for i in range(len(initial_state)):
+        s, d = initial_state[i], state[i]
+        value = base_value
+        # (could be) different for each agent
+        value += 0.15 * (s["blast_strength"] - d["blast_strength"])
+        value += 0.15 * (int(s["can_kick"]) - int(d["can_kick"]))
+        result.append(value)
+    return result
+
+
 if __name__ == '__main__':
     class DummyAgent(pommerman.agents.BaseAgent):
         def act(self, obs, action_space):
@@ -87,10 +106,14 @@ if __name__ == '__main__':
 
     nb_players = 2
     nb_actions = 6
-    iterations = 1000
+    iterations = 100
+    depth = None
+    heuristic_func = None
+    # depth = 12
+    # heuristic_func = heuristic_evaluator
     wait_time = 4
     exploration_coefs = [math.sqrt(2)] * nb_players
-    state_evaluator = RandomRolloutEvaluator(nb_players, nb_actions)
+    state_evaluator = RandomRolloutEvaluator(nb_players, nb_actions, depth=depth, heuristic_func=heuristic_func)
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=[math.sqrt(2)] * nb_players,
@@ -102,7 +125,7 @@ if __name__ == '__main__':
     state = env.reset()
     done = False
     move_map = {
-        0: "Nth",
+        0: "Stop",
         1: "Up",
         2: "Down",
         3: "Left",
