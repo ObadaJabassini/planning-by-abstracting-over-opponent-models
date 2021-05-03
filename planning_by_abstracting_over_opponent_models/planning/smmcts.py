@@ -31,7 +31,7 @@ class SMMCTS:
         state, rewards, is_terminal, _ = env.step(actions)
         # expand
         if actions not in current_node.children:
-            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node)
+            value_estimate = self.expand(env, state, is_terminal, actions, current_node)
         else:
             child = current_node.children[actions]
             value_estimate = self.search(env, child)
@@ -42,9 +42,8 @@ class SMMCTS:
     def select(self, node):
         return node.select_best_actions()
 
-    def expand(self, env, state, rewards, is_terminal, actions, current_node):
-        expected_value, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
-        value_estimate = expected_value if not is_terminal else torch.as_tensor(rewards)
+    def expand(self, env, state, is_terminal, actions, current_node):
+        value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
         current_node.children[actions] = TreeNode(state=state,
                                                   parent=current_node,
                                                   is_terminal=is_terminal,
@@ -76,6 +75,7 @@ class SMMCTS:
             self.search(env, root)
             env._init_game_state = initial_state
             env.reset()
+            env.set_training_agent(0)
         best_actions = root.select_best_actions()
         best_action = best_actions[0]
         return best_action
@@ -114,10 +114,10 @@ if __name__ == '__main__':
     }
     games = 20
     plays_per_game = 10
-    opponent_class = pommerman.agents.RandomAgent
+    opponent_class = pommerman.agents.SimpleAgent
     nb_players = 2
     nb_actions = 6
-    iterations = 100
+    mcts_iterations = 100
     depth = None
     heuristic_func = None
     # depth = 12
@@ -145,7 +145,7 @@ if __name__ == '__main__':
             done = False
             while not done:
                 opponent_action = env.act(state)
-                agent_action = smmcts.simulate(env, iterations=iterations)
+                agent_action = smmcts.simulate(env, iterations=mcts_iterations)
                 actions = [agent_action, *opponent_action]
                 state, rewards, done, _ = env.step(actions)
                 # env.render()

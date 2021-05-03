@@ -1,6 +1,7 @@
 import math
 
 import torch
+from pommerman.envs.v0 import Pomme
 
 
 class TreeNode:
