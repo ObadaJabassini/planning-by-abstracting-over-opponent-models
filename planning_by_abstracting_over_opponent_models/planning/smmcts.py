@@ -1,12 +1,13 @@
 import math
 from functools import partial
+from random import randint
 from time import sleep
 from typing import List
 
 import pommerman
 import torch
 
-from planning_by_abstracting_over_opponent_models.planning.random_rollout_evaluator import RandomRolloutEvaluator
+from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
 
@@ -103,27 +104,6 @@ if __name__ == '__main__':
         def act(self, obs, action_space):
             pass
 
-
-    nb_players = 2
-    nb_actions = 6
-    iterations = 100
-    depth = None
-    heuristic_func = None
-    # depth = 12
-    # heuristic_func = heuristic_evaluator
-    wait_time = 4
-    exploration_coefs = [math.sqrt(2)] * nb_players
-    state_evaluator = RandomRolloutEvaluator(nb_players, nb_actions, depth=depth, heuristic_func=heuristic_func)
-    smmcts = SMMCTS(nb_players=nb_players,
-                    nb_actions=nb_actions,
-                    exploration_coefs=[math.sqrt(2)] * nb_players,
-                    state_evaluator=state_evaluator)
-    agents: List[pommerman.agents.BaseAgent] = [pommerman.agents.RandomAgent() for _ in range(nb_players - 1)]
-    agents.insert(0, DummyAgent())
-    env = pommerman.make('PommeFFACompetition-v0', agents)
-    env.set_training_agent(0)
-    state = env.reset()
-    done = False
     move_map = {
         0: "Stop",
         1: "Up",
@@ -132,13 +112,51 @@ if __name__ == '__main__':
         4: "Right",
         5: "Bomb"
     }
-    while not done:
-        opponent_action = env.act(state)
-        agent_action = smmcts.simulate(env, iterations=iterations)
-        actions = [agent_action, *opponent_action]
-        state, rewards, done, _ = env.step(actions)
-        env.render()
-        moves = [move_map[action] for action in actions]
-        print(moves)
-        sleep(wait_time)
-    print(rewards)
+    games = 20
+    plays_per_game = 10
+    opponent_class = pommerman.agents.RandomAgent
+    nb_players = 2
+    nb_actions = 6
+    iterations = 100
+    depth = None
+    heuristic_func = None
+    # depth = 12
+    # heuristic_func = heuristic_evaluator
+    wait_time = 0
+    exploration_coefs = [math.sqrt(2)] * nb_players
+    state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, depth=depth, heuristic_func=heuristic_func)
+    smmcts = SMMCTS(nb_players=nb_players,
+                    nb_actions=nb_actions,
+                    exploration_coefs=[math.sqrt(2)] * nb_players,
+                    state_evaluator=state_evaluator)
+    win_rate = 0
+    tie_rate = 0
+    for game in range(1, games + 1):
+        print(f"Game {game} started.")
+        seed = randint(0, int(1e6))
+        for play in range(1, plays_per_game + 1):
+            print(f"Play {play} started.")
+            agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
+            agents.insert(0, DummyAgent())
+            env = pommerman.make('PommeFFACompetition-v0', agents)
+            env.seed(seed)
+            env.set_training_agent(0)
+            state = env.reset()
+            done = False
+            while not done:
+                opponent_action = env.act(state)
+                agent_action = smmcts.simulate(env, iterations=iterations)
+                actions = [agent_action, *opponent_action]
+                state, rewards, done, _ = env.step(actions)
+                # env.render()
+                # moves = [move_map[action] for action in actions]
+                # sleep(wait_time)
+            win = int(rewards[0] == 1)
+            tie = int(sum(rewards) == -nb_players)
+            win_rate += win
+            tie_rate += tie
+    win_rate /= games * plays_per_game
+    tie_rate /= games * plays_per_game
+    lose_rate = 1 - win_rate - tie_rate
+    print(f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%")
+

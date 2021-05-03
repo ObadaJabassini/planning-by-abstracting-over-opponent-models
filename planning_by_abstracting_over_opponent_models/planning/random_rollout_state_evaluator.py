@@ -6,12 +6,12 @@ import torch
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 
 
-class RandomRolloutEvaluator(StateEvaluator):
+class RandomRolloutStateEvaluator(StateEvaluator):
     def __init__(self, nb_players, nb_actions, depth=None, heuristic_func=None):
         self.nb_players = nb_players
         self.nb_opponents = self.nb_players - 1
         self.nb_actions = nb_actions
-        self.depth = depth if depth is not None else 1000
+        self.depth = depth if depth is not None else 10000
         self.heuristic_func = heuristic_func
 
     def evaluate(self, env):
