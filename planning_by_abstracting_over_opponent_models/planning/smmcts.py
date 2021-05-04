@@ -75,7 +75,6 @@ class SMMCTS:
             self.search(env, root)
             env._init_game_state = initial_state
             env.reset()
-            env.set_training_agent(0)
         best_actions = root.select_best_actions()
         best_action = best_actions[0]
         return best_action
@@ -112,7 +111,7 @@ if __name__ == '__main__':
         4: "Right",
         5: "Bomb"
     }
-    games = 20
+    games = 10
     plays_per_game = 10
     opponent_class = pommerman.agents.SimpleAgent
     nb_players = 2
