@@ -38,7 +38,11 @@ class TreeNode:
         self.average_estimations = torch.zeros(nb_players, nb_actions)
         self.nb_action_visits = torch.zeros(nb_players, nb_actions)
 
-    def select_best_actions(self):
+    def most_visited_actions(self):
+        most_visited_actions = self.nb_action_visits.argmax(dim=1)
+        return tuple(most_visited_actions.tolist())
+
+    def best_actions(self):
         uct = self.compute_uct()
         best_actions = uct.argmax(dim=1)
         return tuple(best_actions.tolist())
@@ -64,7 +68,6 @@ class TreeNode:
         :return:
         """
         try:
-
             self.value_estimate += action_value_estimate
             self.visit_count += 1
             r = range(self.nb_players)

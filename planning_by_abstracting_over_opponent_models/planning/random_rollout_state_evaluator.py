@@ -14,19 +14,18 @@ class RandomRolloutStateEvaluator(StateEvaluator):
         self.heuristic_func = heuristic_func
 
     def evaluate(self, env):
-        rewards = env._get_rewards()
-        done = env._get_done()
-        if not done:
-            env._init_game_state = env.get_json_info()
-            initial_state = env.get_observations()
-            step = 0
-            while not done and step < self.depth:
-                actions = np.random.randint(low=0, high=self.nb_actions, size=self.nb_players).tolist()
-                state, rewards, done, _ = env.step(actions)
-                rewards = rewards[:self.nb_players]
-                step += 1
-            env.reset()
-            rewards = rewards if done else self.heuristic_func(initial_state, state)
+        env._init_game_state = env.get_json_info()
+        initial_state = env.get_observations()
+        step = 0
+        done = False
+        while not done and step < self.depth:
+            actions = np.random.randint(low=0, high=self.nb_actions, size=self.nb_players).tolist()
+            state, rewards, done, _ = env.step(actions)
+            rewards = rewards[:self.nb_players]
+            step += 1
+        env.reset()
+        rewards = rewards if done else self.heuristic_func(initial_state, state)
+        rewards = rewards[:self.nb_players]
         rewards = torch.as_tensor(rewards).float()
         action_probs = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
         nb_opponents = self.nb_players - 1

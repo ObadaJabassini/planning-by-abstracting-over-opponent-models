@@ -1,5 +1,4 @@
 import math
-from functools import partial
 from random import randint
 from time import sleep
 from typing import List
@@ -31,7 +30,7 @@ class SMMCTS:
         state, rewards, is_terminal, _ = env.step(actions)
         # expand
         if actions not in current_node.children:
-            value_estimate = self.expand(env, state, is_terminal, actions, current_node)
+            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node)
         else:
             child = current_node.children[actions]
             value_estimate = self.search(env, child)
@@ -40,10 +39,15 @@ class SMMCTS:
         return value_estimate
 
     def select(self, node):
-        return node.select_best_actions()
+        return node.best_actions()
 
-    def expand(self, env, state, is_terminal, actions, current_node):
-        value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
+    def expand(self, env, state, rewards, is_terminal, actions, current_node):
+        if is_terminal:
+            value_estimate = torch.as_tensor(rewards[:self.nb_players])
+            action_probs = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
+            opponent_influence = torch.full((self.nb_players - 1, ), 1 / (self.nb_players - 1))
+        else:
+            value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
         current_node.children[actions] = TreeNode(state=state,
                                                   parent=current_node,
                                                   is_terminal=is_terminal,
@@ -75,9 +79,9 @@ class SMMCTS:
             self.search(env, root)
             env._init_game_state = initial_state
             env.reset()
-        best_actions = root.select_best_actions()
-        best_action = best_actions[0]
-        return best_action
+        most_visited_actions = root.most_visited_actions()
+        most_visited_action = most_visited_actions[0]
+        return most_visited_action
 
 
 def heuristic_evaluator(initial_state, state):
