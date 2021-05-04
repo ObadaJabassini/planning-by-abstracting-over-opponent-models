@@ -2,8 +2,8 @@ import math
 from random import randint
 from time import sleep
 from typing import List
-
 import pommerman
+import cpommerman
 import torch
 
 from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import RandomRolloutStateEvaluator
@@ -103,9 +103,12 @@ def heuristic_evaluator(initial_state, state):
 
 
 if __name__ == '__main__':
+
     class DummyAgent(pommerman.agents.BaseAgent):
+
         def act(self, obs, action_space):
             pass
+
 
     move_map = {
         0: "Stop",
@@ -118,13 +121,14 @@ if __name__ == '__main__':
     games = 10
     plays_per_game = 10
     opponent_class = pommerman.agents.SimpleAgent
+    # 2 or 4
     nb_players = 2
     nb_actions = 6
     mcts_iterations = 100
     depth = None
     heuristic_func = None
-    # depth = 12
-    # heuristic_func = heuristic_evaluator
+    depth = 12
+    heuristic_func = heuristic_evaluator
     wait_time = 0
     exploration_coefs = [math.sqrt(2)] * nb_players
     state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, depth=depth, heuristic_func=heuristic_func)
@@ -155,7 +159,7 @@ if __name__ == '__main__':
                 # moves = [move_map[action] for action in actions]
                 # sleep(wait_time)
             win = int(rewards[0] == 1)
-            tie = int(sum(rewards) == -nb_players)
+            tie = int(rewards.count(rewards[0]) == len(rewards))
             win_rate += win
             tie_rate += tie
     win_rate /= games * plays_per_game

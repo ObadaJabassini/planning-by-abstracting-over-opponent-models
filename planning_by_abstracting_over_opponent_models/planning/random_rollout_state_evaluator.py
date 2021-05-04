@@ -19,7 +19,7 @@ class RandomRolloutStateEvaluator(StateEvaluator):
         step = 0
         done = False
         while not done and step < self.depth:
-            actions = np.random.randint(low=0, high=self.nb_actions, size=self.nb_players).tolist()
+            actions = np.random.randint(low=0, high=self.nb_actions, size=self.nb_players, dtype=np.uint8)
             state, rewards, done, _ = env.step(actions)
             rewards = rewards[:self.nb_players]
             step += 1
