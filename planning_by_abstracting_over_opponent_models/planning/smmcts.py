@@ -129,7 +129,7 @@ if __name__ == '__main__':
     plays_per_game = 10
     opponent_class = pommerman.agents.SimpleAgent
     # 2 or 4
-    nb_players = 2
+    nb_players = 4
     nb_actions = 6
     mcts_iterations = 100
     use_progressive_widening = False
