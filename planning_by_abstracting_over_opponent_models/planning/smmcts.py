@@ -1,12 +1,13 @@
 import math
 from random import randint
-from time import sleep
 from typing import List
-import pommerman
-import cpommerman
-import torch
 
-from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import RandomRolloutStateEvaluator
+import pommerman
+import torch
+from tqdm import tqdm
+
+from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import \
+    RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
 
@@ -16,11 +17,13 @@ class SMMCTS:
                  nb_players,
                  nb_actions,
                  exploration_coefs,
-                 state_evaluator: StateEvaluator):
+                 state_evaluator: StateEvaluator,
+                 use_progressive_widening=False):
         self.nb_players = nb_players
         self.nb_actions = nb_actions
+        self.exploration_coefs = torch.as_tensor(exploration_coefs)
         self.state_evaluator = state_evaluator
-        self.exploration_coefs = torch.as_tensor(exploration_coefs).view(nb_players, 1).repeat(1, nb_actions)
+        self.use_progressive_widening = use_progressive_widening
 
     def search(self, env, current_node: TreeNode):
         if current_node.is_terminal:
@@ -56,13 +59,14 @@ class SMMCTS:
                                                   opponent_influence=opponent_influence,
                                                   nb_players=self.nb_players,
                                                   nb_actions=self.nb_actions,
-                                                  exploration_coefs=self.exploration_coefs)
+                                                  exploration_coefs=self.exploration_coefs,
+                                                  use_progressive_widening=self.use_progressive_widening)
         return value_estimate
 
     def backpropagate(self, node, actions, value_estimate):
         node.update_actions_estimates(actions, value_estimate)
 
-    def simulate(self, env, iterations=100):
+    def infer(self, env, iterations=100, progress_bar=False):
         initial_state = env.get_observations()
         value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
         root = TreeNode(initial_state,
@@ -75,7 +79,10 @@ class SMMCTS:
                         self.nb_actions,
                         self.exploration_coefs)
         initial_state = env.get_json_info()
-        for _ in range(iterations):
+        r = range(iterations)
+        if progress_bar:
+            r = tqdm(r)
+        for _ in r:
             self.search(env, root)
             env._init_game_state = initial_state
             env.reset()
@@ -125,19 +132,22 @@ if __name__ == '__main__':
     nb_players = 2
     nb_actions = 6
     mcts_iterations = 100
+    use_progressive_widening = False
     depth = None
     heuristic_func = None
-    depth = 12
-    heuristic_func = heuristic_evaluator
+    # depth = 12
+    # heuristic_func = heuristic_evaluator
     wait_time = 0
     exploration_coefs = [math.sqrt(2)] * nb_players
     state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, depth=depth, heuristic_func=heuristic_func)
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=[math.sqrt(2)] * nb_players,
-                    state_evaluator=state_evaluator)
+                    state_evaluator=state_evaluator,
+                    use_progressive_widening=use_progressive_widening)
     win_rate = 0
     tie_rate = 0
+    progress_bar = False
     for game in range(1, games + 1):
         print(f"Game {game} started.")
         seed = randint(0, int(1e6))
@@ -152,7 +162,7 @@ if __name__ == '__main__':
             done = False
             while not done:
                 opponent_action = env.act(state)
-                agent_action = smmcts.simulate(env, iterations=mcts_iterations)
+                agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
                 actions = [agent_action, *opponent_action]
                 state, rewards, done, _ = env.step(actions)
                 # env.render()
