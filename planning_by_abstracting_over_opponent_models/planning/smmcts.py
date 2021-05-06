@@ -10,6 +10,7 @@ from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
+from planning_by_abstracting_over_opponent_models.pommerman_wrapped_env import PommermanWrappedEnv
 
 
 class SMMCTS:
@@ -30,7 +31,7 @@ class SMMCTS:
             return current_node.value_estimate
         # select
         actions = self.select(current_node)
-        state, rewards, is_terminal, _ = env.step(actions)
+        state, rewards, is_terminal = env.step(actions)
         # expand
         if actions not in current_node.children:
             value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node)
@@ -78,14 +79,13 @@ class SMMCTS:
                         self.nb_players,
                         self.nb_actions,
                         self.exploration_coefs)
-        initial_state = env.get_json_info()
+        game_state = env.get_game_state()
         r = range(iterations)
         if progress_bar:
             r = tqdm(r)
         for _ in r:
             self.search(env, root)
-            env._init_game_state = initial_state
-            env.reset()
+            env.set_game_state(game_state)
         most_visited_actions = root.most_visited_actions()
         most_visited_action = most_visited_actions[0]
         return most_visited_action
@@ -125,9 +125,10 @@ if __name__ == '__main__':
         4: "Right",
         5: "Bomb"
     }
+    use_cython = False
     games = 10
     plays_per_game = 10
-    opponent_class = pommerman.agents.SimpleAgent
+    opponent_class = pommerman.agents.RandomAgent
     # 2 or 4
     nb_players = 4
     nb_actions = 6
@@ -137,7 +138,6 @@ if __name__ == '__main__':
     heuristic_func = None
     # depth = 12
     # heuristic_func = heuristic_evaluator
-    wait_time = 0
     exploration_coefs = [math.sqrt(2)] * nb_players
     state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, depth=depth, heuristic_func=heuristic_func)
     smmcts = SMMCTS(nb_players=nb_players,
@@ -155,19 +155,15 @@ if __name__ == '__main__':
             print(f"Play {play} started.")
             agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
             agents.insert(0, DummyAgent())
-            env = pommerman.make('PommeFFACompetition-v0', agents)
-            env.seed(seed)
-            env.set_training_agent(0)
+            env = PommermanWrappedEnv(use_cython=use_cython, agents=agents, seed=seed)
+            action_space = env.action_space
             state = env.reset()
             done = False
             while not done:
-                opponent_action = env.act(state)
+                actions = env.act(state)
                 agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
-                actions = [agent_action, *opponent_action]
-                state, rewards, done, _ = env.step(actions)
-                # env.render()
-                # moves = [move_map[action] for action in actions]
-                # sleep(wait_time)
+                actions.insert(0, agent_action)
+                state, rewards, done = env.step(actions)
             win = int(rewards[0] == 1)
             tie = int(rewards.count(rewards[0]) == len(rewards))
             win_rate += win
