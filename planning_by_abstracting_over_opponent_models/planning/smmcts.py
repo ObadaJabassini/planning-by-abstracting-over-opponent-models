@@ -10,7 +10,7 @@ from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
-from planning_by_abstracting_over_opponent_models.pommerman_wrapped_env import PommermanWrappedEnv
+from planning_by_abstracting_over_opponent_models.env.pommerman_wrapped_env import PommermanWrappedEnv
 
 
 class SMMCTS:
