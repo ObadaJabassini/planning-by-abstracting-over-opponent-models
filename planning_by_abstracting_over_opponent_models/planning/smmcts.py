@@ -18,13 +18,11 @@ class SMMCTS:
                  nb_players,
                  nb_actions,
                  exploration_coefs,
-                 state_evaluator: StateEvaluator,
-                 use_progressive_widening=False):
+                 state_evaluator: StateEvaluator):
         self.nb_players = nb_players
         self.nb_actions = nb_actions
-        self.exploration_coefs = torch.as_tensor(exploration_coefs)
+        self.exploration_coefs = exploration_coefs
         self.state_evaluator = state_evaluator
-        self.use_progressive_widening = use_progressive_widening
 
     def search(self, env, current_node: TreeNode):
         if current_node.is_terminal:
@@ -32,6 +30,7 @@ class SMMCTS:
         # select
         actions = self.select(current_node)
         state, rewards, is_terminal = env.step(actions)
+        rewards = rewards[:self.nb_players]
         # expand
         if actions not in current_node.children:
             value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node)
@@ -47,21 +46,20 @@ class SMMCTS:
 
     def expand(self, env, state, rewards, is_terminal, actions, current_node):
         if is_terminal:
-            value_estimate = torch.as_tensor(rewards[:self.nb_players])
-            action_probs = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
-            opponent_influence = torch.full((self.nb_players - 1, ), 1 / (self.nb_players - 1))
+            value_estimate = torch.as_tensor(rewards)
+            action_prob_estimate = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
+            pw_alphas = [None] * self.nb_players
         else:
-            value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
+            value_estimate, action_prob_estimate, pw_alphas = self.state_evaluator.evaluate(env)
         current_node.children[actions] = TreeNode(state=state,
                                                   parent=current_node,
                                                   is_terminal=is_terminal,
                                                   value_estimate=value_estimate,
-                                                  action_prob_estimate=action_probs,
-                                                  opponent_influence=opponent_influence,
+                                                  action_prob_estimate=action_prob_estimate,
                                                   nb_players=self.nb_players,
                                                   nb_actions=self.nb_actions,
                                                   exploration_coefs=self.exploration_coefs,
-                                                  use_progressive_widening=self.use_progressive_widening)
+                                                  pw_alphas=pw_alphas)
         return value_estimate
 
     def backpropagate(self, node, actions, value_estimate):
@@ -69,16 +67,16 @@ class SMMCTS:
 
     def infer(self, env, iterations=100, progress_bar=False):
         initial_state = env.get_observations()
-        value_estimate, action_probs, opponent_influence = self.state_evaluator.evaluate(env)
+        value_estimate, action_probs_estimate, pw_alphas = self.state_evaluator.evaluate(env)
         root = TreeNode(initial_state,
                         None,
                         False,
                         value_estimate,
-                        action_probs,
-                        opponent_influence,
+                        action_probs_estimate,
                         self.nb_players,
                         self.nb_actions,
-                        self.exploration_coefs)
+                        self.exploration_coefs,
+                        pw_alphas)
         game_state = env.get_game_state()
         r = range(iterations)
         if progress_bar:
@@ -133,18 +131,17 @@ if __name__ == '__main__':
     nb_players = 4
     nb_actions = 6
     mcts_iterations = 100
-    use_progressive_widening = False
+    pw_alphas = [None] * nb_players
     depth = None
     heuristic_func = None
     # depth = 12
     # heuristic_func = heuristic_evaluator
     exploration_coefs = [math.sqrt(2)] * nb_players
-    state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, depth=depth, heuristic_func=heuristic_func)
+    state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, pw_alphas, depth=depth, heuristic_func=heuristic_func)
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
-                    exploration_coefs=[math.sqrt(2)] * nb_players,
-                    state_evaluator=state_evaluator,
-                    use_progressive_widening=use_progressive_widening)
+                    exploration_coefs=exploration_coefs,
+                    state_evaluator=state_evaluator)
     win_rate = 0
     tie_rate = 0
     progress_bar = False

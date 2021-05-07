@@ -7,9 +7,10 @@ from planning_by_abstracting_over_opponent_models.planning.state_evaluator impor
 
 
 class RandomRolloutStateEvaluator(StateEvaluator):
-    def __init__(self, nb_players, nb_actions, depth=None, heuristic_func=None):
+    def __init__(self, nb_players, nb_actions, pw_alphas, depth=None, heuristic_func=None):
         self.nb_players = nb_players
         self.nb_actions = nb_actions
+        self.pw_alphas = pw_alphas
         self.depth = depth if depth is not None else 10000
         self.heuristic_func = heuristic_func
 
@@ -28,6 +29,4 @@ class RandomRolloutStateEvaluator(StateEvaluator):
         rewards = rewards[:self.nb_players]
         rewards = torch.as_tensor(rewards).float()
         action_probs = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
-        nb_opponents = self.nb_players - 1
-        opponent_influence = torch.full((nb_opponents, ), 1 / nb_opponents)
-        return rewards, action_probs, opponent_influence
+        return rewards, action_probs, self.pw_alphas
