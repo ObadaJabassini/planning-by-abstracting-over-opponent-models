@@ -5,8 +5,10 @@ from typing import List
 import numpy as np
 import pommerman
 import torch
+from array2gif import write_gif
 from tqdm import tqdm
 
+from planning_by_abstracting_over_opponent_models.env.pommerman_env import PommermanEnv
 from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
@@ -125,14 +127,15 @@ if __name__ == '__main__':
         4: "Right",
         5: "Bomb"
     }
-    use_cython = True
+    # save_gif = True
+    use_cython = False
     games = 10
     plays_per_game = 10
     opponent_class = pommerman.agents.RandomAgent
     # 2 or 4
-    nb_players = 4
+    nb_players = 2
     nb_actions = 6
-    mcts_iterations = 100
+    mcts_iterations = 200
     pw_alphas = [None] * nb_players
     depth = None
     heuristic_func = None
@@ -154,19 +157,30 @@ if __name__ == '__main__':
             print(f"Play {play} started.")
             agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
             agents.insert(0, DummyAgent())
-            env = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
+            env: PommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
             state = env.reset()
             done = False
+            step = 0
+            frames = []
             while not done:
+                step += 1
                 actions = env.act(state)
                 agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
                 actions.insert(0, agent_action)
                 state, rewards, done = env.step(actions)
+                # print(f"step {step}: {rewards}")
+                # if save_gif:
+                #     frame = env.render(mode="rgb_array")
+                #     frames.append(frame)
             rewards = np.asarray(rewards)
             win = int(rewards[0] == 1)
             tie = int(np.all(rewards == rewards[0]))
             win_rate += win
             tie_rate += tie
+            # if save_gif:
+            #     file_name = f"games/game_{game}_play_{play}.gif"
+            #     print("saving gif..")
+            #     write_gif(frames, file_name, 3)
     win_rate /= games * plays_per_game
     tie_rate /= games * plays_per_game
     lose_rate = 1 - win_rate - tie_rate
