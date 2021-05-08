@@ -2,6 +2,7 @@ import math
 from random import randint
 from typing import List
 
+import numpy as np
 import pommerman
 import torch
 from tqdm import tqdm
@@ -10,7 +11,8 @@ from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
-from planning_by_abstracting_over_opponent_models.env.pommerman_wrapped_env import PommermanWrappedEnv
+from planning_by_abstracting_over_opponent_models.env.pommerman_python_env import PommermanPythonEnv
+from planning_by_abstracting_over_opponent_models.env.pommerman_cython_env import PommermanCythonEnv
 
 
 class SMMCTS:
@@ -123,7 +125,7 @@ if __name__ == '__main__':
         4: "Right",
         5: "Bomb"
     }
-    use_cython = False
+    use_cython = True
     games = 10
     plays_per_game = 10
     opponent_class = pommerman.agents.RandomAgent
@@ -152,8 +154,7 @@ if __name__ == '__main__':
             print(f"Play {play} started.")
             agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
             agents.insert(0, DummyAgent())
-            env = PommermanWrappedEnv(use_cython=use_cython, agents=agents, seed=seed)
-            action_space = env.action_space
+            env = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
             state = env.reset()
             done = False
             while not done:
@@ -161,8 +162,9 @@ if __name__ == '__main__':
                 agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
                 actions.insert(0, agent_action)
                 state, rewards, done = env.step(actions)
+            rewards = np.asarray(rewards)
             win = int(rewards[0] == 1)
-            tie = int(rewards.count(rewards[0]) == len(rewards))
+            tie = int(np.all(rewards == rewards[0]))
             win_rate += win
             tie_rate += tie
     win_rate /= games * plays_per_game
