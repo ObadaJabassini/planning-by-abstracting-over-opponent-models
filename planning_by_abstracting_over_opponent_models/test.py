@@ -4,7 +4,7 @@ from collections import deque
 import torch
 from icecream import ic
 
-from planning_by_abstracting_over_opponent_models.env.env_utils import create_env
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_env_utils import create_env
 
 
 def test(rank,

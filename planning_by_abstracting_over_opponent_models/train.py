@@ -6,7 +6,7 @@ from icecream import ic
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.env.env_utils import create_env
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 
 
@@ -78,7 +78,7 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, nb_actio
         ammo_before = state[0]["ammo"]
         state, rewards, done, info = env.step(actions)
         ammo_after = state[0]["ammo"]
-        # for a very strange reason, the env sometimes returns the wrong number of rewards
+        # for a very strange reason, the pommerman_env sometimes returns the wrong number of rewards
         rewards = rewards[:nb_agents]
         if dense_reward and rewards[0] == 0 and ammo_after > ammo_before:
             rewards[0] = 0.1

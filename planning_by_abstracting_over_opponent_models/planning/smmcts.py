@@ -8,13 +8,13 @@ import torch
 from array2gif import write_gif
 from tqdm import tqdm
 
-from planning_by_abstracting_over_opponent_models.env.pommerman_env import PommermanEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import BasePommermanEnv
 from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
-from planning_by_abstracting_over_opponent_models.env.pommerman_python_env import PommermanPythonEnv
-from planning_by_abstracting_over_opponent_models.env.pommerman_cython_env import PommermanCythonEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
 
 
 class SMMCTS:
@@ -157,7 +157,7 @@ if __name__ == '__main__':
             print(f"Play {play} started.")
             agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
             agents.insert(0, DummyAgent())
-            env: PommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
+            env: BasePommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
             state = env.reset()
             done = False
             step = 0
@@ -170,7 +170,7 @@ if __name__ == '__main__':
                 state, rewards, done = env.step(actions)
                 # print(f"step {step}: {rewards}")
                 # if save_gif:
-                #     frame = env.render(mode="rgb_array")
+                #     frame = pommerman_env.render(mode="rgb_array")
                 #     frames.append(frame)
             rewards = np.asarray(rewards)
             win = int(rewards[0] == 1)
