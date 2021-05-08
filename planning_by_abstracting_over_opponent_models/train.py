@@ -6,7 +6,7 @@ from icecream import ic
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.env.env import create_env
+from planning_by_abstracting_over_opponent_models.env.env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 
 
