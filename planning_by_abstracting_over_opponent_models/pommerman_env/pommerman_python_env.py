@@ -42,7 +42,7 @@ def extract_features(state, nb_opponents, max_steps):
     extra_bomb_position_map = (board == 6).astype(int)
     incr_range_position_map = (board == 7).astype(int)
     kick_position_map = (board == 8).astype(int)
-    current_step_map = np.full(board_tuple, agent_state["step_count"]).astype(float) / max_steps
+    current_step_map = np.full(board_tuple, agent_state["step_count"] / max_steps)
     features_map = [
         bomb_blast_strength_map,
         bomb_life_map,
@@ -102,7 +102,8 @@ class PommermanPythonEnv(BasePommermanEnv):
         return self.env.act(state)
 
     def render(self, mode=None):
-        mode = mode or 'human'
+        if mode is None:
+            mode = 'human'
         return self.env.render(mode)
 
     def get_game_state(self):

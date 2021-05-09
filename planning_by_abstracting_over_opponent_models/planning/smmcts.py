@@ -1,7 +1,7 @@
 import math
 from random import randint
 from typing import List
-
+import argparse
 import numpy as np
 import pommerman
 import torch
@@ -15,6 +15,8 @@ from planning_by_abstracting_over_opponent_models.planning.state_evaluator impor
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
+
+torch.autograd.set_detect_anomaly(True)
 
 
 class SMMCTS:
@@ -114,6 +116,22 @@ def heuristic_evaluator(initial_state, state):
     return result
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--nb-games', type=int, default=10)
+parser.add_argument('--nb-plays-per-game', type=int, default=10)
+parser.add_argument('--nb-players', type=int, default=2, choices=[2, 4])
+parser.add_argument('--use-cython', dest="use_cython", action="store_true")
+parser.add_argument('--use-python', dest="use_cython", action="store_false")
+parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
+parser.add_argument('--no-progress-bar', dest="progress_bar", action="store_false")
+parser.add_argument('--mcts-iterations', type=int, default=100)
+parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
+parser.add_argument('--fpu', type=int, default=1000)
+parser.add_argument('--pw-alpha', type=int, default=None)
+parser.set_defaults(use_cython=False)
+parser.set_defaults(progress_bar=False)
+
+
 if __name__ == '__main__':
 
     class DummyAgent(pommerman.agents.BaseAgent):
@@ -130,24 +148,24 @@ if __name__ == '__main__':
         4: "Right",
         5: "Bomb"
     }
-    use_cython = False
     save_gif = False
-    games = 10
-    plays_per_game = 10
+    args = parser.parse_args()
+    use_cython = args.use_cython
+    nb_games = args.nb_games
+    nb_plays_per_game = args.nb_plays_per_game
     opponent_class = pommerman.agents.SimpleAgent
-    # 2 or 4
-    nb_players = 2
+    nb_players = args.nb_players
     nb_actions = 6
-    mcts_iterations = 100
-    exploration_coefs = [math.sqrt(2)] * nb_players
-    fpus = [1000] * nb_players
-    # fpus = [1 / nb_players] * nb_players
-    pw_alphas = [None] * nb_players
+    mcts_iterations = args.mcts_iterations
+    exploration_coefs = [args.exploration_coef] * nb_players
+    fpus = [args.fpu] * nb_players
+    pw_alphas = [args.pw_alpha] * nb_players
+    progress_bar = args.progress_bar
     depth = None
     heuristic_func = None
-    # depth = 12
-    # heuristic_func = heuristic_evaluator
-    state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, pw_alphas, depth=depth, heuristic_func=heuristic_func)
+    state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, pw_alphas,
+                                                  depth=depth,
+                                                  heuristic_func=heuristic_func)
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
@@ -155,21 +173,19 @@ if __name__ == '__main__':
                     state_evaluator=state_evaluator)
     win_rate = 0
     tie_rate = 0
-    progress_bar = False
-    for game in range(1, games + 1):
+    for game in range(1, nb_games + 1):
         print(f"Game {game} started.")
         seed = randint(0, int(1e6))
-        for play in range(1, plays_per_game + 1):
+        for play in range(1, nb_plays_per_game + 1):
             print(f"Play {play} started.")
             agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
             agents.insert(0, DummyAgent())
-            env: BasePommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
+            env: BasePommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(
+                agents=agents, seed=seed)
             state = env.reset()
             done = False
-            step = 0
             frames = []
             while not done:
-                step += 1
                 actions = env.act(state)
                 agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
                 actions.insert(0, agent_action)
@@ -187,8 +203,8 @@ if __name__ == '__main__':
                 file_name = f"games/game_{game}_play_{play}.gif"
                 print("Saving gif..")
                 write_gif(frames, file_name, 3)
-    win_rate /= games * plays_per_game
-    tie_rate /= games * plays_per_game
+    total_games = nb_games * nb_plays_per_game
+    win_rate /= total_games
+    tie_rate /= total_games
     lose_rate = 1 - win_rate - tie_rate
     print(f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%")
-
