@@ -22,10 +22,12 @@ class SMMCTS:
                  nb_players,
                  nb_actions,
                  exploration_coefs,
+                 fpus,
                  state_evaluator: StateEvaluator):
         self.nb_players = nb_players
         self.nb_actions = nb_actions
         self.exploration_coefs = exploration_coefs
+        self.fpus = fpus
         self.state_evaluator = state_evaluator
 
     def search(self, env, current_node: TreeNode):
@@ -63,6 +65,7 @@ class SMMCTS:
                                                   nb_players=self.nb_players,
                                                   nb_actions=self.nb_actions,
                                                   exploration_coefs=self.exploration_coefs,
+                                                  fpus=self.fpus,
                                                   pw_alphas=pw_alphas)
         return value_estimate
 
@@ -127,25 +130,28 @@ if __name__ == '__main__':
         4: "Right",
         5: "Bomb"
     }
-    # save_gif = True
     use_cython = False
+    save_gif = False
     games = 10
     plays_per_game = 10
-    opponent_class = pommerman.agents.RandomAgent
+    opponent_class = pommerman.agents.SimpleAgent
     # 2 or 4
     nb_players = 2
     nb_actions = 6
-    mcts_iterations = 200
+    mcts_iterations = 100
+    exploration_coefs = [math.sqrt(2)] * nb_players
+    fpus = [1000] * nb_players
+    # fpus = [1 / nb_players] * nb_players
     pw_alphas = [None] * nb_players
     depth = None
     heuristic_func = None
     # depth = 12
     # heuristic_func = heuristic_evaluator
-    exploration_coefs = [math.sqrt(2)] * nb_players
     state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, pw_alphas, depth=depth, heuristic_func=heuristic_func)
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
+                    fpus=fpus,
                     state_evaluator=state_evaluator)
     win_rate = 0
     tie_rate = 0
@@ -169,18 +175,18 @@ if __name__ == '__main__':
                 actions.insert(0, agent_action)
                 state, rewards, done = env.step(actions)
                 # print(f"step {step}: {rewards}")
-                # if save_gif:
-                #     frame = pommerman_env.render(mode="rgb_array")
-                #     frames.append(frame)
+                if save_gif:
+                    frame = env.render(mode="rgb_array")
+                    frames.append(frame)
             rewards = np.asarray(rewards)
             win = int(rewards[0] == 1)
             tie = int(np.all(rewards == rewards[0]))
             win_rate += win
             tie_rate += tie
-            # if save_gif:
-            #     file_name = f"games/game_{game}_play_{play}.gif"
-            #     print("saving gif..")
-            #     write_gif(frames, file_name, 3)
+            if save_gif:
+                file_name = f"games/game_{game}_play_{play}.gif"
+                print("Saving gif..")
+                write_gif(frames, file_name, 3)
     win_rate /= games * plays_per_game
     tie_rate /= games * plays_per_game
     lose_rate = 1 - win_rate - tie_rate

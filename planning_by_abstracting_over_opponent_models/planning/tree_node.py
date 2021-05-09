@@ -4,12 +4,13 @@ import torch
 
 
 class Player:
-    def __init__(self, idd, nb_actions, action_probs_estimate, exploration_coef, pw_alpha=None):
+    def __init__(self, idd, nb_actions, action_probs_estimate, exploration_coef, fpu, pw_alpha=None):
         self.idd = idd
         self.nb_actions = nb_actions
         self.average_estimations = torch.zeros(nb_actions)
         self.nb_action_visits = torch.zeros(nb_actions)
         self.exploration_coef = exploration_coef
+        self.fpu = fpu
         self.pw_alpha = pw_alpha
         self.use_progressive_widening = pw_alpha is not None
         if self.use_progressive_widening:
@@ -39,13 +40,10 @@ class Player:
         c = self.exploration_coef
         x, n = self.average_estimations[:k], self.nb_action_visits[:k]
         x_bar = x / n
-        exploration_term = torch.sqrt(math.log2(nb_visits) / n)
-        # if there is no estimate for the action, assign zero
-        x_bar = torch.nan_to_num(x_bar, 0, 0, 0)
-        exploration_term *= c * probs
-        # when an action is not explored, assign a large value to ensure it will be explored
-        exploration_term = torch.nan_to_num(exploration_term, 1000, 1000, 1000)
+        exploration_term = c * probs * torch.sqrt(math.log2(nb_visits) / n)
         uct = x_bar + exploration_term
+        # when an action is not explored, assign a fpu
+        uct = torch.nan_to_num(uct, self.fpu, self.fpu, self.fpu)
         return uct
 
     def update_action_estimate(self, action, estimate):
@@ -65,6 +63,7 @@ class TreeNode:
                  nb_players,
                  nb_actions,
                  exploration_coefs,
+                 fpus,
                  pw_alphas=None):
         """
         :param state: the associated state
@@ -92,15 +91,14 @@ class TreeNode:
                                nb_actions,
                                action_prob_estimate[i],
                                exploration_coefs[i],
+                               fpus[i],
                                pw_alphas[i]) for i in range(nb_players)]
 
     def most_visited_actions(self):
-        most_visited_actions = [player.most_visited_action() for player in self.players]
-        return tuple(most_visited_actions)
+        return tuple((player.most_visited_action() for player in self.players))
 
     def best_actions(self):
-        best_actions = [player.best_action(self.nb_visits) for player in self.players]
-        return tuple(best_actions)
+        return tuple((player.best_action(self.nb_visits) for player in self.players))
 
     def update_actions_estimates(self, actions, action_value_estimate):
         """
