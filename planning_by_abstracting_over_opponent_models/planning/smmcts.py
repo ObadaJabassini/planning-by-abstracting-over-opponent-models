@@ -124,9 +124,9 @@ parser.add_argument('--use-cython', dest="use_cython", action="store_true")
 parser.add_argument('--use-python', dest="use_cython", action="store_false")
 parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
 parser.add_argument('--no-progress-bar', dest="progress_bar", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=100)
+parser.add_argument('--mcts-iterations', type=int, default=200)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
-parser.add_argument('--fpu', type=int, default=1000)
+parser.add_argument('--fpu', type=float, default=1000)
 parser.add_argument('--pw-alpha', type=int, default=None)
 parser.set_defaults(use_cython=False)
 parser.set_defaults(progress_bar=False)
@@ -151,14 +151,17 @@ if __name__ == '__main__':
     save_gif = False
     args = parser.parse_args()
     use_cython = args.use_cython
+    use_cython = False
     nb_games = args.nb_games
     nb_plays_per_game = args.nb_plays_per_game
     opponent_class = pommerman.agents.SimpleAgent
     nb_players = args.nb_players
+    nb_players = 2
     nb_actions = 6
     mcts_iterations = args.mcts_iterations
     exploration_coefs = [args.exploration_coef] * nb_players
     fpus = [args.fpu] * nb_players
+    # fpus = [1 / nb_players] * nb_players
     pw_alphas = [args.pw_alpha] * nb_players
     progress_bar = args.progress_bar
     depth = None
@@ -207,4 +210,7 @@ if __name__ == '__main__':
     win_rate /= total_games
     tie_rate /= total_games
     lose_rate = 1 - win_rate - tie_rate
-    print(f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%")
+    s = f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+    print(s)
+    with open("result.txt", "w") as f:
+        f.write(s)

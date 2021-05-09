@@ -7,7 +7,7 @@ class Player:
     def __init__(self, idd, nb_actions, action_probs_estimate, exploration_coef, fpu, pw_alpha=None):
         self.idd = idd
         self.nb_actions = nb_actions
-        self.average_estimations = torch.zeros(nb_actions)
+        self.action_estimations = torch.zeros(nb_actions)
         self.nb_action_visits = torch.zeros(nb_actions)
         self.exploration_coef = exploration_coef
         self.fpu = fpu
@@ -38,7 +38,7 @@ class Player:
         k = int(math.ceil(nb_visits ** self.pw_alpha)) if self.use_progressive_widening else self.nb_actions
         probs = self.action_probs_estimate[:k]
         c = self.exploration_coef
-        x, n = self.average_estimations[:k], self.nb_action_visits[:k]
+        x, n = self.action_estimations[:k], self.nb_action_visits[:k]
         x_bar = x / n
         exploration_term = c * probs * torch.sqrt(math.log2(nb_visits) / n)
         uct = x_bar + exploration_term
@@ -49,7 +49,7 @@ class Player:
     def update_action_estimate(self, action, estimate):
         if self.use_progressive_widening:
             action = self.original_to_sorted_actions[action]
-        self.average_estimations[action] += estimate
+        self.action_estimations[action] += estimate
         self.nb_action_visits[action] += 1
 
 
