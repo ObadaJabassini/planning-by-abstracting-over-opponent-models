@@ -78,6 +78,7 @@ def extract_observation(state, nb_opponents, max_steps):
 class PommermanPythonEnv(BasePommermanEnv):
 
     def __init__(self, agents, seed):
+        self.nb_players = len(agents)
         self.env = pommerman.make('PommeFFACompetition-v0', agents)
         self.env.seed(seed)
         self.env.set_training_agent(0)
@@ -89,14 +90,25 @@ class PommermanPythonEnv(BasePommermanEnv):
     def get_done(self):
         return self.env._get_done()
 
+    def transform_rewards(self, rewards):
+        rewards = np.asarray(rewards)
+        rewards = (rewards + 1) / 2
+        return rewards
+
     def get_rewards(self):
-        return self.env._get_rewards()
+        rewards = self.env._get_rewards()
+        rewards = rewards[:self.nb_players]
+        rewards = self.transform_rewards(rewards)
+        return rewards
 
     def reset(self):
         return self.env.reset()
 
     def step(self, actions):
-        return self.env.step(actions)[:3]
+        state, rewards, done, _ = self.env.step(actions)
+        rewards = rewards[:self.nb_players]
+        rewards = self.transform_rewards(rewards)
+        return state, rewards, done
 
     def act(self, state):
         return self.env.act(state)

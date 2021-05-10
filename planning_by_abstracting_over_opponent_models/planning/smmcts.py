@@ -1,3 +1,4 @@
+from multiprocessing import Pool, cpu_count
 import math
 from random import randint
 from typing import List
@@ -38,7 +39,6 @@ class SMMCTS:
         # select
         actions = self.select(current_node)
         state, rewards, is_terminal = env.step(actions)
-        rewards = rewards[:self.nb_players]
         # expand
         if actions not in current_node.children:
             value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node)
@@ -116,10 +116,80 @@ def heuristic_evaluator(initial_state, state):
     return result
 
 
+class DummyAgent(pommerman.agents.BaseAgent):
+
+    def act(self, obs, action_space):
+        pass
+
+
+def play_game(game_id,
+              play_id,
+              seed,
+              opponent_class,
+              nb_players,
+              use_cython,
+              mcts_iterations,
+              exploration_coef,
+              fpu,
+              pw_alpha,
+              progress_bar):
+    print(f"Game {game_id}, Play {play_id} started.")
+    save_gif = False
+    # move_map = {
+    #     0: "Stop",
+    #     1: "Up",
+    #     2: "Down",
+    #     3: "Left",
+    #     4: "Right",
+    #     5: "Bomb"
+    # }
+    nb_actions = 6
+    exploration_coefs = [exploration_coef] * nb_players
+    fpus = [fpu] * nb_players
+    pw_alphas = [pw_alpha] * nb_players
+    depth = None
+    heuristic_func = None
+    state_evaluator = RandomRolloutStateEvaluator(nb_players,
+                                                  nb_actions,
+                                                  pw_alphas,
+                                                  depth=depth,
+                                                  heuristic_func=heuristic_func)
+    smmcts = SMMCTS(nb_players=nb_players,
+                    nb_actions=nb_actions,
+                    exploration_coefs=exploration_coefs,
+                    fpus=fpus,
+                    state_evaluator=state_evaluator)
+    agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
+    agents.insert(0, DummyAgent())
+    env: BasePommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(
+        agents=agents, seed=seed)
+    state = env.reset()
+    done = False
+    frames = []
+    while not done:
+        actions = env.act(state)
+        agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
+        actions.insert(0, agent_action)
+        state, rewards, done = env.step(actions)
+        # print(f"step {step}: {rewards}")
+        if save_gif:
+            frame = env.render(mode="rgb_array")
+            frames.append(frame)
+    win = int(rewards[0] == 1)
+    tie = int(np.all(rewards == rewards[0]))
+    if save_gif:
+        file_name = f"games/game_{game_id}_play_{play_id}.gif"
+        print("Saving gif..")
+        write_gif(frames, file_name, 3)
+    return game_id, play_id, win, tie
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--nb-games', type=int, default=10)
 parser.add_argument('--nb-plays-per-game', type=int, default=10)
 parser.add_argument('--nb-players', type=int, default=2, choices=[2, 4])
+parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
+parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
 parser.add_argument('--use-cython', dest="use_cython", action="store_true")
 parser.add_argument('--use-python', dest="use_cython", action="store_false")
 parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
@@ -128,89 +198,43 @@ parser.add_argument('--mcts-iterations', type=int, default=200)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=1000)
 parser.add_argument('--pw-alpha', type=int, default=None)
+parser.set_defaults(use_simple_agent=True)
 parser.set_defaults(use_cython=False)
 parser.set_defaults(progress_bar=False)
 
-
 if __name__ == '__main__':
-
-    class DummyAgent(pommerman.agents.BaseAgent):
-
-        def act(self, obs, action_space):
-            pass
-
-
-    move_map = {
-        0: "Stop",
-        1: "Up",
-        2: "Down",
-        3: "Left",
-        4: "Right",
-        5: "Bomb"
-    }
-    save_gif = False
     args = parser.parse_args()
-    use_cython = args.use_cython
-    use_cython = False
     nb_games = args.nb_games
     nb_plays_per_game = args.nb_plays_per_game
-    opponent_class = pommerman.agents.SimpleAgent
-    nb_players = args.nb_players
-    nb_players = 2
-    nb_actions = 6
-    mcts_iterations = args.mcts_iterations
-    exploration_coefs = [args.exploration_coef] * nb_players
-    fpus = [args.fpu] * nb_players
-    # fpus = [1 / nb_players] * nb_players
-    pw_alphas = [args.pw_alpha] * nb_players
-    progress_bar = args.progress_bar
-    depth = None
-    heuristic_func = None
-    state_evaluator = RandomRolloutStateEvaluator(nb_players, nb_actions, pw_alphas,
-                                                  depth=depth,
-                                                  heuristic_func=heuristic_func)
-    smmcts = SMMCTS(nb_players=nb_players,
-                    nb_actions=nb_actions,
-                    exploration_coefs=exploration_coefs,
-                    fpus=fpus,
-                    state_evaluator=state_evaluator)
+    opponent_class = pommerman.agents.SimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
+    with Pool(cpu_count()) as pool:
+        games = []
+        for game in range(1, nb_games + 1):
+            seed = randint(0, int(1e6))
+            for play in range(1, nb_plays_per_game + 1):
+                params = (game,
+                          play,
+                          seed,
+                          opponent_class,
+                          args.nb_players,
+                          args.use_cython,
+                          args.mcts_iterations,
+                          args.exploration_coef,
+                          args.fpu,
+                          args.pw_alpha,
+                          args.progress_bar)
+                games.append(params)
+        result = pool.starmap(play_game, games)
     win_rate = 0
     tie_rate = 0
-    for game in range(1, nb_games + 1):
-        print(f"Game {game} started.")
-        seed = randint(0, int(1e6))
-        for play in range(1, nb_plays_per_game + 1):
-            print(f"Play {play} started.")
-            agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
-            agents.insert(0, DummyAgent())
-            env: BasePommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(
-                agents=agents, seed=seed)
-            state = env.reset()
-            done = False
-            frames = []
-            while not done:
-                actions = env.act(state)
-                agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
-                actions.insert(0, agent_action)
-                state, rewards, done = env.step(actions)
-                # print(f"step {step}: {rewards}")
-                if save_gif:
-                    frame = env.render(mode="rgb_array")
-                    frames.append(frame)
-            rewards = np.asarray(rewards)
-            win = int(rewards[0] == 1)
-            tie = int(np.all(rewards == rewards[0]))
-            win_rate += win
-            tie_rate += tie
-            if save_gif:
-                file_name = f"games/game_{game}_play_{play}.gif"
-                print("Saving gif..")
-                write_gif(frames, file_name, 3)
+    for r in result:
+        win_rate += r[2]
+        tie_rate += r[3]
     total_games = nb_games * nb_plays_per_game
     win_rate /= total_games
     tie_rate /= total_games
     lose_rate = 1 - win_rate - tie_rate
-    s = f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+    s = f"fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
     print(s)
-    with open("result.txt", "w") as f:
+    with open("result.txt", "a") as f:
         f.write(s)

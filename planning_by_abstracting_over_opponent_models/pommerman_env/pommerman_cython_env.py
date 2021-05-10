@@ -22,8 +22,12 @@ class PommermanCythonEnv(BasePommermanEnv):
     def get_done(self):
         return self.env.get_done()
 
+    def transform_rewards(self, rewards):
+        rewards = (rewards + 1) / 2
+        return rewards
+
     def get_rewards(self):
-        return self.env.get_rewards()
+        return self.transform_rewards(self.env.get_rewards())
 
     def step(self, actions):
         actions = np.asarray(actions).astype(np.uint8)
