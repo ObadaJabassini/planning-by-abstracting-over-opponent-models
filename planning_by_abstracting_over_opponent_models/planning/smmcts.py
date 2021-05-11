@@ -11,6 +11,7 @@ import torch
 from array2gif import write_gif
 from tqdm import tqdm
 
+from planning_by_abstracting_over_opponent_models.planning.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
@@ -182,7 +183,7 @@ def play_game(game_id,
         # print("Saving gif..")
         write_gif(frames, file_name, 3)
     elapsed_time = round((time.time() - start_time) / 60, 1)
-    # print(f"Game {game_id}, Play {play_id} finished ({elapsed_time} minutes).")
+    print(f"Game {game_id}, Play {play_id} finished ({elapsed_time} minutes).")
     return game_id, play_id, win, tie
 
 
@@ -199,7 +200,7 @@ parser.add_argument('--use-cython', dest="use_cython", action="store_true")
 parser.add_argument('--use-python', dest="use_cython", action="store_false")
 parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
 parser.add_argument('--no-progress-bar', dest="progress_bar", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=200)
+parser.add_argument('--mcts-iterations', type=int, default=1500)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=1000)
 parser.add_argument('--pw-alpha', type=int, default=None)
@@ -212,8 +213,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     nb_games = args.nb_games
     nb_plays = args.nb_plays
-    args.fpu = math.sqrt(2)
-    opponent_class = pommerman.agents.SimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
+    opponent_class = ModifiedSimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
     games = []
     for game in range(1, nb_games + 1):
         seed = randint(0, int(1e6))
