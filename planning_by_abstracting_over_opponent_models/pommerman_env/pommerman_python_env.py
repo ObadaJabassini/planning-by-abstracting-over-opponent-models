@@ -91,13 +91,13 @@ class PommermanPythonEnv(BasePommermanEnv):
         return self.env._get_done()
 
     def transform_rewards(self, rewards):
+        rewards = rewards[:self.nb_players]
         rewards = np.asarray(rewards)
         rewards = (rewards + 1) / 2
         return rewards
 
     def get_rewards(self):
         rewards = self.env._get_rewards()
-        rewards = rewards[:self.nb_players]
         rewards = self.transform_rewards(rewards)
         return rewards
 
@@ -106,7 +106,6 @@ class PommermanPythonEnv(BasePommermanEnv):
 
     def step(self, actions):
         state, rewards, done, _ = self.env.step(actions)
-        rewards = rewards[:self.nb_players]
         rewards = self.transform_rewards(rewards)
         return state, rewards, done
 

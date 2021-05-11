@@ -182,7 +182,7 @@ def play_game(game_id,
         print("Saving gif..")
         write_gif(frames, file_name, 3)
     elapsed_time = round((time.time() - start_time) / 60, 1)
-    print(f"Game {game_id}, Play {play_id} Finish ({elapsed_time}).")
+    print(f"Game {game_id}, Play {play_id} finished ({elapsed_time} minutes).")
     return game_id, play_id, win, tie
 
 
