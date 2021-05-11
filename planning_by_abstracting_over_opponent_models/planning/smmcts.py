@@ -134,7 +134,8 @@ def play_game(game_id,
               exploration_coef,
               fpu,
               pw_alpha,
-              progress_bar):
+              progress_bar,
+              show_elapsed_time):
     start_time = time.time()
     save_gif = False
     # move_map = {
@@ -161,7 +162,7 @@ def play_game(game_id,
                     exploration_coefs=exploration_coefs,
                     fpus=fpus,
                     state_evaluator=state_evaluator)
-    agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
+    agents = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
     env = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
     state = env.reset()
@@ -180,10 +181,10 @@ def play_game(game_id,
     tie = int(np.all(rewards == rewards[0]))
     if save_gif:
         file_name = f"games/game_{game_id}_play_{play_id}.gif"
-        # print("Saving gif..")
         write_gif(frames, file_name, 3)
-    elapsed_time = round((time.time() - start_time) / 60, 1)
-    print(f"Game {game_id}, Play {play_id} finished ({elapsed_time} minutes).")
+    if show_elapsed_time:
+        elapsed_time = round((time.time() - start_time) / 60, 1)
+        print(f"Game {game_id}, Play {play_id} finished ({elapsed_time} minutes).")
     return game_id, play_id, win, tie
 
 
@@ -200,14 +201,17 @@ parser.add_argument('--use-cython', dest="use_cython", action="store_true")
 parser.add_argument('--use-python', dest="use_cython", action="store_false")
 parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
 parser.add_argument('--no-progress-bar', dest="progress_bar", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=1500)
+parser.add_argument('--mcts-iterations', type=int, default=200)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=1000)
 parser.add_argument('--pw-alpha', type=int, default=None)
+parser.add_argument('--show-elapsed-time', dest="show_elapsed_time", action="store_true")
+parser.add_argument('--hide-elapsed-time', dest="show_elapsed_time", action="store_false")
 parser.set_defaults(multiprocessing=True)
 parser.set_defaults(use_simple_agent=True)
 parser.set_defaults(use_cython=True)
 parser.set_defaults(progress_bar=False)
+parser.set_defaults(show_elapsed_time=False)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -228,7 +232,8 @@ if __name__ == '__main__':
                       args.exploration_coef,
                       args.fpu,
                       args.pw_alpha,
-                      args.progress_bar)
+                      args.progress_bar,
+                      args.show_elapsed_time)
             games.append(params)
     if args.multiprocessing:
         with Pool(args.nb_processes) as pool:
