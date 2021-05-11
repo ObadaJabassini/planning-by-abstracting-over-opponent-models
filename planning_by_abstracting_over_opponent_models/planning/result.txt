@@ -1,0 +1,1 @@
+fpu = 1000, win rate = 51.0%, tie rate = 9.0%, lose rate = 40.0%

@@ -162,8 +162,7 @@ def play_game(game_id,
                     state_evaluator=state_evaluator)
     agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
-    env: BasePommermanEnv = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(
-        agents=agents, seed=seed)
+    env = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
     state = env.reset()
     done = False
     frames = []
@@ -188,6 +187,7 @@ def play_game(game_id,
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--nb-games', type=int, default=10)
 parser.add_argument('--nb-plays-per-game', type=int, default=10)
 parser.add_argument('--nb-players', type=int, default=2, choices=[2, 4])
@@ -209,8 +209,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     nb_games = args.nb_games
     nb_plays_per_game = args.nb_plays_per_game
+    args.fpu = 1
     opponent_class = pommerman.agents.SimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
-    with Pool(cpu_count()) as pool:
+    with Pool(args.nb_processes) as pool:
         games = []
         for game in range(1, nb_games + 1):
             seed = randint(0, int(1e6))
