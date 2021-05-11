@@ -191,7 +191,7 @@ parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
 parser.add_argument('--nb-games', type=int, default=1)
-parser.add_argument('--nb-plays-per-game', type=int, default=10)
+parser.add_argument('--nb-plays', type=int, default=10)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
 parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
@@ -211,13 +211,13 @@ parser.set_defaults(progress_bar=False)
 if __name__ == '__main__':
     args = parser.parse_args()
     nb_games = args.nb_games
-    nb_plays_per_game = args.nb_plays_per_game
+    nb_plays = args.nb_plays
     args.fpu = math.sqrt(2)
     opponent_class = pommerman.agents.SimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
     games = []
     for game in range(1, nb_games + 1):
         seed = randint(0, int(1e6))
-        for play in range(1, nb_plays_per_game + 1):
+        for play in range(1, nb_plays + 1):
             params = (game,
                       play,
                       seed,
