@@ -187,7 +187,7 @@ def play_game(game_id,
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--nb-processes', type=int, default=cpu_count() - 2)
+parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
 parser.add_argument('--nb-games', type=int, default=1)
