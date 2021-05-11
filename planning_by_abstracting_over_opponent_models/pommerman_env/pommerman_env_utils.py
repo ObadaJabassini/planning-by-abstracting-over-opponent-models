@@ -3,9 +3,10 @@ from typing import List
 import pommerman
 import torch
 
-from planning_by_abstracting_over_opponent_models.pommerman_env.agent import Agent
+from planning_by_abstracting_over_opponent_models.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 
 
 def create_env(seed,
@@ -26,9 +27,7 @@ def create_env(seed,
     agent = Agent(agent_model, nb_opponents, max_steps, device)
     agents: List[pommerman.agents.BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
     agents.insert(0, agent)
-    env = pommerman.make('PommeFFACompetition-v0', agents)
-    env.seed(seed + rank)
-    env.set_training_agent(0)
+    env = PommermanPythonEnv(agents, seed)
     return agents, env
 
 

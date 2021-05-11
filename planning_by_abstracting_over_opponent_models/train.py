@@ -61,7 +61,6 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, nb_actio
     opponent_rewards = []
     opponent_values = []
     steps = 0
-    nb_agents = len(agents)
     done = False
     agent = agents[0]
     while not done and steps < nb_steps:
@@ -76,12 +75,11 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, nb_actio
         agent_action = agent_action.item()
         actions = [agent_action, *opponent_actions]
         ammo_before = state[0]["ammo"]
-        state, rewards, done, info = env.step(actions)
+        state, rewards, done = env.step(actions)
         ammo_after = state[0]["ammo"]
         # for a very strange reason, the pommerman_env sometimes returns the wrong number of rewards
-        rewards = rewards[:nb_agents]
-        if dense_reward and rewards[0] == 0 and ammo_after > ammo_before:
-            rewards[0] = 0.1
+        if dense_reward and rewards[0] == 0.5 and ammo_after > ammo_before:
+            rewards[0] = 0.55
         # agent
         agent_reward = rewards[0]
         agent_rewards.append(agent_reward)

@@ -45,7 +45,7 @@ def test(rank,
             agent_action = agent.act(state, action_space)
             opponents_action = env.act(state)
             episode_actions = [agent_action, *opponents_action]
-            state, rewards, done, _ = env.step(episode_actions)
+            state, rewards, done = env.step(episode_actions)
         reward_sum += rewards[0]
 
         # a quick hack to prevent the agent from stucking
