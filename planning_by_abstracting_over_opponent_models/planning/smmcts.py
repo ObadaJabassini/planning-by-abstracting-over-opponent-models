@@ -136,7 +136,8 @@ def play_game(game_id,
               pw_alpha,
               progress_bar,
               show_elapsed_time):
-    start_time = time.time()
+    if show_elapsed_time:
+        start_time = time.time()
     save_gif = False
     # move_map = {
     #     0: "Stop",
