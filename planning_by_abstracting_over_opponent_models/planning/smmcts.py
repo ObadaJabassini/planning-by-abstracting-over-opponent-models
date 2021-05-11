@@ -244,5 +244,5 @@ if __name__ == '__main__':
     win_rate /= total_games
     tie_rate /= total_games
     lose_rate = 1 - win_rate - tie_rate
-    s = f"fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%\n"
+    s = f"fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
     print(s)
