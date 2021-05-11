@@ -209,25 +209,25 @@ if __name__ == '__main__':
     args = parser.parse_args()
     nb_games = args.nb_games
     nb_plays_per_game = args.nb_plays_per_game
-    args.fpu = 1
+    args.fpu = math.sqrt(2)
     opponent_class = pommerman.agents.SimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
+    games = []
+    for game in range(1, nb_games + 1):
+        seed = randint(0, int(1e6))
+        for play in range(1, nb_plays_per_game + 1):
+            params = (game,
+                      play,
+                      seed,
+                      opponent_class,
+                      args.nb_players,
+                      args.use_cython,
+                      args.mcts_iterations,
+                      args.exploration_coef,
+                      args.fpu,
+                      args.pw_alpha,
+                      args.progress_bar)
+            games.append(params)
     with Pool(args.nb_processes) as pool:
-        games = []
-        for game in range(1, nb_games + 1):
-            seed = randint(0, int(1e6))
-            for play in range(1, nb_plays_per_game + 1):
-                params = (game,
-                          play,
-                          seed,
-                          opponent_class,
-                          args.nb_players,
-                          args.use_cython,
-                          args.mcts_iterations,
-                          args.exploration_coef,
-                          args.fpu,
-                          args.pw_alpha,
-                          args.progress_bar)
-                games.append(params)
         result = pool.starmap(play_game, games)
     win_rate = 0
     tie_rate = 0
@@ -240,5 +240,5 @@ if __name__ == '__main__':
     lose_rate = 1 - win_rate - tie_rate
     s = f"fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
     print(s)
-    with open("result.txt", "a") as f:
+    with open("results.txt", "a") as f:
         f.write(s)
