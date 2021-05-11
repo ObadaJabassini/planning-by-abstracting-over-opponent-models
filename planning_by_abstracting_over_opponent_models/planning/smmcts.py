@@ -241,7 +241,7 @@ if __name__ == '__main__':
     for r in result:
         win_rate += r[2]
         tie_rate += r[3]
-    total_games = nb_games * nb_plays_per_game
+    total_games = nb_games * nb_plays
     win_rate /= total_games
     tie_rate /= total_games
     lose_rate = 1 - win_rate - tie_rate
