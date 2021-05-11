@@ -188,9 +188,11 @@ def play_game(game_id,
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
-parser.add_argument('--nb-games', type=int, default=10)
+parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
+parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
+parser.add_argument('--nb-games', type=int, default=1)
 parser.add_argument('--nb-plays-per-game', type=int, default=10)
-parser.add_argument('--nb-players', type=int, default=2, choices=[2, 4])
+parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
 parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
 parser.add_argument('--use-cython', dest="use_cython", action="store_true")
@@ -201,8 +203,9 @@ parser.add_argument('--mcts-iterations', type=int, default=200)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=1000)
 parser.add_argument('--pw-alpha', type=int, default=None)
+parser.set_defaults(multiprocessing=False)
 parser.set_defaults(use_simple_agent=True)
-parser.set_defaults(use_cython=False)
+parser.set_defaults(use_cython=True)
 parser.set_defaults(progress_bar=False)
 
 if __name__ == '__main__':
@@ -227,8 +230,12 @@ if __name__ == '__main__':
                       args.pw_alpha,
                       args.progress_bar)
             games.append(params)
-    with Pool(args.nb_processes) as pool:
-        result = pool.starmap(play_game, games)
+    print("Started playing games.")
+    if args.multiprocessing:
+        with Pool(args.nb_processes) as pool:
+            result = pool.starmap(play_game, games)
+    else:
+        result = [play_game(*game) for game in games]
     win_rate = 0
     tie_rate = 0
     for r in result:
@@ -238,7 +245,5 @@ if __name__ == '__main__':
     win_rate /= total_games
     tie_rate /= total_games
     lose_rate = 1 - win_rate - tie_rate
-    s = f"fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+    s = f"fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%\n"
     print(s)
-    with open("results.txt", "a") as f:
-        f.write(s)

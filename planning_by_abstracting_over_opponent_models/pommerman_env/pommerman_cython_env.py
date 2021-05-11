@@ -44,8 +44,7 @@ class PommermanCythonEnv(BasePommermanEnv):
     def render(self, mode=None):
         if mode is None:
             mode = 'human'
-        state = self.env.get_json_info()
-        self.env_render._init_game_state = state
+        self.env_render._init_game_state = self.env.get_json_info()
         self.env_render.set_json_info()
         return self.env_render.render(mode)
 
