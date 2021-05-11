@@ -179,10 +179,10 @@ def play_game(game_id,
     tie = int(np.all(rewards == rewards[0]))
     if save_gif:
         file_name = f"games/game_{game_id}_play_{play_id}.gif"
-        print("Saving gif..")
+        # print("Saving gif..")
         write_gif(frames, file_name, 3)
     elapsed_time = round((time.time() - start_time) / 60, 1)
-    print(f"Game {game_id}, Play {play_id} finished ({elapsed_time} minutes).")
+    # print(f"Game {game_id}, Play {play_id} finished ({elapsed_time} minutes).")
     return game_id, play_id, win, tie
 
 
@@ -230,7 +230,6 @@ if __name__ == '__main__':
                       args.pw_alpha,
                       args.progress_bar)
             games.append(params)
-    print("Started playing games.")
     if args.multiprocessing:
         with Pool(args.nb_processes) as pool:
             result = pool.starmap(play_game, games)
