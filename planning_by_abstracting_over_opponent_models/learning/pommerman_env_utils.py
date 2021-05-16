@@ -6,7 +6,7 @@ import torch
 from planning_by_abstracting_over_opponent_models.learning.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
-from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import PommermanBaseEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_env import PommermanBaseEnv
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonBaseEnv
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonBaseEnv
 
@@ -19,7 +19,6 @@ def create_env(rank,
                nb_actions,
                nb_opponents,
                opponent_class,
-               max_steps,
                train=True):
     agent_model = create_agent_model(rank,
                                      seed,
@@ -28,7 +27,7 @@ def create_env(rank,
                                      device,
                                      train=train,
                                      **model_spec)
-    agent = Agent(agent_model, nb_opponents, max_steps, device)
+    agent = Agent(0, agent_model)
     agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     r = seed + rank

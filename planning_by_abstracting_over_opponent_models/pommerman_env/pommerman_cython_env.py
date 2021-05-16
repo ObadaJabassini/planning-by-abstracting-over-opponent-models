@@ -2,28 +2,29 @@ import numpy as np
 import cpommerman
 import pommerman
 
-from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import PommermanBaseEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_env import PommermanBaseEnv
 
 
 class PommermanCythonBaseEnv(PommermanBaseEnv):
 
     def __init__(self, agents, seed):
+        super().__init__(len(agents))
+        np.random.seed(seed)
         self.agents = agents
         self.env_render = pommerman.make('PommeFFACompetition-v0', agents)
         self.env = cpommerman.make()
         self.env.set_training_agent(0)
-        np.random.seed(seed)
         self.action_space = self.env.action_space
 
     def get_observations(self):
-        return self.env.get_observations()
+        obs = self.env.get_observations()
+        step_count = self.env.get_step_count()
+        for ob in obs:
+            ob['step_count'] = step_count
+        return obs
 
     def get_done(self):
         return self.env.get_done()
-
-    def transform_rewards(self, rewards):
-        rewards = (rewards + 1) / 2
-        return rewards
 
     def get_rewards(self):
         return self.transform_rewards(self.env.get_rewards())
@@ -52,8 +53,3 @@ class PommermanCythonBaseEnv(PommermanBaseEnv):
 
     def set_game_state(self, game_state):
         self.env.set_state(game_state)
-
-    def get_features(self):
-        features = self.env.get_features()
-        features = features[0]
-        return features

@@ -2,9 +2,8 @@ import time
 from collections import deque
 
 import torch
-from icecream import ic
 
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_env_utils import create_env
+from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 
 
 def test(rank,
@@ -17,7 +16,6 @@ def test(rank,
          nb_actions,
          nb_opponents,
          opponent_class,
-         max_steps,
          device):
     agents, env = create_env(rank,
                              seed,
@@ -27,7 +25,6 @@ def test(rank,
                              nb_actions,
                              nb_opponents,
                              opponent_class,
-                             max_steps,
                              train=False)
     agent = agents[0]
     agent_model = agent.agent_model
@@ -46,7 +43,8 @@ def test(rank,
         if done:
             agent_model.load_state_dict(shared_model.state_dict())
         with torch.no_grad():
-            agent_action = agent.act(state, action_space)
+            obs = env.get_features(state).to(device)
+            agent_action = agent.act(obs, action_space)
             opponents_action = env.act(state)
             episode_actions = [agent_action, *opponents_action]
             state, rewards, done = env.step(episode_actions)
@@ -65,5 +63,5 @@ def test(rank,
             reward_sum = 0
             episode_length = 0
             actions.clear()
-            state = env.reset()
+            state = env.reset(raw_obs=False)
             # time.sleep(60)

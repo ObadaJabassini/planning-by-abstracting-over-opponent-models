@@ -11,7 +11,7 @@ import torch.multiprocessing as mp
 
 from planning_by_abstracting_over_opponent_models.learning.config import cpu
 from planning_by_abstracting_over_opponent_models.planning.modified_simple_agent import ModifiedSimpleAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_env_utils import create_agent_model
+from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
 from planning_by_abstracting_over_opponent_models.learning.train import train
 
@@ -21,7 +21,7 @@ torch.autograd.set_detect_anomaly(True)
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=32)
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
-parser.add_argument('--nb-episodes', type=int, default=int(1e6))
+parser.add_argument('--nb-episodes', type=int, default=int(2))
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--nb-steps', type=int, default=20)
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
@@ -59,7 +59,6 @@ if __name__ == '__main__':
         "hard_attention_rnn_hidden_size": args.hard_attention_rnn_hidden_size
     }
     nb_actions = 6
-    max_steps = 800
     shared_model = create_agent_model(nb_processes,
                                       seed,
                                       nb_actions,
@@ -89,7 +88,6 @@ if __name__ == '__main__':
     #         nb_actions,
     #         nb_opponents,
     #         opponent_class,
-    #         max_steps,
     #         device)
     # p = mp.Process(target=test, args=args)
     # p.start()
@@ -107,7 +105,6 @@ if __name__ == '__main__':
                 nb_opponents,
                 opponent_class,
                 nb_steps,
-                max_steps,
                 device,
                 optimizer)
         p = mp.Process(target=train, args=args)
@@ -117,5 +114,4 @@ if __name__ == '__main__':
     for p in processes:
         p.join()
     print("Saving the model..")
-    torch.save(shared_model.state_dict(), "../models/agent_model.pt")
-    print("Model saved.")
+    torch.save(shared_model.state_dict(), "./agent_model.pt")

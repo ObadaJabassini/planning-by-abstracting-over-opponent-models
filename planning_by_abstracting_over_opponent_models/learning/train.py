@@ -2,11 +2,10 @@
 
 import torch
 import torch.nn.functional as F
-from icecream import ic
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_env_utils import create_env
+from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
 
 
@@ -50,7 +49,15 @@ def reshape_tensors_for_loss_func(steps,
     return opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths
 
 
-def collect_trajectory(env, state, lock, counter, agents, nb_opponents, nb_actions, nb_steps, device,
+def collect_trajectory(env,
+                       state,
+                       lock,
+                       counter,
+                       agents,
+                       nb_opponents,
+                       nb_actions,
+                       nb_steps,
+                       device,
                        dense_reward=True):
     agent_rewards = []
     agent_values = []
@@ -65,7 +72,8 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, nb_actio
     agent = agents[0]
     while not done and steps < nb_steps:
         steps += 1
-        agent_policy, agent_value, opponent_log_prob, opponent_value, _ = agent.estimate(state)
+        obs = env.get_features(state).to(device)
+        agent_policy, agent_value, opponent_log_prob, opponent_value, _ = agent.estimate(obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
@@ -103,7 +111,8 @@ def collect_trajectory(env, state, lock, counter, agents, nb_opponents, nb_actio
         r = torch.zeros(1, device=device)
         opponent_value = torch.zeros(nb_opponents, device=device)
     else:
-        _, agent_value, _, opponent_value, _ = agent.estimate(state)
+        obs = env.get_features(state).to(device)
+        _, agent_value, _, opponent_value, _ = agent.estimate(obs)
         r = agent_value.view(1)
         r = r.detach()
         opponent_value = opponent_value.view(-1)
@@ -144,7 +153,6 @@ def train(rank,
           nb_opponents,
           opponent_class,
           nb_steps,
-          max_steps,
           device,
           optimizer):
     agents, env = create_env(rank,
@@ -155,7 +163,6 @@ def train(rank,
                              nb_actions,
                              nb_opponents,
                              opponent_class,
-                             max_steps,
                              train=True)
     agent_model = agents[0].agent_model
     state = env.reset()

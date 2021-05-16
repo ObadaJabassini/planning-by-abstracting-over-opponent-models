@@ -1,27 +1,25 @@
 import torch.nn.functional as F
 from pommerman.agents import BaseAgent
 
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import extract_observation
-
 
 class Agent(BaseAgent):
 
-    def __init__(self, agent_model, nb_opponents, max_steps, device, stochastic=False):
+    def __init__(self, agent_id, agent_model, stochastic=False):
         super().__init__()
+        self.agent_id = agent_id
         self.agent_model = agent_model
-        self.nb_opponents = nb_opponents
-        self.max_steps = max_steps
-        self.device = device
         self.stochastic = stochastic
 
     def act(self, obs, action_space):
-        agent_policy, _, _, _, _ = self.estimate(obs)
-        agent_prob = F.softmax(agent_policy, dim=-1)
-        agent_prob = agent_prob.view(-1)
-        agent_action = agent_prob.argmax() if not self.stochastic else agent_prob.multinomial(num_samples=1)
+        action_probs, _, _, _, _ = self.estimate(obs)
+        action_probs = F.softmax(action_probs, dim=-1)
+        action_probs = action_probs.view(-1)
+        agent_action = action_probs.argmax() if not self.stochastic else action_probs.multinomial(num_samples=1)
         agent_action = agent_action.item()
         return agent_action
 
     def estimate(self, obs):
-        obs = extract_observation(obs, self.nb_opponents, self.max_steps).to(self.device)
+        obs = obs[self.agent_id]
+        # (1, 18, 11, 11)
+        obs = obs.unsqueeze(0)
         return self.agent_model(obs)
