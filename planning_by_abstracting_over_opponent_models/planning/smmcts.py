@@ -16,8 +16,8 @@ from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonBaseEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonBaseEnv
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -165,7 +165,7 @@ def play_game(game_id,
                     state_evaluator=state_evaluator)
     agents = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
-    env = PommermanCythonEnv(agents=agents, seed=seed) if use_cython else PommermanPythonEnv(agents=agents, seed=seed)
+    env = PommermanCythonBaseEnv(agents=agents, seed=seed) if use_cython else PommermanPythonBaseEnv(agents=agents, seed=seed)
     state = env.reset()
     done = False
     frames = []
@@ -198,8 +198,6 @@ parser.add_argument('--nb-plays', type=int, default=10)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
 parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
-parser.add_argument('--use-cython', dest="use_cython", action="store_true")
-parser.add_argument('--use-python', dest="use_cython", action="store_false")
 parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
 parser.add_argument('--no-progress-bar', dest="progress_bar", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=1500)
@@ -216,6 +214,7 @@ parser.set_defaults(show_elapsed_time=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()
+    args.use_cython = args.nb_players == 4
     nb_games = args.nb_games
     nb_plays = args.nb_plays
     opponent_class = ModifiedSimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent

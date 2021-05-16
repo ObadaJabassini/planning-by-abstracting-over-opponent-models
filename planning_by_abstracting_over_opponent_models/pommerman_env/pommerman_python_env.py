@@ -2,7 +2,7 @@ import numpy as np
 import pommerman
 import torch
 
-from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import BasePommermanEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import PommermanBaseEnv
 
 
 def check_agent_existence(state, board_tuple, index):
@@ -75,7 +75,7 @@ def extract_observation(state, nb_opponents, max_steps):
     return obs
 
 
-class PommermanPythonEnv(BasePommermanEnv):
+class PommermanPythonBaseEnv(PommermanBaseEnv):
 
     def __init__(self, agents, seed):
         self.nb_players = len(agents)

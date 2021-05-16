@@ -1,7 +1,7 @@
 import abc
 
 
-class BasePommermanEnv(abc.ABC):
+class PommermanBaseEnv(abc.ABC):
 
     @abc.abstractmethod
     def get_observations(self):

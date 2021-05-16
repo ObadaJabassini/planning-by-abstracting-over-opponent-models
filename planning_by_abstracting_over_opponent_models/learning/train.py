@@ -134,6 +134,7 @@ def ensure_shared_grads(model, shared_model):
 
 def train(rank,
           seed,
+          use_cython,
           shared_model,
           counter,
           lock,
@@ -141,19 +142,21 @@ def train(rank,
           nb_episodes,
           nb_actions,
           nb_opponents,
+          opponent_class,
           nb_steps,
           max_steps,
           device,
           optimizer):
-    torch.manual_seed(seed + rank)
-    agents, env = create_env(seed,
-                             rank,
+    agents, env = create_env(rank,
+                             seed,
+                             use_cython,
                              device,
                              model_spec,
                              nb_actions,
                              nb_opponents,
+                             opponent_class,
                              max_steps,
-                             True)
+                             train=True)
     agent_model = agents[0].agent_model
     state = env.reset()
     # RL

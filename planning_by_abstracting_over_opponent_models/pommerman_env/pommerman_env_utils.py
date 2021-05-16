@@ -3,36 +3,41 @@ from typing import List
 import pommerman
 import torch
 
-from planning_by_abstracting_over_opponent_models.agent import Agent
+from planning_by_abstracting_over_opponent_models.learning.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import PommermanBaseEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonBaseEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonBaseEnv
 
 
-def create_env(seed,
-               rank,
+def create_env(rank,
+               seed,
+               use_cython,
                device,
                model_spec,
                nb_actions,
                nb_opponents,
+               opponent_class,
                max_steps,
                train=True):
-    agent_model = create_agent_model(seed,
-                                     rank,
+    agent_model = create_agent_model(rank,
+                                     seed,
                                      nb_actions,
                                      nb_opponents,
                                      device,
                                      train=train,
                                      **model_spec)
     agent = Agent(agent_model, nb_opponents, max_steps, device)
-    agents: List[pommerman.agents.BaseAgent] = [pommerman.agents.SimpleAgent() for _ in range(nb_opponents)]
+    agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_opponents)]
     agents.insert(0, agent)
-    env = PommermanPythonEnv(agents, seed)
+    r = seed + rank
+    env: PommermanBaseEnv = PommermanCythonBaseEnv(agents, r) if use_cython else PommermanPythonBaseEnv(agents, r)
     return agents, env
 
 
-def create_agent_model(seed,
-                       rank,
+def create_agent_model(rank,
+                       seed,
                        nb_actions,
                        nb_opponents,
                        device,

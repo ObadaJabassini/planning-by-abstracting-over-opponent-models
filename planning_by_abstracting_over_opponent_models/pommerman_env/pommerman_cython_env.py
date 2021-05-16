@@ -2,18 +2,17 @@ import numpy as np
 import cpommerman
 import pommerman
 
-from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import BasePommermanEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.base_pommerman_env import PommermanBaseEnv
 
 
-class PommermanCythonEnv(BasePommermanEnv):
+class PommermanCythonBaseEnv(PommermanBaseEnv):
 
     def __init__(self, agents, seed):
-        assert len(agents) == 4
         self.agents = agents
+        self.env_render = pommerman.make('PommeFFACompetition-v0', agents)
         self.env = cpommerman.make()
         self.env.set_training_agent(0)
         np.random.seed(seed)
-        self.env_render = pommerman.make('PommeFFACompetition-v0', agents)
         self.action_space = self.env.action_space
 
     def get_observations(self):

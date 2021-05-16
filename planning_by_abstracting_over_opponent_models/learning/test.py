@@ -9,20 +9,24 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_env_ut
 
 def test(rank,
          seed,
+         use_cython,
          shared_model,
          counter,
          model_spec,
          nb_episodes,
          nb_actions,
          nb_opponents,
+         opponent_class,
          max_steps,
          device):
-    agents, env = create_env(seed,
-                             rank,
+    agents, env = create_env(rank,
+                             seed,
+                             use_cython,
                              device,
                              model_spec,
                              nb_actions,
                              nb_opponents,
+                             opponent_class,
                              max_steps,
                              train=False)
     agent = agents[0]

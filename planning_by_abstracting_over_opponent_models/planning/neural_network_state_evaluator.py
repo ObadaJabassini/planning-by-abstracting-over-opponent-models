@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from planning_by_abstracting_over_opponent_models.config import cpu
+from planning_by_abstracting_over_opponent_models.learning.config import cpu
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 
 

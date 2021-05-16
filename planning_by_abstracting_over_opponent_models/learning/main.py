@@ -3,24 +3,29 @@
 import os
 import argparse
 import warnings
+from multiprocessing import cpu_count
+
+import pommerman.agents
 import torch
 import torch.multiprocessing as mp
 
-from planning_by_abstracting_over_opponent_models.config import cpu
+from planning_by_abstracting_over_opponent_models.learning.config import cpu
+from planning_by_abstracting_over_opponent_models.planning.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_env_utils import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
-from planning_by_abstracting_over_opponent_models.test import test
-from planning_by_abstracting_over_opponent_models.train import train
+from planning_by_abstracting_over_opponent_models.learning.train import train
 
 warnings.filterwarnings('ignore')
 torch.autograd.set_detect_anomaly(True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=32)
-parser.add_argument('--nb-processes', type=int, default=4, help='how many training processes to use')
-parser.add_argument('--nb-episodes', type=int, default=int(5))
-parser.add_argument('--nb-opponents', type=int, default=1, choices=[1, 3])
+parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
+parser.add_argument('--nb-episodes', type=int, default=int(1e6))
+parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--nb-steps', type=int, default=20)
+parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
+parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
 parser.add_argument('--nb-conv-layers', type=int, default=3, choices=[3, 4])
 parser.add_argument('--nb-filters', type=int, default=32)
 parser.add_argument('--latent-dim', type=int, default=64)
@@ -30,6 +35,7 @@ parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
 parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
 parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
 parser.set_defaults(shared_opt=True)
+parser.set_defaults(use_simple_agent=True)
 
 
 if __name__ == '__main__':
@@ -38,9 +44,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     device = cpu
     seed = args.seed
+    use_cython = args.nb_players == 4
     nb_processes = args.nb_processes
     nb_episodes = args.nb_episodes
-    nb_opponents = args.nb_opponents
+    nb_opponents = args.nb_players - 1
+    opponent_class = ModifiedSimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
     nb_steps = args.nb_steps
     model_spec = {
         "nb_conv_layers": args.nb_conv_layers,
@@ -52,8 +60,8 @@ if __name__ == '__main__':
     }
     nb_actions = 6
     max_steps = 800
-    shared_model = create_agent_model(seed,
-                                      nb_processes,
+    shared_model = create_agent_model(nb_processes,
+                                      seed,
                                       nb_actions,
                                       nb_opponents,
                                       device,
@@ -73,12 +81,14 @@ if __name__ == '__main__':
     lock = mp.Lock()
     # args = (nb_processes,
     #         seed,
+    #         use_cython,
     #         shared_model,
     #         counter,
     #         model_spec,
     #         nb_episodes,
     #         nb_actions,
     #         nb_opponents,
+    #         opponent_class,
     #         max_steps,
     #         device)
     # p = mp.Process(target=test, args=args)
@@ -87,6 +97,7 @@ if __name__ == '__main__':
     for rank in range(nb_processes):
         args = (rank,
                 seed,
+                use_cython,
                 shared_model,
                 counter,
                 lock,
@@ -94,6 +105,7 @@ if __name__ == '__main__':
                 nb_episodes,
                 nb_actions,
                 nb_opponents,
+                opponent_class,
                 nb_steps,
                 max_steps,
                 device,
@@ -105,5 +117,5 @@ if __name__ == '__main__':
     for p in processes:
         p.join()
     print("Saving the model..")
-    torch.save(shared_model.state_dict(), "models/agent_model.pt")
+    torch.save(shared_model.state_dict(), "../models/agent_model.pt")
     print("Model saved.")
