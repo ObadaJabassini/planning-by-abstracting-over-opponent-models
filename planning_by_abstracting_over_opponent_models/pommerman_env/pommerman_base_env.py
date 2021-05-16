@@ -83,22 +83,15 @@ class PommermanBaseEnv(abc.ABC):
             can_kick_map = np.full(board_tuple, int(agent_state["can_kick"]))
             teammate_existence_map = np.zeros(board_tuple)
             if self.nb_players == 2:
-                idx = 1 if agent_id == 0 else 1
-                opponents_position_map = [agent_position_maps[idx],
+                other_index = 1 - agent_id
+                opponents_position_map = [agent_position_maps[other_index],
                                           np.zeros(board_tuple),
                                           np.zeros(board_tuple)]
             else:
-                if agent_id == 0:
-                    i, j, k = 2, 1, 3
-                elif agent_id == 1:
-                    i, j, k = 3, 2, 0
-                elif agent_id == 2:
-                    i, j, k = 0, 3, 1
-                else:
-                    i, j, k = 1, 0, 2
-                opponents_position_map = [agent_position_maps[i],
-                                          agent_position_maps[j],
-                                          agent_position_maps[k]]
+                opposite_index, next_index, prev_index = (agent_id + 2) % 4, (agent_id + 1) % 4, (agent_id - 1) % 4
+                opponents_position_map = [agent_position_maps[opposite_index],
+                                          agent_position_maps[next_index],
+                                          agent_position_maps[prev_index]]
             features_map = [
                 bomb_blast_strength_map,
                 bomb_life_map,
