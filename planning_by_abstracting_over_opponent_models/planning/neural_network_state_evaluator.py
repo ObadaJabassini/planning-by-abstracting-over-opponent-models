@@ -6,14 +6,16 @@ from planning_by_abstracting_over_opponent_models.planning.state_evaluator impor
 
 
 class NeuralNetworkStateEvaluator(StateEvaluator):
-    def __init__(self, agent_model, extract_observation_func, agent_pw_alpha=1):
+    def __init__(self, agent_id, agent_model, agent_pw_alpha=1):
+        self.agent_id = agent_id
         self.agent_model = agent_model
-        self.extract_observation_func = extract_observation_func
         self.agent_pw_alpha = agent_pw_alpha
 
     def evaluate(self, env):
         state = env.get_observations()
-        obs = self.extract_observation_func(state)
+        obs = env.get_features(state)
+        obs = obs[self.agent_id]
+        obs = obs.unsqueeze(0)
         agent_action_log, agent_value, opponents_action_log, opponent_values, opponent_influence = self.agent_model(obs)
         value_estimate = self.estimate_values(agent_value, opponent_values)
         action_probs_estimate = self.estimate_action_probabilities(agent_action_log, opponents_action_log)
