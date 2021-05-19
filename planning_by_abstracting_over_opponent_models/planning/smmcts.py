@@ -3,7 +3,6 @@ import math
 import time
 from multiprocessing import Pool, cpu_count
 from random import randint
-from typing import List
 
 import numpy as np
 import pommerman
