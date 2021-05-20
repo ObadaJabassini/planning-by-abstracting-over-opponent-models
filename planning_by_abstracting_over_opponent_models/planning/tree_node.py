@@ -4,7 +4,7 @@ import torch
 
 
 class Player:
-    def __init__(self, idd, nb_actions, action_probs_estimate, exploration_coef, fpu, pw_alpha=None):
+    def __init__(self, idd, nb_actions, action_probs_estimate, exploration_coef, fpu, pw_c=None, pw_alpha=None):
         self.idd = idd
         self.nb_actions = nb_actions
         self.action_estimations = torch.zeros(nb_actions)
@@ -12,6 +12,7 @@ class Player:
         self.exploration_coef = exploration_coef
         self.fpu = fpu
         self.pw_alpha = pw_alpha
+        self.pw_c = pw_c
         self.use_progressive_widening = pw_alpha is not None
         if self.use_progressive_widening:
             self.action_probs_estimate, indices = torch.sort(action_probs_estimate)
@@ -22,10 +23,10 @@ class Player:
             self.action_probs_estimate = action_probs_estimate
 
     def most_visited_action(self):
-        most_visited_action = self.nb_action_visits.argmax().item()
+        result = self.nb_action_visits.argmax().item()
         if self.use_progressive_widening:
-            most_visited_action = self.sorted_to_original_actions[most_visited_action]
-        return most_visited_action
+            result = self.sorted_to_original_actions[result]
+        return result
 
     def best_action(self, nb_visits):
         uct = self.compute_uct(nb_visits)
@@ -34,8 +35,14 @@ class Player:
             best_action = self.sorted_to_original_actions[best_action]
         return best_action
 
+    def max_action(self):
+        result = self.action_estimations.argmax().item()
+        if self.use_progressive_widening:
+            result = self.sorted_to_original_actions[result]
+        return result
+
     def compute_uct(self, nb_visits):
-        k = int(math.ceil(nb_visits ** self.pw_alpha)) if self.use_progressive_widening else self.nb_actions
+        k = int(math.ceil(self.pw_c * (nb_visits ** self.pw_alpha))) if self.use_progressive_widening else self.nb_actions
         probs = self.action_probs_estimate[:k]
         c = self.exploration_coef
         x, n = self.action_estimations[:k], self.nb_action_visits[:k]
@@ -64,6 +71,7 @@ class TreeNode:
                  nb_actions,
                  exploration_coefs,
                  fpus,
+                 pw_cs=None,
                  pw_alphas=None):
         """
         :param state: the associated state
@@ -92,6 +100,7 @@ class TreeNode:
                                action_prob_estimate[i],
                                exploration_coefs[i],
                                fpus[i],
+                               pw_cs[i],
                                pw_alphas[i]) for i in range(nb_players)]
 
     def most_visited_actions(self):

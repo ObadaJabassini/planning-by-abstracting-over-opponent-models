@@ -27,11 +27,13 @@ class SMMCTS:
                  nb_actions,
                  exploration_coefs,
                  fpus,
+                 pw_cs,
                  state_evaluator: StateEvaluator):
         self.nb_players = nb_players
         self.nb_actions = nb_actions
         self.exploration_coefs = exploration_coefs
         self.fpus = fpus
+        self.pw_cs = pw_cs
         self.state_evaluator = state_evaluator
 
     def search(self, env, current_node: TreeNode):
@@ -69,6 +71,7 @@ class SMMCTS:
                                                   nb_actions=self.nb_actions,
                                                   exploration_coefs=self.exploration_coefs,
                                                   fpus=self.fpus,
+                                                  pw_cs=self.pw_cs,
                                                   pw_alphas=pw_alphas)
         return value_estimate
 
@@ -132,6 +135,7 @@ def play_game(game_id,
               mcts_iterations,
               exploration_coef,
               fpu,
+              pw_c,
               pw_alpha,
               progress_bar,
               show_elapsed_time):
@@ -150,6 +154,7 @@ def play_game(game_id,
     exploration_coefs = [exploration_coef] * nb_players
     fpus = [fpu] * nb_players
     pw_alphas = [pw_alpha] * nb_players
+    pw_cs = [pw_c] * nb_players
     depth = None
     heuristic_func = None
     state_evaluator = RandomRolloutStateEvaluator(nb_players,
@@ -161,6 +166,7 @@ def play_game(game_id,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
                     fpus=fpus,
+                    pw_cs=pw_cs,
                     state_evaluator=state_evaluator)
     agents = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
@@ -203,6 +209,7 @@ parser.add_argument('--mcts-iterations', type=int, default=100)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=1000)
 parser.add_argument('--pw-alpha', type=int, default=None)
+parser.add_argument('--pw-c', type=int, default=None)
 parser.add_argument('--show-elapsed-time', dest="show_elapsed_time", action="store_true")
 parser.add_argument('--hide-elapsed-time', dest="show_elapsed_time", action="store_false")
 parser.set_defaults(multiprocessing=True)
@@ -230,6 +237,7 @@ if __name__ == '__main__':
                       args.mcts_iterations,
                       args.exploration_coef,
                       args.fpu,
+                      args.pw_c,
                       args.pw_alpha,
                       args.progress_bar,
                       args.show_elapsed_time)
