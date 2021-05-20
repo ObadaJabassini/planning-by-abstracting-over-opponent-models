@@ -95,6 +95,8 @@ class TreeNode:
         self.children = dict()
         if pw_alphas is None:
             pw_alphas = [None] * nb_players
+        if pw_cs is None:
+            pw_cs = [None] * nb_players
         self.players = [Player(i,
                                nb_actions,
                                action_prob_estimate[i],

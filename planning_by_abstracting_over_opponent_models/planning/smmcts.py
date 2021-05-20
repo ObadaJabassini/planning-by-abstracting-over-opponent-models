@@ -26,17 +26,13 @@ class SMMCTS:
                  nb_players,
                  nb_actions,
                  exploration_coefs,
-                 fpus,
-                 pw_cs,
                  state_evaluator: StateEvaluator):
         self.nb_players = nb_players
         self.nb_actions = nb_actions
         self.exploration_coefs = exploration_coefs
-        self.fpus = fpus
-        self.pw_cs = pw_cs
         self.state_evaluator = state_evaluator
 
-    def search(self, env, current_node: TreeNode):
+    def search(self, env, current_node: TreeNode, fpus, pw_cs):
         if current_node.is_terminal:
             return current_node.value_estimate
         # select
@@ -44,10 +40,10 @@ class SMMCTS:
         state, rewards, is_terminal = env.step(actions)
         # expand
         if actions not in current_node.children:
-            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node)
+            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node, fpus, pw_cs)
         else:
             child = current_node.children[actions]
-            value_estimate = self.search(env, child)
+            value_estimate = self.search(env, child, fpus, pw_cs)
         # backpropagate
         self.backpropagate(current_node, actions, value_estimate)
         return value_estimate
@@ -55,7 +51,7 @@ class SMMCTS:
     def select(self, node):
         return node.best_actions()
 
-    def expand(self, env, state, rewards, is_terminal, actions, current_node):
+    def expand(self, env, state, rewards, is_terminal, actions, current_node, fpus, pw_cs):
         if is_terminal:
             value_estimate = torch.as_tensor(rewards)
             action_prob_estimate = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
@@ -70,15 +66,15 @@ class SMMCTS:
                                                   nb_players=self.nb_players,
                                                   nb_actions=self.nb_actions,
                                                   exploration_coefs=self.exploration_coefs,
-                                                  fpus=self.fpus,
-                                                  pw_cs=self.pw_cs,
+                                                  fpus=fpus,
+                                                  pw_cs=pw_cs,
                                                   pw_alphas=pw_alphas)
         return value_estimate
 
     def backpropagate(self, node, actions, value_estimate):
         node.update_actions_estimates(actions, value_estimate)
 
-    def infer(self, env, iterations=100, progress_bar=False):
+    def infer(self, env, iterations=100, fpus=None, pw_cs=None, progress_bar=False):
         initial_state = env.get_observations()
         value_estimate, action_probs_estimate, pw_alphas = self.state_evaluator.evaluate(env)
         root = TreeNode(initial_state,
@@ -95,7 +91,7 @@ class SMMCTS:
         if progress_bar:
             r = tqdm(r)
         for _ in r:
-            self.search(env, root)
+            self.search(env, root, fpus, pw_cs)
             env.set_game_state(game_state)
         most_visited_actions = root.most_visited_actions()
         most_visited_action = most_visited_actions[0]
@@ -165,8 +161,6 @@ def play_game(game_id,
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
-                    fpus=fpus,
-                    pw_cs=pw_cs,
                     state_evaluator=state_evaluator)
     agents = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
@@ -176,7 +170,7 @@ def play_game(game_id,
     frames = []
     while not done:
         actions = env.act(state)
-        agent_action = smmcts.infer(env, iterations=mcts_iterations, progress_bar=progress_bar)
+        agent_action = smmcts.infer(env, iterations=mcts_iterations, fpus=fpus, pw_cs=pw_cs, progress_bar=progress_bar)
         actions.insert(0, agent_action)
         state, rewards, done = env.step(actions)
         # print(f"step {step}: {rewards}")
