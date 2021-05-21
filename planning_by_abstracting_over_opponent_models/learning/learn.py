@@ -10,10 +10,11 @@ import torch
 import torch.multiprocessing as mp
 
 from planning_by_abstracting_over_opponent_models.learning.config import cpu
+from planning_by_abstracting_over_opponent_models.learning.train import train
+from planning_by_abstracting_over_opponent_models.learning.test import test
 from planning_by_abstracting_over_opponent_models.planning.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
-from planning_by_abstracting_over_opponent_models.learning.train import train
 
 warnings.filterwarnings('ignore')
 torch.autograd.set_detect_anomaly(True)
@@ -21,7 +22,7 @@ torch.autograd.set_detect_anomaly(True)
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=32)
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
-parser.add_argument('--nb-episodes', type=int, default=int(2))
+parser.add_argument('--nb-episodes', type=int, default=int(5))
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--nb-steps', type=int, default=20)
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
@@ -34,8 +35,11 @@ parser.add_argument('--nb-soft-attention-heads', type=int, default=None)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
 parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
 parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
+parser.add_argument('--monitoring', dest='monitor', action='store_true')
+parser.add_argument('--no-monitoring', dest='monitor', action='store_false')
 parser.set_defaults(use_simple_agent=True)
 parser.set_defaults(shared_opt=True)
+parser.set_defaults(monitor=False)
 
 
 if __name__ == '__main__':
@@ -78,20 +82,21 @@ if __name__ == '__main__':
     processes = []
     counter = mp.Value('i', 0)
     lock = mp.Lock()
-    # args = (nb_processes + 1,
-    #         seed,
-    #         use_cython,
-    #         shared_model,
-    #         counter,
-    #         model_spec,
-    #         nb_episodes,
-    #         nb_actions,
-    #         nb_opponents,
-    #         opponent_class,
-    #         device)
-    # p = mp.Process(target=test, args=args)
-    # p.start()
-    # processes.append(p)
+    if args.monitor:
+        args = (nb_processes + 1,
+                seed,
+                use_cython,
+                shared_model,
+                counter,
+                model_spec,
+                nb_episodes,
+                nb_actions,
+                nb_opponents,
+                opponent_class,
+                device)
+        p = mp.Process(target=test, args=args)
+        p.start()
+        processes.append(p)
     for rank in range(nb_processes):
         args = (rank,
                 seed,
@@ -110,8 +115,7 @@ if __name__ == '__main__':
         p = mp.Process(target=train, args=args)
         p.start()
         processes.append(p)
-    print("Started training")
+    print("Started training.")
     for p in processes:
         p.join()
-    print("Saving the model..")
-    torch.save(shared_model.state_dict(), "./agent_model.pt")
+    torch.save(shared_model.state_dict(), "agent_model.pt")
