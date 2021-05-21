@@ -53,8 +53,7 @@ def create_agent_model(rank,
                                            nb_filters=nb_filters,
                                            filter_size=3,
                                            filter_stride=1,
-                                           filter_padding=1).to(device)
-
+                                           filter_padding=1)
     agent_model = AgentModel(features_extractor=features_extractor,
                              nb_opponents=nb_opponents,
                              agent_nb_actions=nb_actions,
@@ -62,8 +61,7 @@ def create_agent_model(rank,
                              head_dim=head_dim,
                              latent_dim=latent_dim,
                              nb_soft_attention_heads=nb_soft_attention_heads,
-                             hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size)
-    agent_model = agent_model.to(device)
+                             hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size).to(device)
     agent_model.train(train)
     return agent_model
 

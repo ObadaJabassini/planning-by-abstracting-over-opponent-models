@@ -34,8 +34,8 @@ parser.add_argument('--nb-soft-attention-heads', type=int, default=None)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
 parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
 parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
-parser.set_defaults(shared_opt=True)
 parser.set_defaults(use_simple_agent=True)
+parser.set_defaults(shared_opt=True)
 
 
 if __name__ == '__main__':
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     processes = []
     counter = mp.Value('i', 0)
     lock = mp.Lock()
-    # args = (nb_processes,
+    # args = (nb_processes + 1,
     #         seed,
     #         use_cython,
     #         shared_model,
