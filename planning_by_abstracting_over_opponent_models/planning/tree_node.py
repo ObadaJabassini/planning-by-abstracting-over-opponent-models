@@ -1,11 +1,54 @@
+from functools import partial
+import abc
 import math
-
+import random
 import torch
 
 
-class Player:
-    def __init__(self, idd, nb_actions, action_probs_estimate, exploration_coef, fpu, pw_c=None, pw_alpha=None):
+class Player(abc.ABC):
+    def __init__(self, idd):
         self.idd = idd
+
+    @abc.abstractmethod
+    def most_visited_action(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def best_action(self, nb_visits):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def max_action(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def update_action_estimate(self, action, estimate):
+        raise NotImplementedError()
+
+
+class RandomPlayer(Player):
+
+    def __init__(self, idd, nb_actions):
+        super().__init__(idd)
+        self.nb_actions = nb_actions
+        self.rand = partial(random.randint, a=0, b=nb_actions)
+
+    def most_visited_action(self):
+        return self.rand()
+
+    def best_action(self, nb_visits):
+        return self.rand()
+
+    def max_action(self):
+        return self.rand()
+
+    def update_action_estimate(self, action, estimate):
+        pass
+
+
+class MCTSPlayer(Player):
+    def __init__(self, idd, nb_actions, action_probs_estimate, exploration_coef, fpu, pw_c=None, pw_alpha=None):
+        super().__init__(idd)
         self.nb_actions = nb_actions
         self.action_estimations = torch.zeros(nb_actions)
         self.nb_action_visits = torch.zeros(nb_actions)
@@ -42,7 +85,8 @@ class Player:
         return result
 
     def compute_uct(self, nb_visits):
-        k = int(math.ceil(self.pw_c * (nb_visits ** self.pw_alpha))) if self.use_progressive_widening else self.nb_actions
+        k = math.ceil(self.pw_c * (nb_visits ** self.pw_alpha)) if self.use_progressive_widening else self.nb_actions
+        k = int(k)
         probs = self.action_probs_estimate[:k]
         c = self.exploration_coef
         x, n = self.action_estimations[:k], self.nb_action_visits[:k]
@@ -66,19 +110,20 @@ class TreeNode:
                  parent,
                  is_terminal,
                  value_estimate,
-                 action_prob_estimate,
+                 action_probs_estimate,
                  nb_players,
                  nb_actions,
                  exploration_coefs,
                  fpus,
-                 pw_cs=None,
-                 pw_alphas=None):
+                 random_players,
+                 pw_cs,
+                 pw_alphas):
         """
         :param state: the associated state
         :param parent: a pointer to the parent
         :param is_terminal: if the state is terminal
         :param value_estimate: the value estimate of the state, shape: (nb_players)
-        :param action_prob_estimate: the probabilities of each action for each agent, shape: (nb_players, nb_actions)
+        :param action_probs_estimate: the probabilities of each action for each agent, shape: (nb_players, nb_actions)
         :param nb_players: the number of players
         :param nb_actions: the number of actions
         :param exploration_coefs: the exploration coefficient for each agent, shape: (nb_players, nb_actions)
@@ -89,27 +134,27 @@ class TreeNode:
         self.is_terminal = is_terminal
         self.value_estimate = value_estimate
         self.nb_players = nb_players
-        self.nb_actions = nb_actions
-        self.exploration_coefs = exploration_coefs
         self.nb_visits = 1
         self.children = dict()
-        if pw_alphas is None:
-            pw_alphas = [None] * nb_players
-        if pw_cs is None:
-            pw_cs = [None] * nb_players
-        self.players = [Player(i,
-                               nb_actions,
-                               action_prob_estimate[i],
-                               exploration_coefs[i],
-                               fpus[i],
-                               pw_cs[i],
-                               pw_alphas[i]) for i in range(nb_players)]
+        self.players = []
+        for i in range(nb_players):
+            player = MCTSPlayer(i,
+                                nb_actions,
+                                action_probs_estimate[i],
+                                exploration_coefs[i],
+                                fpus[i],
+                                pw_cs[i],
+                                pw_alphas[i]) if not random_players[i] else RandomPlayer(i, nb_actions)
+            self.players.append(player)
 
     def most_visited_actions(self):
         return tuple((player.most_visited_action() for player in self.players))
 
     def best_actions(self):
         return tuple((player.best_action(self.nb_visits) for player in self.players))
+
+    def max_actions(self):
+        return tuple((player.max_action() for player in self.players))
 
     def update_actions_estimates(self, actions, action_value_estimate):
         """

@@ -26,7 +26,6 @@ class AgentLoss(nn.Module):
             R = self.gamma * R + agent_rewards[i]
             advantage = R - agent_values[i]
             value_loss = value_loss + 0.5 * advantage.pow(2)
-            # Generalized Advantage Estimation
             delta_t = agent_rewards[i] + self.gamma * agent_values[i + 1] - agent_values[i]
             gae = gae * self.gamma * self.gae_lambda + delta_t
             policy_loss = policy_loss - agent_log_probs[i] * gae.detach() - self.entropy_coef * agent_entropies[i]
