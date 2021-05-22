@@ -85,7 +85,7 @@ def collect_trajectory(env,
         ammo_before = state[0]["ammo"]
         state, rewards, done = env.step(actions)
         ammo_after = state[0]["ammo"]
-        if dense_reward and rewards[0] == 0 and ammo_after > ammo_before:
+        if dense_reward and not done and rewards[0] == 0 and ammo_after > ammo_before:
             rewards[0] = 0.1
         # agent
         agent_reward = rewards[0]
