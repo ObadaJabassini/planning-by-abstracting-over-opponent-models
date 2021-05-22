@@ -7,13 +7,14 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_e
 
 class PommermanCythonBaseEnv(PommermanBaseEnv):
 
-    def __init__(self, agents, seed):
-        super().__init__(len(agents))
+    def __init__(self, agents, seed, training_agent=0, rescale_rewards=False):
+        super().__init__(len(agents), rescale_rewards)
         np.random.seed(seed)
         self.agents = agents
         self.env_render = pommerman.make('PommeFFACompetition-v0', agents)
         self.env = cpommerman.make()
-        self.env.set_training_agent(0)
+        if 0 <= training_agent <= 3:
+            self.env.set_training_agent(training_agent)
         self.action_space = self.env.action_space
 
     def get_observations(self):

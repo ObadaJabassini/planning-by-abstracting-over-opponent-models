@@ -6,10 +6,11 @@ import torch
 
 class PommermanBaseEnv(abc.ABC):
 
-    def __init__(self, nb_players):
+    def __init__(self, nb_players, rescale_rewards=False):
         self.board_size = 11
         self.max_steps = 1000
         self.nb_players = nb_players
+        self.rescale_rewards = rescale_rewards
 
     @abc.abstractmethod
     def get_observations(self):
@@ -49,7 +50,8 @@ class PommermanBaseEnv(abc.ABC):
 
     def transform_rewards(self, rewards):
         rewards = np.asarray(rewards[:self.nb_players])
-        rewards = (rewards + 1) / 2
+        if self.rescale_rewards:
+            rewards = (rewards + 1) / 2
         return rewards
 
     def get_agent_position_map(self, state, index):

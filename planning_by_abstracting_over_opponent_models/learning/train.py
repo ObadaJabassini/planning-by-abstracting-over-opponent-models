@@ -85,9 +85,8 @@ def collect_trajectory(env,
         ammo_before = state[0]["ammo"]
         state, rewards, done = env.step(actions)
         ammo_after = state[0]["ammo"]
-        # for a very strange reason, the pommerman_env sometimes returns the wrong number of rewards
-        if dense_reward and rewards[0] == 0.5 and ammo_after > ammo_before:
-            rewards[0] = 0.55
+        if dense_reward and rewards[0] == 0 and ammo_after > ammo_before:
+            rewards[0] = 0.1
         # agent
         agent_reward = rewards[0]
         agent_rewards.append(agent_reward)
@@ -170,18 +169,16 @@ def train(rank,
     dense_reward = True
     max_grad_norm = 50
     gamma = 0.99
-    entropy_coef = 0.01
-    value_coef = 0.5
-    gae_lambda = 1.0
     value_loss_coef = 0.5
+    entropy_coef = 0.01
+    gae_lambda = 1.0
     opponent_coefs = torch.tensor([0.01] * nb_opponents, device=device)
     if optimizer is None:
         optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
-                          value_coef=value_coef,
+                          value_loss_coef=value_loss_coef,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda,
-                          value_loss_coef=value_loss_coef
                           ).to(device)
     episodes = 0
     while episodes < nb_episodes:
@@ -225,4 +222,5 @@ def train(rank,
         optimizer.step()
         if done:
             episodes += 1
-            print(f"Worker {rank}, episode {episodes}.")
+            if episodes % 10000:
+                print(f"Worker {rank}, episode {episodes}.")

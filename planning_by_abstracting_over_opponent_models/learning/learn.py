@@ -67,9 +67,9 @@ if __name__ == '__main__':
                                       seed,
                                       nb_actions,
                                       nb_opponents,
-                                      device,
-                                      **model_spec,
-                                      train=True)
+                                      device=device,
+                                      train=True,
+                                      **model_spec)
     shared_model.share_memory()
     optimizer = None
     if args.shared_opt:

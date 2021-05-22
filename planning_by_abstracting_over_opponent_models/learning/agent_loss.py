@@ -8,13 +8,12 @@ import torch.nn.functional as F
 
 class AgentLoss(nn.Module):
 
-    def __init__(self, gamma, value_coef, entropy_coef, gae_lambda, value_loss_coef):
+    def __init__(self, gamma, entropy_coef, gae_lambda, value_loss_coef):
         super().__init__()
         self.gamma = gamma
-        self.entropy_coef = entropy_coef
-        self.value_coef = value_coef
-        self.gae_lambda = gae_lambda
         self.value_loss_coef = value_loss_coef
+        self.entropy_coef = entropy_coef
+        self.gae_lambda = gae_lambda
 
     def agent_loss_func(self, agent_rewards, agent_values, agent_log_probs, agent_entropies):
         policy_loss = 0

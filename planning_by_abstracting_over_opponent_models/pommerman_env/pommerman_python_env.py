@@ -5,8 +5,8 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_e
 
 class PommermanPythonBaseEnv(PommermanBaseEnv):
 
-    def __init__(self, agents, seed):
-        super().__init__(len(agents))
+    def __init__(self, agents, seed, rescale_rewards=False):
+        super().__init__(len(agents), rescale_rewards)
         self.nb_players = len(agents)
         self.env = pommerman.make('PommeFFACompetition-v0', agents)
         self.env.seed(seed)

@@ -24,7 +24,7 @@ def create_env(rank,
                                      seed,
                                      nb_actions,
                                      nb_opponents,
-                                     device,
+                                     device=device,
                                      train=train,
                                      **model_spec)
     agent = Agent(0, agent_model)
@@ -39,13 +39,13 @@ def create_agent_model(rank,
                        seed,
                        nb_actions,
                        nb_opponents,
-                       device,
                        nb_conv_layers,
                        nb_filters,
                        latent_dim,
                        head_dim,
                        nb_soft_attention_heads,
                        hard_attention_rnn_hidden_size,
+                       device,
                        train=True):
     torch.manual_seed(seed + rank)
     nb_filters = [nb_filters] * nb_conv_layers
