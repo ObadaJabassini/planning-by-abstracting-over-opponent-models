@@ -124,4 +124,4 @@ if __name__ == '__main__':
     print("Started training.")
     for p in processes:
         p.join()
-    torch.save(shared_model.state_dict(), "models/full_agent_model.pt")
+    torch.save(shared_model.state_dict(), "models/fully_trained_agent_model.pt")
