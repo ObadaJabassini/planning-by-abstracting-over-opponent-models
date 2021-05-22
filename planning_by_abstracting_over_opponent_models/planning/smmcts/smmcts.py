@@ -10,11 +10,11 @@ import torch
 from array2gif import write_gif
 from tqdm import tqdm
 
-from planning_by_abstracting_over_opponent_models.planning.modified_simple_agent import ModifiedSimpleAgent
-from planning_by_abstracting_over_opponent_models.planning.random_rollout_state_evaluator import \
+from planning_by_abstracting_over_opponent_models.pommerman_env.modified_simple_agent import ModifiedSimpleAgent
+from planning_by_abstracting_over_opponent_models.planning.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
-from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
+from planning_by_abstracting_over_opponent_models.planning.smmcts.tree_node import TreeNode
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonBaseEnv
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonBaseEnv
 
@@ -94,30 +94,29 @@ class SMMCTS:
         r = range(iterations)
         if progress_bar:
             r = tqdm(r)
-        for _ in r:
+        for iteration in r:
             self.search(env, root, fpus, random_players, pw_cs)
             env.set_game_state(game_state)
-        most_visited_actions = root.most_visited_actions()
-        most_visited_action = most_visited_actions[0]
+        most_visited_action = root.most_visited_actions()[0]
         return most_visited_action
 
 
-def heuristic_evaluator(initial_state, state):
-    result = []
-    # similar for all the agents
-    s, d = initial_state[0], state[0]
-    base_value = 0.17 * (len(s["alive"]) - len(d["alive"]))
-    s_nb_wooden = (s["board"] == 2).sum()
-    d_nb_wooden = (d["board"] == 2).sum()
-    base_value += 0.1 * (s_nb_wooden - d_nb_wooden)
-    for i in range(len(initial_state)):
-        s, d = initial_state[i], state[i]
-        value = base_value
-        # (could be) different for each agent
-        value += 0.15 * (s["blast_strength"] - d["blast_strength"])
-        value += 0.15 * (int(s["can_kick"]) - int(d["can_kick"]))
-        result.append(value)
-    return result
+# def heuristic_evaluator(initial_state, state):
+#     result = []
+#     # similar for all the agents
+#     s, d = initial_state[0], state[0]
+#     base_value = 0.17 * (len(s["alive"]) - len(d["alive"]))
+#     s_nb_wooden = (s["board"] == 2).sum()
+#     d_nb_wooden = (d["board"] == 2).sum()
+#     base_value += 0.1 * (s_nb_wooden - d_nb_wooden)
+#     for i in range(len(initial_state)):
+#         s, d = initial_state[i], state[i]
+#         value = base_value
+#         # (could be) different for each agent
+#         value += 0.15 * (s["blast_strength"] - d["blast_strength"])
+#         value += 0.15 * (int(s["can_kick"]) - int(d["can_kick"]))
+#         result.append(value)
+#     return result
 
 
 class DummyAgent(pommerman.agents.BaseAgent):
@@ -154,7 +153,7 @@ def play_game(game_id,
     nb_actions = 6
     exploration_coefs = [exploration_coef] * nb_players
     fpus = [fpu] * nb_players
-    random_players = [False] + [ignore_opponent_actions] * (nb_players - 1)
+    random_players = [False] + ([ignore_opponent_actions] * (nb_players - 1))
     pw_cs = [pw_c] * nb_players
     pw_alphas = [pw_alpha] * nb_players
     depth = None
