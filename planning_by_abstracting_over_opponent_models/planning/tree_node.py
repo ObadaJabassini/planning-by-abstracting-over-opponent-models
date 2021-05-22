@@ -31,7 +31,7 @@ class RandomPlayer(Player):
     def __init__(self, idd, nb_actions):
         super().__init__(idd)
         self.nb_actions = nb_actions
-        self.rand = partial(random.randint, a=0, b=nb_actions)
+        self.rand = partial(random.randint, a=0, b=nb_actions - 1)
 
     def most_visited_action(self):
         return self.rand()
