@@ -169,7 +169,7 @@ def play_game(game_id,
                     state_evaluator=state_evaluator)
     agents = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
-    env = PommermanCythonBaseEnv(agents=agents, seed=seed) if use_cython else PommermanPythonBaseEnv(agents=agents, seed=seed)
+    env = PommermanCythonBaseEnv(agents=agents, seed=seed, rescale_rewards=True) if use_cython else PommermanPythonBaseEnv(agents=agents, seed=seed, rescale_rewards=True)
     state = env.reset()
     done = False
     frames = []
