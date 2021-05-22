@@ -14,11 +14,11 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python
 def create_env(rank,
                seed,
                use_cython,
-               device,
                model_spec,
                nb_actions,
                nb_opponents,
                opponent_class,
+               device,
                train=True):
     agent_model = create_agent_model(rank,
                                      seed,

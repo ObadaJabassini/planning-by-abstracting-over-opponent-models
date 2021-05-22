@@ -9,7 +9,7 @@ import pommerman.agents
 import torch
 import torch.multiprocessing as mp
 
-from planning_by_abstracting_over_opponent_models.learning.config import cpu
+from planning_by_abstracting_over_opponent_models.learning.config import cpu, gpu
 from planning_by_abstracting_over_opponent_models.learning.train import train
 from planning_by_abstracting_over_opponent_models.learning.test import test
 from planning_by_abstracting_over_opponent_models.pommerman_env.modified_simple_agent import ModifiedSimpleAgent
@@ -25,6 +25,7 @@ parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='h
 parser.add_argument('--nb-episodes', type=int, default=int(5))
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--nb-steps', type=int, default=20)
+parser.add_argument('--save-interval', type=int, default=int(1e4))
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
 parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
 parser.add_argument('--nb-conv-layers', type=int, default=3, choices=[3, 4])
@@ -37,16 +38,19 @@ parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
 parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
 parser.add_argument('--monitoring', dest='monitor', action='store_true')
 parser.add_argument('--no-monitoring', dest='monitor', action='store_false')
+parser.add_argument('--use-gpu', dest='use_gpu', action='store_true')
+parser.add_argument('--use-cpu', dest='use_gpu', action='store_false')
 parser.set_defaults(use_simple_agent=True)
 parser.set_defaults(shared_opt=True)
 parser.set_defaults(monitor=False)
-
+parser.set_defaults(use_gpu=False)
 
 if __name__ == '__main__':
+    os.mkdir("models")
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     args = parser.parse_args()
-    device = cpu
+    device = gpu if args.use_gpu else cpu
     seed = args.seed
     use_cython = args.nb_players == 4
     nb_processes = args.nb_processes
@@ -54,6 +58,7 @@ if __name__ == '__main__':
     nb_opponents = args.nb_players - 1
     opponent_class = ModifiedSimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
     nb_steps = args.nb_steps
+    save_interval = args.save_interval
     model_spec = {
         "nb_conv_layers": args.nb_conv_layers,
         "nb_filters": args.nb_filters,
@@ -106,10 +111,11 @@ if __name__ == '__main__':
                 lock,
                 model_spec,
                 nb_episodes,
+                nb_steps,
                 nb_actions,
                 nb_opponents,
                 opponent_class,
-                nb_steps,
+                save_interval,
                 device,
                 optimizer)
         p = mp.Process(target=train, args=args)
@@ -118,4 +124,4 @@ if __name__ == '__main__':
     print("Started training.")
     for p in processes:
         p.join()
-    torch.save(shared_model.state_dict(), "agent_model.pt")
+    torch.save(shared_model.state_dict(), "models/full_agent_model.pt")

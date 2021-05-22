@@ -148,26 +148,27 @@ def train(rank,
           lock,
           model_spec,
           nb_episodes,
+          nb_steps,
           nb_actions,
           nb_opponents,
           opponent_class,
-          nb_steps,
+          save_interval,
           device,
           optimizer):
     agents, env = create_env(rank,
                              seed,
                              use_cython,
-                             device,
                              model_spec,
                              nb_actions,
                              nb_opponents,
                              opponent_class,
+                             device,
                              train=True)
     agent_model = agents[0].agent_model
     state = env.reset()
     # RL
     dense_reward = True
-    max_grad_norm = 50
+    max_grad_norm = 40
     gamma = 0.99
     value_loss_coef = 0.5
     entropy_coef = 0.01
@@ -222,5 +223,6 @@ def train(rank,
         optimizer.step()
         if done:
             episodes += 1
-            if episodes % 10000:
-                print(f"Worker {rank}, episode {episodes}.")
+            if episodes % save_interval == 0:
+                torch.save(shared_model.state_dict(), f"models/agent_model_{episodes}.pt")
+                print(f"Worker {rank}, episode {episodes} finished.")

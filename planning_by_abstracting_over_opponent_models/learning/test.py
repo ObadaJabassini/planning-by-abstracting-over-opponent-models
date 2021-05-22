@@ -20,11 +20,11 @@ def test(rank,
     agents, env = create_env(rank,
                              seed,
                              use_cython,
-                             device,
                              model_spec,
                              nb_actions,
                              nb_opponents,
                              opponent_class,
+                             device,
                              train=False)
     agent = agents[0]
     agent_model = agent.agent_model
