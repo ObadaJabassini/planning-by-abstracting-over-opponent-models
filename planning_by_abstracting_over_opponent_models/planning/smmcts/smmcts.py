@@ -15,8 +15,8 @@ from planning_by_abstracting_over_opponent_models.planning.state_evaluator.rando
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.smmcts.tree_node import TreeNode
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonBaseEnv
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonBaseEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -169,7 +169,7 @@ def play_game(game_id,
                     state_evaluator=state_evaluator)
     agents = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
-    env = PommermanCythonBaseEnv(agents=agents, seed=seed, rescale_rewards=True) if use_cython else PommermanPythonBaseEnv(agents=agents, seed=seed, rescale_rewards=True)
+    env = PommermanCythonEnv(agents=agents, seed=seed, rescale_rewards=True) if use_cython else PommermanPythonEnv(agents=agents, seed=seed, rescale_rewards=True)
     state = env.reset()
     done = False
     frames = []

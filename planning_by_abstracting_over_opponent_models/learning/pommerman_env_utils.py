@@ -7,8 +7,8 @@ from planning_by_abstracting_over_opponent_models.learning.agent import Agent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_env import PommermanBaseEnv
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonBaseEnv
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonBaseEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
+from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 
 
 def create_env(rank,
@@ -31,7 +31,7 @@ def create_env(rank,
     agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     r = seed + rank
-    env: PommermanBaseEnv = PommermanCythonBaseEnv(agents, r) if use_cython else PommermanPythonBaseEnv(agents, r)
+    env: PommermanBaseEnv = PommermanCythonEnv(agents, r) if use_cython else PommermanPythonEnv(agents, r)
     return agents, env
 
 
