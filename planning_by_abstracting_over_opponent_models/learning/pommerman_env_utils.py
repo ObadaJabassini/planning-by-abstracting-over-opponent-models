@@ -3,7 +3,7 @@ from typing import List
 import pommerman
 import torch
 
-from planning_by_abstracting_over_opponent_models.learning.agent import Agent
+from planning_by_abstracting_over_opponent_models.learning.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import AgentModel
 from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_env import PommermanBaseEnv
@@ -27,7 +27,7 @@ def create_env(rank,
                                      device=device,
                                      train=train,
                                      **model_spec)
-    agent = Agent(0, agent_model)
+    agent = RLAgent(0, agent_model)
     agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     r = seed + rank

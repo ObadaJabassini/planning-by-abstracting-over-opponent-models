@@ -2,7 +2,7 @@ import torch.nn.functional as F
 from pommerman.agents import BaseAgent
 
 
-class Agent(BaseAgent):
+class RLAgent(BaseAgent):
 
     def __init__(self, agent_id, agent_model, stochastic=False):
         super().__init__()
