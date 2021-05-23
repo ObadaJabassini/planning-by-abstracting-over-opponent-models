@@ -1,5 +1,5 @@
 # heavily inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/main.py
-
+from pathlib import Path
 import os
 import argparse
 import warnings
@@ -46,7 +46,7 @@ parser.set_defaults(monitor=False)
 parser.set_defaults(use_gpu=False)
 
 if __name__ == '__main__':
-    os.mkdir("models")
+    Path("models").mkdir(exist_ok=True)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     args = parser.parse_args()
