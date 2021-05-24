@@ -11,9 +11,9 @@ import torch.multiprocessing as mp
 
 from planning_by_abstracting_over_opponent_models.learning.config import cpu, gpu
 from planning_by_abstracting_over_opponent_models.learning.train import train
-from planning_by_abstracting_over_opponent_models.learning.test import test
+from planning_by_abstracting_over_opponent_models.learning.monitor import monitor
 from planning_by_abstracting_over_opponent_models.pommerman_env.modified_simple_agent import ModifiedSimpleAgent
-from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model
+from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
 
 warnings.filterwarnings('ignore')
@@ -25,7 +25,7 @@ parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='h
 parser.add_argument('--nb-episodes', type=int, default=int(5))
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--nb-steps', type=int, default=20)
-parser.add_argument('--save-interval', type=int, default=int(1e4))
+parser.add_argument('--save-interval', type=int, default=int(2))
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
 parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
 parser.add_argument('--nb-conv-layers', type=int, default=3, choices=[3, 4])
@@ -99,7 +99,7 @@ if __name__ == '__main__':
                 nb_opponents,
                 opponent_class,
                 device)
-        p = mp.Process(target=test, args=args)
+        p = mp.Process(target=monitor, args=args)
         p.start()
         processes.append(p)
     for rank in range(nb_processes):
