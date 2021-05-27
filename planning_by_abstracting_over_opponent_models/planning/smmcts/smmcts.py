@@ -10,6 +10,10 @@ import torch
 from array2gif import write_gif
 from tqdm import tqdm
 
+from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
+from planning_by_abstracting_over_opponent_models.learning.config import cpu
+from planning_by_abstracting_over_opponent_models.planning.state_evaluator.neural_network_state_evaluator import \
+    NeuralNetworkStateEvaluator
 from planning_by_abstracting_over_opponent_models.pommerman_env.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
@@ -40,7 +44,8 @@ class SMMCTS:
         state, rewards, is_terminal = env.step(actions)
         # expand
         if actions not in current_node.children:
-            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node, fpus, random_players, pw_cs)
+            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node, fpus, random_players,
+                                         pw_cs)
         else:
             child = current_node.children[actions]
             value_estimate = self.search(env, child, fpus, random_players, pw_cs)
@@ -137,6 +142,7 @@ def play_game(game_id,
               ignore_opponent_actions,
               pw_c,
               pw_alpha,
+              use_random_rollout,
               progress_bar,
               show_elapsed_time):
     if show_elapsed_time:
@@ -158,24 +164,37 @@ def play_game(game_id,
     pw_alphas = [pw_alpha] * nb_players
     depth = None
     heuristic_func = None
-    state_evaluator = RandomRolloutStateEvaluator(nb_players,
-                                                  nb_actions,
-                                                  pw_alphas,
-                                                  depth=depth,
-                                                  heuristic_func=heuristic_func)
+    if use_random_rollout:
+        state_evaluator = RandomRolloutStateEvaluator(nb_players,
+                                                      nb_actions,
+                                                      pw_alphas,
+                                                      depth=depth,
+                                                      heuristic_func=heuristic_func)
+    else:
+        iterations = int(9e4)
+        agent_model = create_agent_model(0, 32, 6, nb_players - 1, 3, 32, 64, 64, None, None, cpu, False)
+        agent_model.load_state_dict(torch.load(f"../models/agent_model_{iterations}.pt"))
+        agent_model.eval()
+        state_evaluator = NeuralNetworkStateEvaluator(0, agent_model, 1)
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
                     state_evaluator=state_evaluator)
     agents = [opponent_class() for _ in range(nb_players - 1)]
     agents.insert(0, DummyAgent())
-    env = PommermanCythonEnv(agents=agents, seed=seed, rescale_rewards=True) if use_cython else PommermanPythonEnv(agents=agents, seed=seed, rescale_rewards=True)
+    env = PommermanCythonEnv(agents=agents, seed=seed, rescale_rewards=True) if use_cython else \
+        PommermanPythonEnv(agents=agents, seed=seed, rescale_rewards=True)
     state = env.reset()
     done = False
     frames = []
     while not done:
         actions = env.act(state)
-        agent_action = smmcts.infer(env, iterations=mcts_iterations, fpus=fpus, random_players=random_players, pw_cs=pw_cs, progress_bar=progress_bar)
+        agent_action = smmcts.infer(env,
+                                    iterations=mcts_iterations,
+                                    fpus=fpus,
+                                    random_players=random_players,
+                                    pw_cs=pw_cs,
+                                    progress_bar=progress_bar)
         actions.insert(0, agent_action)
         state, rewards, done = env.step(actions)
         # print(f"step {step}: {rewards}")
@@ -197,18 +216,20 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
-parser.add_argument('--nb-games', type=int, default=10)
-parser.add_argument('--nb-plays', type=int, default=10)
+parser.add_argument('--nb-games', type=int, default=2)
+parser.add_argument('--nb-plays', type=int, default=5)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
 parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=5000)
+parser.add_argument('--mcts-iterations', type=int, default=50)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
-parser.add_argument('--pw-alpha', type=int, default=None)
-parser.add_argument('--pw-c', type=int, default=None)
+parser.add_argument('--pw-alpha', type=float, default=0.25)
+parser.add_argument('--pw-c', type=float, default=1)
+parser.add_argument('--use-random-rollout', dest="use_random_rollout", action="store_true")
+parser.add_argument('--use-nn', dest="use_random_rollout", action="store_false")
 parser.add_argument('--show-elapsed-time', dest="show_elapsed_time", action="store_true")
 parser.add_argument('--hide-elapsed-time', dest="show_elapsed_time", action="store_false")
 parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
@@ -216,6 +237,7 @@ parser.add_argument('--no-progress-bar', dest="progress_bar", action="store_fals
 parser.set_defaults(multiprocessing=True)
 parser.set_defaults(use_simple_agent=True)
 parser.set_defaults(ignore_opponent_actions=True)
+parser.set_defaults(use_random_rollout=True)
 parser.set_defaults(show_elapsed_time=True)
 parser.set_defaults(progress_bar=False)
 
@@ -241,6 +263,7 @@ if __name__ == '__main__':
                       args.ignore_opponent_actions,
                       args.pw_c,
                       args.pw_alpha,
+                      args.use_random_rollout,
                       args.progress_bar,
                       args.show_elapsed_time)
             games.append(params)

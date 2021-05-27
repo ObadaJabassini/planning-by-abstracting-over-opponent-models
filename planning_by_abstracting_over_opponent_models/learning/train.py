@@ -1,4 +1,5 @@
 # partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+from collections import OrderedDict
 
 import torch
 import torch.nn.functional as F
@@ -7,6 +8,27 @@ from torch.optim import Adam
 
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
+
+
+last_positions_max_size = 30
+last_positions = []
+
+
+def densify_reward(prev_state, curr_state, rewards):
+    reward = 0
+    position = curr_state[0]["position"]
+    if position not in last_positions:
+        reward += 0.001
+    ammo_before = prev_state[0]["ammo"]
+    ammo_after = curr_state[0]["ammo"]
+    if ammo_after > ammo_before:
+        reward += 0.01
+
+    last_positions.append(position)
+    if len(last_positions) > last_positions_max_size:
+        last_positions.pop(0)
+    rewards[0] = reward
+    return rewards
 
 
 def reshape_tensors_for_loss_func(steps,
@@ -82,11 +104,10 @@ def collect_trajectory(env,
         opponent_actions = env.act(state)
         agent_action = agent_action.item()
         actions = [agent_action, *opponent_actions]
-        ammo_before = state[0]["ammo"]
+        prev_state = state
         state, rewards, done = env.step(actions)
-        ammo_after = state[0]["ammo"]
-        if dense_reward and not done and rewards[0] == 0 and ammo_after > ammo_before:
-            rewards[0] = 0.1
+        if dense_reward and not done and rewards[0] == 0:
+            rewards = densify_reward(prev_state, state, rewards)
         # agent
         agent_reward = rewards[0]
         agent_rewards.append(agent_reward)

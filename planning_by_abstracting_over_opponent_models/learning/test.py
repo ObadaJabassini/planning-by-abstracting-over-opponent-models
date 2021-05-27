@@ -14,7 +14,7 @@ if __name__ == '__main__':
     device = cpu
     nb_opponents = 3
     opponent_class = ModifiedSimpleAgent
-    iterations = int(5e4)
+    iterations = int(9e4)
     agent_model = create_agent_model(0, 32, 6, nb_opponents, 3, 32, 64, 64, None, None, device, False)
     agent_model.load_state_dict(torch.load(f"../models/agent_model_{iterations}.pt"))
     agent_model.eval()

@@ -32,7 +32,7 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         """
         agent_value = agent_value.view(-1).to(cpu)
         opponent_values = opponent_values.view(-1).to(cpu)
-        value_estimate = torch.cat((agent_value, opponent_values))
+        value_estimate = torch.cat((agent_value, opponent_values)).to(cpu)
         return value_estimate
 
     def estimate_action_probabilities(self, agent_action_log, opponent_action_log):
@@ -43,9 +43,9 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         :return:
         """
         agent_action_probs = F.softmax(agent_action_log, dim=-1)
-        agent_action_probs = agent_action_probs.view((1, -1)).to(cpu)
+        agent_action_probs = agent_action_probs.view((1, -1))
         action_space_size = agent_action_probs.size(1)
         opponent_action_probs = F.softmax(opponent_action_log, dim=-1)
-        opponent_action_probs = opponent_action_probs.view(-1, action_space_size).to(cpu)
-        probs = torch.vstack((agent_action_probs, opponent_action_probs))
+        opponent_action_probs = opponent_action_probs.view(-1, action_space_size)
+        probs = torch.vstack((agent_action_probs, opponent_action_probs)).to(cpu)
         return probs
