@@ -7,18 +7,12 @@ from pathlib import Path
 
 import torch
 import torch.multiprocessing as mp
-from pommerman.agents import RandomAgent
 
 from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.config import cpu, gpu
 from planning_by_abstracting_over_opponent_models.learning.monitor import monitor
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
 from planning_by_abstracting_over_opponent_models.learning.train import train
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.smart_random_agent import SmartRandomAgentNoBomb, \
-    SmartRandomAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.static_agent import StaticAgent
 
 warnings.filterwarnings('ignore')
 torch.autograd.set_detect_anomaly(True)
@@ -44,10 +38,6 @@ parser.add_argument('--no-monitoring', dest='monitor', action='store_false')
 parser.add_argument('--device', type=str, default="cpu")
 parser.set_defaults(shared_opt=True)
 parser.set_defaults(monitor=False)
-
-
-
-
 
 if __name__ == '__main__':
     Path("../models").mkdir(exist_ok=True)
