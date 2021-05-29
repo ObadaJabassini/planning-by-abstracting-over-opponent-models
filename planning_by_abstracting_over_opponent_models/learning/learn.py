@@ -1,22 +1,21 @@
 # heavily inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/main.py
-from pathlib import Path
-import os
 import argparse
+import os
 import warnings
 from multiprocessing import cpu_count
+from pathlib import Path
 
-import pommerman.agents
 import torch
 import torch.multiprocessing as mp
 from pommerman.agents import RandomAgent
 
+from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.config import cpu, gpu
-from planning_by_abstracting_over_opponent_models.learning.train import train
 from planning_by_abstracting_over_opponent_models.learning.monitor import monitor
+from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
+from planning_by_abstracting_over_opponent_models.learning.train import train
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
-from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
-from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.smart_random_agent import SmartRandomAgentNoBomb, \
     SmartRandomAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.static_agent import StaticAgent
@@ -61,7 +60,7 @@ def str_to_opponent_class(s):
 
 
 if __name__ == '__main__':
-    Path("models").mkdir(exist_ok=True)
+    Path("../models").mkdir(exist_ok=True)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     args = parser.parse_args()
@@ -139,4 +138,4 @@ if __name__ == '__main__':
     print("Started training.")
     for p in processes:
         p.join()
-    torch.save(shared_model.state_dict(), "models/fully_trained_agent_model.pt")
+    torch.save(shared_model.state_dict(), "../models/fully_trained_agent_model.pt")

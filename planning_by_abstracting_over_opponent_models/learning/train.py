@@ -226,5 +226,5 @@ def train(rank,
             episodes += 1
             reward_shaper.reset()
             if episodes % save_interval == 0:
-                torch.save(shared_model.state_dict(), f"models/agent_model_{episodes}.pt")
+                torch.save(shared_model.state_dict(), f"../models/agent_model_{episodes}.pt")
                 print(f"Worker {rank}, episode {episodes} finished.")
