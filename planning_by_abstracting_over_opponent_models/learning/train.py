@@ -1,6 +1,7 @@
 # partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
 from collections import OrderedDict
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
@@ -8,27 +9,7 @@ from torch.optim import Adam
 
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
-
-
-last_positions_max_size = 30
-last_positions = []
-
-
-def densify_reward(prev_state, curr_state, rewards):
-    reward = 0
-    position = curr_state[0]["position"]
-    if position not in last_positions:
-        reward += 0.001
-    ammo_before = prev_state[0]["ammo"]
-    ammo_after = curr_state[0]["ammo"]
-    if ammo_after > ammo_before:
-        reward += 0.01
-
-    last_positions.append(position)
-    if len(last_positions) > last_positions_max_size:
-        last_positions.pop(0)
-    rewards[0] = reward
-    return rewards
+from planning_by_abstracting_over_opponent_models.learning.reward_shaper import RewardShaper
 
 
 def reshape_tensors_for_loss_func(steps,
@@ -80,7 +61,7 @@ def collect_trajectory(env,
                        nb_actions,
                        nb_steps,
                        device,
-                       dense_reward=True):
+                       reward_shaper=None):
     agent_rewards = []
     agent_values = []
     agent_log_probs = []
@@ -106,10 +87,10 @@ def collect_trajectory(env,
         actions = [agent_action, *opponent_actions]
         prev_state = state
         state, rewards, done = env.step(actions)
-        if dense_reward and not done and rewards[0] == 0:
-            rewards = densify_reward(prev_state, state, rewards)
-        # agent
         agent_reward = rewards[0]
+        if reward_shaper is not None and not done and agent_reward == 0:
+            agent_reward = reward_shaper.shape(state, agent_action)
+        # agent
         agent_rewards.append(agent_reward)
         agent_entropies.append(agent_entropy.view(-1))
         agent_log_probs.append(agent_log_prob.view(-1))
@@ -188,7 +169,7 @@ def train(rank,
     agent_model = agents[0].agent_model
     state = env.reset()
     # RL
-    dense_reward = True
+    reward_shaper = RewardShaper(0)
     max_grad_norm = 40
     gamma = 0.99
     value_loss_coef = 0.5
@@ -206,16 +187,16 @@ def train(rank,
     while episodes < nb_episodes:
         # sync with the shared model
         agent_model.load_state_dict(shared_model.state_dict())
-        steps, state, done, agent_trajectory, opponent_trajectory = collect_trajectory(env,
-                                                                                       state,
-                                                                                       lock,
-                                                                                       counter,
-                                                                                       agents,
-                                                                                       nb_opponents,
-                                                                                       nb_actions,
-                                                                                       nb_steps,
-                                                                                       device,
-                                                                                       dense_reward)
+        steps, state, done, agent_trajectory, opponent_trajectory = collect_trajectory(env=env,
+                                                                                       state=state,
+                                                                                       lock=lock,
+                                                                                       counter=counter,
+                                                                                       agents=agents,
+                                                                                       nb_opponents=nb_opponents,
+                                                                                       nb_actions=nb_actions,
+                                                                                       nb_steps=nb_steps,
+                                                                                       device=device,
+                                                                                       reward_shaper=reward_shaper)
         agent_rewards, agent_values, agent_log_probs, agent_entropies = agent_trajectory
         opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
         # ic(agent_rewards)
@@ -244,6 +225,7 @@ def train(rank,
         optimizer.step()
         if done:
             episodes += 1
+            reward_shaper.reset()
             if episodes % save_interval == 0:
                 torch.save(shared_model.state_dict(), f"models/agent_model_{episodes}.pt")
                 print(f"Worker {rank}, episode {episodes} finished.")

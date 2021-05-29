@@ -14,7 +14,7 @@ from planning_by_abstracting_over_opponent_models.learning.agent_model import cr
 from planning_by_abstracting_over_opponent_models.learning.config import cpu
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator.neural_network_state_evaluator import \
     NeuralNetworkStateEvaluator
-from planning_by_abstracting_over_opponent_models.pommerman_env.modified_simple_agent import ModifiedSimpleAgent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
@@ -216,18 +216,16 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
-parser.add_argument('--nb-games', type=int, default=2)
-parser.add_argument('--nb-plays', type=int, default=5)
+parser.add_argument('--nb-games', type=int, default=1)
+parser.add_argument('--nb-plays', type=int, default=1)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
-parser.add_argument('--use-simple-agent', dest="use_simple_agent", action="store_true")
-parser.add_argument('--use-random-agent', dest="use_simple_agent", action="store_false")
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=50)
+parser.add_argument('--mcts-iterations', type=int, default=5000)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
-parser.add_argument('--pw-alpha', type=float, default=0.25)
-parser.add_argument('--pw-c', type=float, default=1)
+parser.add_argument('--pw-alpha', type=float, default=None)
+parser.add_argument('--pw-c', type=float, default=None)
 parser.add_argument('--use-random-rollout', dest="use_random_rollout", action="store_true")
 parser.add_argument('--use-nn', dest="use_random_rollout", action="store_false")
 parser.add_argument('--show-elapsed-time', dest="show_elapsed_time", action="store_true")
@@ -235,7 +233,6 @@ parser.add_argument('--hide-elapsed-time', dest="show_elapsed_time", action="sto
 parser.add_argument('--progress-bar', dest="progress_bar", action="store_true")
 parser.add_argument('--no-progress-bar', dest="progress_bar", action="store_false")
 parser.set_defaults(multiprocessing=True)
-parser.set_defaults(use_simple_agent=True)
 parser.set_defaults(ignore_opponent_actions=True)
 parser.set_defaults(use_random_rollout=True)
 parser.set_defaults(show_elapsed_time=True)
@@ -246,7 +243,7 @@ if __name__ == '__main__':
     args.use_cython = args.nb_players == 4
     nb_games = args.nb_games
     nb_plays = args.nb_plays
-    opponent_class = ModifiedSimpleAgent if args.use_simple_agent else pommerman.agents.RandomAgent
+    opponent_class = ModifiedSimpleAgent
     games = []
     for game in range(1, nb_games + 1):
         seed = randint(0, int(1e6))

@@ -1,4 +1,3 @@
-from time import sleep
 from typing import List
 
 import pommerman.agents
@@ -7,7 +6,7 @@ import torch
 from planning_by_abstracting_over_opponent_models.learning.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.rl_agent import RLAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.modified_simple_agent import ModifiedSimpleAgent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
 
 if __name__ == '__main__':
