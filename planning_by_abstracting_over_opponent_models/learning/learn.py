@@ -8,13 +8,18 @@ from multiprocessing import cpu_count
 import pommerman.agents
 import torch
 import torch.multiprocessing as mp
+from pommerman.agents import RandomAgent
 
 from planning_by_abstracting_over_opponent_models.learning.config import cpu, gpu
 from planning_by_abstracting_over_opponent_models.learning.train import train
 from planning_by_abstracting_over_opponent_models.learning.monitor import monitor
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.smart_random_agent import SmartRandomAgentNoBomb, \
+    SmartRandomAgent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.static_agent import StaticAgent
 
 warnings.filterwarnings('ignore')
 torch.autograd.set_detect_anomaly(True)
@@ -24,6 +29,7 @@ parser.add_argument('--seed', type=int, default=32)
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
 parser.add_argument('--nb-episodes', type=int, default=int(50))
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
+parser.add_argument('--opponent-class', type=str, default="random")
 parser.add_argument('--nb-steps', type=int, default=20)
 parser.add_argument('--save-interval', type=int, default=int(2))
 parser.add_argument('--nb-conv-layers', type=int, default=3, choices=[3, 4])
@@ -42,6 +48,18 @@ parser.set_defaults(shared_opt=True)
 parser.set_defaults(monitor=False)
 parser.set_defaults(use_gpu=False)
 
+
+def str_to_opponent_class(s):
+    return {
+        "static": StaticAgent(),
+        "random": RandomAgent(),
+        "smart_no_bomb": SmartRandomAgentNoBomb(),
+        "smart": SmartRandomAgent(),
+        "simple": ModifiedSimpleAgent(),
+        "cautious": CautiousAgent()
+    }[s.lower()]
+
+
 if __name__ == '__main__':
     Path("models").mkdir(exist_ok=True)
     os.environ['OMP_NUM_THREADS'] = '1'
@@ -53,7 +71,7 @@ if __name__ == '__main__':
     nb_processes = args.nb_processes
     nb_episodes = args.nb_episodes
     nb_opponents = args.nb_players - 1
-    opponent_class = ModifiedSimpleAgent
+    opponent_class = str_to_opponent_class(args.opponent_class)
     nb_steps = args.nb_steps
     save_interval = args.save_interval
     model_spec = {

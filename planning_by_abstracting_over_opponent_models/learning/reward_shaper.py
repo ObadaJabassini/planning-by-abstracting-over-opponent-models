@@ -66,7 +66,11 @@ class RewardShaper:
         self.closest_enemy_id_prev = -1
         self.closest_enemy_dist_prev = float("inf")
 
-    def shape(self, curr_state, curr_action):
+    def shape(self, curr_state, curr_action, original_reward):
+        if self.prev_state is None:
+            self.prev_state = curr_state
+            self.prev_action = curr_action
+            return original_reward
         prev_state = self.prev_state[self.agent_index]
         curr_state = curr_state[self.agent_index]
         reward = 0

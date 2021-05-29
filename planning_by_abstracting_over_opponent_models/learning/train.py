@@ -85,11 +85,10 @@ def collect_trajectory(env,
         opponent_actions = env.act(state)
         agent_action = agent_action.item()
         actions = [agent_action, *opponent_actions]
-        prev_state = state
         state, rewards, done = env.step(actions)
         agent_reward = rewards[0]
         if reward_shaper is not None and not done and agent_reward == 0:
-            agent_reward = reward_shaper.shape(state, agent_action)
+            agent_reward = reward_shaper.shape(state, agent_action, agent_reward)
         # agent
         agent_rewards.append(agent_reward)
         agent_entropies.append(agent_entropy.view(-1))
