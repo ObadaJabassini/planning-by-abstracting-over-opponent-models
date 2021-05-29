@@ -154,9 +154,7 @@ class RewardShaper:
 
         # stage 6: pick a powerup
         potential_power = prev_state['board'][curr_state['position']]
-        picked_power = (potential_power == Item.ExtraBomb.value) or \
-                       (potential_power == Item.IncrRange.value) or \
-                       (potential_power == Item.Kick.value)
+        picked_power = potential_power in [Item.ExtraBomb.value, Item.IncrRange.value, Item.Kick.value]
         if picked_power:
             reward += self.pick_power_reward
 

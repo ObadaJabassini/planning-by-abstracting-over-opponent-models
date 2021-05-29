@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from icecream import ic
 
-from planning_by_abstracting_over_opponent_models.learning.features_extractor import FeaturesExtractor
-from planning_by_abstracting_over_opponent_models.learning.soft_hard_multihead_attention import SoftHardMultiheadAttention
+from planning_by_abstracting_over_opponent_models.learning.model.features_extractor import FeaturesExtractor
+from planning_by_abstracting_over_opponent_models.learning.model.soft_hard_multihead_attention import SoftHardMultiheadAttention
 
 
 class AgentModel(nn.Module):

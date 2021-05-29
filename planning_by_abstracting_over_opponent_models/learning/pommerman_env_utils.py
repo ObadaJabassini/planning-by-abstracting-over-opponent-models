@@ -3,8 +3,8 @@ from typing import List
 import pommerman
 from pommerman.agents import RandomAgent
 
-from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
-from planning_by_abstracting_over_opponent_models.learning.rl_agent import RLAgent
+from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.smart_random_agent import SmartRandomAgent, \

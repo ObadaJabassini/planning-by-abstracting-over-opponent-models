@@ -10,7 +10,7 @@ import torch
 from array2gif import write_gif
 from tqdm import tqdm
 
-from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
+from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator.neural_network_state_evaluator import \
     NeuralNetworkStateEvaluator

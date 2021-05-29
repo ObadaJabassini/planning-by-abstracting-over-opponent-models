@@ -1,15 +1,13 @@
 # partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
-from collections import OrderedDict
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
-from planning_by_abstracting_over_opponent_models.learning.agent_loss import AgentLoss
-from planning_by_abstracting_over_opponent_models.learning.reward_shaper import RewardShaper
+from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
+from planning_by_abstracting_over_opponent_models.pommerman_env.reward_shaper import RewardShaper
 
 
 def reshape_tensors_for_loss_func(steps,
