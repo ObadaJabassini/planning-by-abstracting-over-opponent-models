@@ -88,7 +88,7 @@ def collect_trajectory(env,
         state, rewards, done = env.step(actions)
         agent_reward = rewards[0]
         if reward_shaper is not None and not done and agent_reward == 0:
-            agent_reward = reward_shaper.shape(state, agent_action, agent_reward)
+            agent_reward = reward_shaper.shape(state[0], agent_action, agent_reward)
         # agent
         agent_rewards.append(agent_reward)
         agent_entropies.append(agent_entropy.view(-1))
@@ -168,7 +168,7 @@ def train(rank,
     agent_model = agents[0].agent_model
     state = env.reset()
     # RL
-    reward_shaper = RewardShaper(0)
+    reward_shaper = RewardShaper()
     max_grad_norm = 40
     gamma = 0.99
     value_loss_coef = 0.5

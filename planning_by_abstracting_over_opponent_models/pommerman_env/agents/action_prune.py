@@ -14,13 +14,11 @@ TODO: 1) Moving bomb detection 2) other agent movements.
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 import numpy as np
 from pommerman import utility
 from pommerman import constants
-from collections import deque
 import copy
-import math
 from collections import deque
 
 INT_MAX = 9999.0

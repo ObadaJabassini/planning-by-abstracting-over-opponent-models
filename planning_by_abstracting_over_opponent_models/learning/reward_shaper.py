@@ -35,7 +35,6 @@ class Point:
 
 class RewardShaper:
     def __init__(self,
-                 agent_index,
                  mobility_reward=0.1,
                  consecutive_actions_reward=-0.0001,
                  not_using_ammo_reward=-0.0001,
@@ -45,7 +44,6 @@ class RewardShaper:
                  on_flame_reward=-0.0001,
                  pick_power_reward=0.1,
                  catch_enemy_reward=0.001):
-        self.agent_index = agent_index
         self.mobility_reward = mobility_reward
         self.consecutive_actions_reward = consecutive_actions_reward
         self.not_using_ammo_reward = not_using_ammo_reward
@@ -71,8 +69,7 @@ class RewardShaper:
             self.prev_state = curr_state
             self.prev_action = curr_action
             return original_reward
-        prev_state = self.prev_state[self.agent_index]
-        curr_state = curr_state[self.agent_index]
+        prev_state = self.prev_state
         reward = 0
 
         # reward stage 1: mobility
@@ -116,7 +113,7 @@ class RewardShaper:
                 if cell_pose[0] > 10 or cell_pose[1] > 10:  # bigger than board size
                     continue
                 nr_woods += curr_state['board'][cell_pose] == Item.Wood.value
-                nr_enemies += curr_state['board'][cell_pose] in [e.value for e in curr_state['enemies']]
+                nr_enemies += curr_state['board'][cell_pose] in [e for e in curr_state['enemies']]
             assert nr_woods + nr_enemies < 10
             reward += self.plant_bomb_near_wood_reward * nr_woods + self.plant_bomb_near_enemy_reward * nr_enemies
 
@@ -169,12 +166,12 @@ class RewardShaper:
             closest_enemy_id = -1
             closest_enemy_dist = float("inf")
             for e in curr_state['enemies']:
-                enemy_pose = np.argwhere(curr_state['board'] == e.value)
+                enemy_pose = np.argwhere(curr_state['board'] == e)
                 if len(enemy_pose) == 0:
                     continue
                 dist2_enemy = np.linalg.norm(my_pose - enemy_pose)
                 if dist2_enemy <= closest_enemy_dist:
-                    closest_enemy_id = e.value
+                    closest_enemy_id = e
                     closest_enemy_dist = dist2_enemy
             return closest_enemy_id, closest_enemy_dist
 

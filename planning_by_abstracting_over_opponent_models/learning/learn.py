@@ -26,7 +26,7 @@ torch.autograd.set_detect_anomaly(True)
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=32)
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
-parser.add_argument('--nb-episodes', type=int, default=int(50))
+parser.add_argument('--nb-episodes', type=int, default=int(20))
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--opponent-class', type=str, default="static")
 parser.add_argument('--nb-steps', type=int, default=20)
@@ -41,22 +41,12 @@ parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
 parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
 parser.add_argument('--monitoring', dest='monitor', action='store_true')
 parser.add_argument('--no-monitoring', dest='monitor', action='store_false')
-parser.add_argument('--use-gpu', dest='use_gpu', action='store_true')
-parser.add_argument('--use-cpu', dest='use_gpu', action='store_false')
+parser.add_argument('--device', type=str, default="cpu")
 parser.set_defaults(shared_opt=True)
 parser.set_defaults(monitor=False)
-parser.set_defaults(use_gpu=False)
 
 
-def str_to_opponent_class(s):
-    return {
-        "static": StaticAgent(),
-        "random": RandomAgent(),
-        "smart_no_bomb": SmartRandomAgentNoBomb(),
-        "smart": SmartRandomAgent(),
-        "simple": ModifiedSimpleAgent(),
-        "cautious": CautiousAgent()
-    }[s.lower()]
+
 
 
 if __name__ == '__main__':
@@ -64,13 +54,13 @@ if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     args = parser.parse_args()
-    device = gpu if args.use_gpu else cpu
+    device = gpu if args.device == "gpu" else cpu
     seed = args.seed
     use_cython = args.nb_players == 4
     nb_processes = args.nb_processes
     nb_episodes = args.nb_episodes
     nb_opponents = args.nb_players - 1
-    opponent_class = str_to_opponent_class(args.opponent_class)
+    opponent_class = args.opponent_class
     nb_steps = args.nb_steps
     save_interval = args.save_interval
     model_spec = {
