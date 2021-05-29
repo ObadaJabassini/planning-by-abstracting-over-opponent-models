@@ -172,7 +172,7 @@ def train(rank,
     value_loss_coef = 0.5
     entropy_coef = 0.01
     gae_lambda = 1.0
-    opponent_coefs = torch.tensor([0.01] * nb_opponents, device=device)
+    opponent_coefs = torch.tensor([0.1] * nb_opponents, device=device)
     if optimizer is None:
         optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
