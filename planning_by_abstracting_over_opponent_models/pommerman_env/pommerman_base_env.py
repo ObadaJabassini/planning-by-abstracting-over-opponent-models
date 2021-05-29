@@ -9,7 +9,7 @@ class PommermanBaseEnv(abc.ABC):
 
     def __init__(self, nb_players, rescale_rewards=False):
         self.board_size = 11
-        self.max_steps = 1000
+        self.max_steps = 800
         self.nb_players = nb_players
         self.rescale_rewards = rescale_rewards
 
@@ -58,7 +58,7 @@ class PommermanBaseEnv(abc.ABC):
     def get_agent_position_map(self, state, index):
         result = np.zeros((self.board_size, self.board_size)).astype(float)
         idd = 10 + index
-        if idd in state[index]["alive"]:
+        if idd in state[0]["alive"]:
             position = state[index]["position"]
             result[position] = 1
         return result
