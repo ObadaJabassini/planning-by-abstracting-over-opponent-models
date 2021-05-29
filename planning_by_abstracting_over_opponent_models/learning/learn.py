@@ -44,7 +44,7 @@ if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     args = parser.parse_args()
-    device = gpu if args.device == "gpu" else cpu
+    device = gpu if args.device.lower() == "gpu" else cpu
     seed = args.seed
     use_cython = args.nb_players == 4
     nb_processes = args.nb_processes
