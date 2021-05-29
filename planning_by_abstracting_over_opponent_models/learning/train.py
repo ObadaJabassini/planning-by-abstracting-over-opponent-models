@@ -178,8 +178,7 @@ def train(rank,
     criterion = AgentLoss(gamma=gamma,
                           value_loss_coef=value_loss_coef,
                           entropy_coef=entropy_coef,
-                          gae_lambda=gae_lambda,
-                          ).to(device)
+                          gae_lambda=gae_lambda).to(device)
     episodes = 0
     while episodes < nb_episodes:
         # sync with the shared model
