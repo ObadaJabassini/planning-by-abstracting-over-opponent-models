@@ -11,7 +11,7 @@ from array2gif import write_gif
 from tqdm import tqdm
 
 from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
-from planning_by_abstracting_over_opponent_models.learning.config import cpu
+from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator.neural_network_state_evaluator import \
     NeuralNetworkStateEvaluator
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent

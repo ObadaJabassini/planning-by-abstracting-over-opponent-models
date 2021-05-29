@@ -9,7 +9,7 @@ import torch
 import torch.multiprocessing as mp
 
 from planning_by_abstracting_over_opponent_models.learning.agent_model import create_agent_model
-from planning_by_abstracting_over_opponent_models.learning.config import cpu, gpu
+from planning_by_abstracting_over_opponent_models.config import cpu, gpu
 from planning_by_abstracting_over_opponent_models.learning.monitor import monitor
 from planning_by_abstracting_over_opponent_models.learning.shared_adam import SharedAdam
 from planning_by_abstracting_over_opponent_models.learning.train import train
