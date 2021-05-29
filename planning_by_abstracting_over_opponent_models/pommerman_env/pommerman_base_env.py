@@ -68,14 +68,14 @@ class PommermanBaseEnv(abc.ABC):
         features = np.zeros((self.nb_players, 18, self.board_size, self.board_size))
         agent_position_maps = [self.get_agent_position_map(state, i) for i in range(self.nb_players)]
         board = state[0]["board"]
-        passage_position_map = (board == Item.Passage).astype(float)
-        rigid_wall_position_map = (board == Item.Rigid).astype(float)
-        wood_wall_position_map = (board == Item.Wood).astype(float)
-        flames_position_map = (board == Item.Flames).astype(float)
-        extra_bomb_position_map = (board == Item.ExtraBomb).astype(float)
-        incr_range_position_map = (board == Item.IncrRange).astype(float)
-        kick_position_map = (board == Item.Kick).astype(float)
-        current_step_map = np.full(board_tuple, state[0]["step_count"] / self.max_steps)
+        passage_position_map = (board == Item.Passage.value).astype(float)
+        rigid_wall_position_map = (board == Item.Rigid.value).astype(float)
+        wood_wall_position_map = (board == Item.Wood.value).astype(float)
+        flames_position_map = (board == Item.Flames.value).astype(float)
+        extra_bomb_position_map = (board == Item.ExtraBomb.value).astype(float)
+        incr_range_position_map = (board == Item.IncrRange.value).astype(float)
+        kick_position_map = (board == Item.Kick.value).astype(float)
+        current_step_map = np.full(board_tuple, state[0]["step_count"] / self.max_steps).astype(float)
         for agent_id in range(self.nb_players):
             agent_state = state[agent_id]
             bomb_blast_strength_map = agent_state["bomb_blast_strength"].astype(float)
