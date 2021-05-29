@@ -40,7 +40,7 @@ parser.set_defaults(shared_opt=True)
 parser.set_defaults(monitor=False)
 
 if __name__ == '__main__':
-    Path("../models").mkdir(exist_ok=True)
+    Path("../saved_models").mkdir(exist_ok=True)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     args = parser.parse_args()
@@ -118,4 +118,4 @@ if __name__ == '__main__':
     print("Started training.")
     for p in processes:
         p.join()
-    torch.save(shared_model.state_dict(), "../models/fully_trained_agent_model.pt")
+    torch.save(shared_model.state_dict(), "../saved_models/fully_trained_agent_model.pt")
