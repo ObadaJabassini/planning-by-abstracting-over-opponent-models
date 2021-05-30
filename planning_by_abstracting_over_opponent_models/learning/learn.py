@@ -62,7 +62,7 @@ if __name__ == '__main__':
         "hard_attention_rnn_hidden_size": args.hard_attention_rnn_hidden_size
     }
     nb_actions = 6
-    shared_model = create_agent_model(rank=nb_processes,
+    shared_model = create_agent_model(rank=nb_processes + 1,
                                       seed=seed,
                                       nb_actions=nb_actions,
                                       nb_opponents=nb_opponents,
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     counter = mp.Value('i', 0)
     lock = mp.Lock()
     if args.monitor:
-        args = (nb_processes + 1,
+        args = (nb_processes,
                 seed,
                 use_cython,
                 shared_model,
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         p = mp.Process(target=monitor, args=args)
         p.start()
         processes.append(p)
-    for rank in range(nb_processes):
+    for rank in range(nb_processes - 1):
         args = (rank,
                 seed,
                 use_cython,
