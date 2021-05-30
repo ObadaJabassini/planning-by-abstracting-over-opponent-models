@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
+from torch.utils.tensorboard import SummaryWriter
 
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
@@ -68,9 +69,9 @@ def collect_trajectory(env,
     opponent_actions_ground_truths = []
     opponent_rewards = []
     opponent_values = []
-    steps = 0
-    done = False
     agent = agents[0]
+    done = False
+    steps = 0
     while not done and steps < nb_steps:
         steps += 1
         obs = env.get_features(state).to(device)
@@ -178,44 +179,62 @@ def train(rank,
                           gae_lambda=gae_lambda).to(device)
     reward_shaper = RewardShaper()
     episodes = 0
-    while True:
-        # sync with the shared model
-        agent_model.load_state_dict(shared_model.state_dict())
-        steps, state, done, agent_trajectory, opponent_trajectory = collect_trajectory(env=env,
-                                                                                       state=state,
-                                                                                       lock=lock,
-                                                                                       counter=counter,
-                                                                                       agents=agents,
-                                                                                       nb_opponents=nb_opponents,
-                                                                                       nb_actions=nb_actions,
-                                                                                       nb_steps=nb_steps,
-                                                                                       device=device,
-                                                                                       reward_shaper=reward_shaper)
-        agent_rewards, agent_values, agent_log_probs, agent_entropies = agent_trajectory
-        opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
-        # ic(agent_rewards)
-        # ic(agent_log_probs)
-        # ic(agent_values)
-        # ic(opponent_log_probs)
-        # ic(opponent_actions_ground_truths)
-        # ic(opponent_values)
-        # backward step
-        optimizer.zero_grad()
-        loss = criterion(agent_rewards,
-                         agent_log_probs,
-                         agent_values,
-                         agent_entropies,
-                         opponent_log_probs,
-                         opponent_actions_ground_truths,
-                         opponent_values,
-                         opponent_rewards,
-                         opponent_coefs)
-        # ic(loss)
-        # for name, param in agent_model.named_parameters():
-        #     print(name, torch.isfinite(param).all())
-        loss.backward()
-        clip_grad_norm_(agent_model.parameters(), max_grad_norm)
-        ensure_shared_grads(agent_model, shared_model)
-        optimizer.step()
-        if done:
-            episodes += 1
+    episode_batches = 0
+    running_loss = 0.0
+    summary_writer = SummaryWriter("runs") if rank == 0 else None
+    try:
+        while True:
+            # sync with the shared model
+            agent_model.load_state_dict(shared_model.state_dict())
+            steps, state, done, agent_trajectory, opponent_trajectory = collect_trajectory(env=env,
+                                                                                           state=state,
+                                                                                           lock=lock,
+                                                                                           counter=counter,
+                                                                                           agents=agents,
+                                                                                           nb_opponents=nb_opponents,
+                                                                                           nb_actions=nb_actions,
+                                                                                           nb_steps=nb_steps,
+                                                                                           device=device,
+                                                                                           reward_shaper=reward_shaper)
+            agent_rewards, agent_values, agent_log_probs, agent_entropies = agent_trajectory
+            opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
+            # ic(agent_rewards)
+            # ic(agent_log_probs)
+            # ic(agent_values)
+            # ic(opponent_log_probs)
+            # ic(opponent_actions_ground_truths)
+            # ic(opponent_values)
+            # backward step
+            optimizer.zero_grad()
+            loss = criterion(agent_rewards,
+                             agent_log_probs,
+                             agent_values,
+                             agent_entropies,
+                             opponent_log_probs,
+                             opponent_actions_ground_truths,
+                             opponent_values,
+                             opponent_rewards,
+                             opponent_coefs)
+            # ic(loss)
+            # for name, param in agent_model.named_parameters():
+            #     print(name, torch.isfinite(param).all())
+            loss.backward()
+            clip_grad_norm_(agent_model.parameters(), max_grad_norm)
+            ensure_shared_grads(agent_model, shared_model)
+            optimizer.step()
+
+            running_loss += loss.item()
+            episode_batches += 1
+            if done:
+                episodes += 1
+                avg_loss = running_loss / episode_batches
+                running_loss = 0.0
+                episode_batches = 0
+                if summary_writer is not None and episodes % 10 == 0:
+                    summary_writer.add_scalar('training loss',
+                                              avg_loss,
+                                              episodes)
+                    summary_writer.flush()
+    except KeyboardInterrupt:
+        if summary_writer is not None:
+            summary_writer.close()
