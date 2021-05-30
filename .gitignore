@@ -1,5 +1,7 @@
 # Pycharm
 .idea
+saved_models/
+rewards.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

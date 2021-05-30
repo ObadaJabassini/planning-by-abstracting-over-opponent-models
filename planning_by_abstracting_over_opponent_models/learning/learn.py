@@ -20,12 +20,12 @@ torch.autograd.set_detect_anomaly(True)
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=32)
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
-parser.add_argument('--nb-episodes', type=int, default=int(20))
+# parser.add_argument('--nb-episodes', type=int, default=int(20))
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--opponent-class', type=str, default="static")
 parser.add_argument('--nb-steps', type=int, default=20)
-parser.add_argument('--save-interval', type=int, default=int(2))
-parser.add_argument('--nb-conv-layers', type=int, default=3, choices=[3, 4])
+parser.add_argument('--save-interval', type=int, default=int(60))
+parser.add_argument('--nb-conv-layers', type=int, default=4, choices=[3, 4])
 parser.add_argument('--nb-filters', type=int, default=32)
 parser.add_argument('--latent-dim', type=int, default=64)
 parser.add_argument('--head-dim', type=int, default=64)
@@ -36,8 +36,9 @@ parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
 parser.add_argument('--monitoring', dest='monitor', action='store_true')
 parser.add_argument('--no-monitoring', dest='monitor', action='store_false')
 parser.add_argument('--device', type=str, default="cpu")
+parser.add_argument('--check-point', type=str, default=None)
 parser.set_defaults(shared_opt=True)
-parser.set_defaults(monitor=False)
+parser.set_defaults(monitor=True)
 
 if __name__ == '__main__':
     Path("../saved_models").mkdir(exist_ok=True)
@@ -48,7 +49,6 @@ if __name__ == '__main__':
     seed = args.seed
     use_cython = args.nb_players == 4
     nb_processes = args.nb_processes
-    nb_episodes = args.nb_episodes
     nb_opponents = args.nb_players - 1
     opponent_class = args.opponent_class
     nb_steps = args.nb_steps
@@ -62,13 +62,15 @@ if __name__ == '__main__':
         "hard_attention_rnn_hidden_size": args.hard_attention_rnn_hidden_size
     }
     nb_actions = 6
-    shared_model = create_agent_model(nb_processes,
-                                      seed,
-                                      nb_actions,
-                                      nb_opponents,
+    shared_model = create_agent_model(rank=nb_processes,
+                                      seed=seed,
+                                      nb_actions=nb_actions,
+                                      nb_opponents=nb_opponents,
                                       device=device,
                                       train=True,
                                       **model_spec)
+    if args.check_point is not None:
+        shared_model.load_state_dict(torch.load(args.check_point))
     shared_model.share_memory()
     optimizer = None
     if args.shared_opt:
@@ -88,10 +90,10 @@ if __name__ == '__main__':
                 shared_model,
                 counter,
                 model_spec,
-                nb_episodes,
                 nb_actions,
                 nb_opponents,
                 opponent_class,
+                save_interval,
                 device)
         p = mp.Process(target=monitor, args=args)
         p.start()
@@ -104,12 +106,10 @@ if __name__ == '__main__':
                 counter,
                 lock,
                 model_spec,
-                nb_episodes,
                 nb_steps,
                 nb_actions,
                 nb_opponents,
                 opponent_class,
-                save_interval,
                 device,
                 optimizer)
         p = mp.Process(target=train, args=args)

@@ -106,6 +106,7 @@ def collect_trajectory(env,
             counter.value += 1
     if done:
         state = env.reset()
+        reward_shaper.reset()
         r = torch.zeros(1, device=device)
         opponent_value = torch.zeros(nb_opponents, device=device)
     else:
@@ -114,7 +115,6 @@ def collect_trajectory(env,
         r = agent_value.view(1)
         r = r.detach()
         opponent_value = opponent_value.view(-1)
-
     r = r.to(device)
     opponent_value = opponent_value.to(device)
     agent_values.append(r)
@@ -146,12 +146,10 @@ def train(rank,
           counter,
           lock,
           model_spec,
-          nb_episodes,
           nb_steps,
           nb_actions,
           nb_opponents,
           opponent_class,
-          save_interval,
           device,
           optimizer):
     agents, env = create_env(rank,
@@ -166,21 +164,21 @@ def train(rank,
     agent_model = agents[0].agent_model
     state = env.reset()
     # RL
-    reward_shaper = RewardShaper()
     max_grad_norm = 40
     gamma = 0.99
     value_loss_coef = 0.5
     entropy_coef = 0.01
     gae_lambda = 1.0
-    opponent_coefs = torch.tensor([0.1] * nb_opponents, device=device)
+    opponent_coefs = torch.tensor([0.01] * nb_opponents, device=device)
     if optimizer is None:
         optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
     criterion = AgentLoss(gamma=gamma,
                           value_loss_coef=value_loss_coef,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda).to(device)
+    reward_shaper = RewardShaper()
     episodes = 0
-    while episodes < nb_episodes:
+    while True:
         # sync with the shared model
         agent_model.load_state_dict(shared_model.state_dict())
         steps, state, done, agent_trajectory, opponent_trajectory = collect_trajectory(env=env,
@@ -221,7 +219,3 @@ def train(rank,
         optimizer.step()
         if done:
             episodes += 1
-            reward_shaper.reset()
-            if episodes % save_interval == 0:
-                torch.save(shared_model.state_dict(), f"../saved_models/agent_model_{episodes}.pt")
-                print(f"Worker {rank}, episode {episodes} finished.")
