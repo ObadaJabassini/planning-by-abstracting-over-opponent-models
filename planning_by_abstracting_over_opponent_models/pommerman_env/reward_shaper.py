@@ -41,7 +41,7 @@ class RewardShaper:
                  plant_bomb_near_wood_reward=0.05,
                  plant_bomb_near_enemy_reward=0.1,
                  avoid_bomb_reward=0.05,
-                 on_flame_reward=-0.0001,
+                 on_flame_reward=-0.001,
                  pick_power_reward=0.1,
                  catch_enemy_reward=0.001):
         self.mobility_reward = mobility_reward
@@ -72,13 +72,13 @@ class RewardShaper:
         prev_state = self.prev_state
         reward = 0
 
-        # reward stage 1: mobility
+        # stage 1: mobility
         pose_t = np.array(curr_state['position'])
         pose_tm1 = np.array(prev_state['position'])
         move_dist = np.linalg.norm(pose_t - pose_tm1)
         reward += self.mobility_reward if move_dist > 0 else 0
 
-        # reward stage 2: consecutive actions
+        # stage 2: consecutive actions
         if curr_action == self.prev_action:
             self.cons_action_counter += 1
         else:
@@ -86,7 +86,7 @@ class RewardShaper:
         if self.cons_action_counter >= 10:
             reward += self.consecutive_actions_reward
 
-        # reward stage 3: not using ammo
+        # stage 3: not using ammo
         if curr_state['ammo'] == prev_state['ammo']:
             self.not_using_ammo_counter += 1
         else:
@@ -94,7 +94,7 @@ class RewardShaper:
         if self.not_using_ammo_counter >= 10:
             reward += self.not_using_ammo_reward
 
-        # stage 3: planting a bomb
+        # stage 4: planting a bomb
         bombs_pose = np.argwhere(curr_state['bomb_life'] != 0)
         if curr_state['ammo'] < prev_state['ammo']:
             surroundings = [(-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0)]
@@ -117,7 +117,7 @@ class RewardShaper:
             assert nr_woods + nr_enemies < 10
             reward += self.plant_bomb_near_wood_reward * nr_woods + self.plant_bomb_near_enemy_reward * nr_enemies
 
-        # stage 4: avoid flame
+        # stage 5: avoid flame
         for bp in bombs_pose:
             def rot_deg90cw(point):
                 new_point = [0, 0]
@@ -143,7 +143,7 @@ class RewardShaper:
             if on_blast_direct:
                 reward += self.on_flame_reward * factor
 
-        # stage 5: avoid bombs
+        # stage 6: avoid bombs
         dist2bombs = 0
         for bp in bombs_pose:
             dist2bombs += np.linalg.norm(curr_state['position'] - bp)
@@ -152,13 +152,13 @@ class RewardShaper:
         if dist_delta > 0 and move_dist:
             reward += dist_delta * self.avoid_bomb_reward
 
-        # stage 6: pick a powerup
+        # stage 7: pick a powerup
         potential_power = prev_state['board'][curr_state['position']]
         picked_power = potential_power in [Item.ExtraBomb.value, Item.IncrRange.value, Item.Kick.value]
         if picked_power:
             reward += self.pick_power_reward
 
-        # stage 7: catch an enemy
+        # stage 8: catch an enemy
         def closest_enemy():
             my_pose = curr_state['position']
             closest_enemy_id = -1
@@ -178,8 +178,8 @@ class RewardShaper:
             self.closest_enemy_id_prev = closest_enemy_id_cur
             self.closest_enemy_dist_prev = closest_enemy_dist_cur
         else:
-            catching_trhe = 4  # consider catching when close at most this much to the enemy
-            if closest_enemy_dist_cur < self.closest_enemy_dist_prev and closest_enemy_dist_cur < catching_trhe:
+            catching_thre = 4  # consider catching when close at most this much to the enemy
+            if closest_enemy_dist_cur < self.closest_enemy_dist_prev and closest_enemy_dist_cur < catching_thre:
                 reward += self.catch_enemy_reward
                 self.closest_enemy_dist_prev = closest_enemy_dist_cur
             if closest_enemy_dist_cur <= 1.1:  # got that close

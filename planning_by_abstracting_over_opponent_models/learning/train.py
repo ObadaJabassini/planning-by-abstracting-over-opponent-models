@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn.functional as F
+from icecream import ic
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
@@ -9,6 +10,8 @@ from torch.utils.tensorboard import SummaryWriter
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
 from planning_by_abstracting_over_opponent_models.pommerman_env.reward_shaper import RewardShaper
+
+torch.autograd.set_detect_anomaly(True)
 
 
 def reshape_tensors_for_loss_func(steps,
@@ -165,10 +168,10 @@ def train(rank,
     agent_model = agents[0].agent_model
     state = env.reset()
     # RL
-    max_grad_norm = 40
+    max_grad_norm = 0.5
     gamma = 0.99
-    value_loss_coef = 0.5
     entropy_coef = 0.01
+    value_loss_coef = 0.5
     gae_lambda = 1.0
     opponent_coefs = torch.tensor([0.01] * nb_opponents, device=device)
     if optimizer is None:
@@ -210,24 +213,33 @@ def train(rank,
                              agent_log_probs,
                              agent_values,
                              agent_entropies,
-                             opponent_log_probs,
-                             opponent_actions_ground_truths,
-                             opponent_values,
                              opponent_rewards,
+                             opponent_log_probs,
+                             opponent_values,
+                             opponent_actions_ground_truths,
                              opponent_coefs)
-            # ic(loss)
-            # for name, param in agent_model.named_parameters():
-            #     print(name, torch.isfinite(param).all())
+            if rank == 0:
+                print(f"loss = {loss.item()}")
+                # print("is finite:")
+                # for name, param in agent_model.named_parameters():
+                #     print(name, torch.isfinite(param).all())
             loss.backward()
+            # if rank == 0:
+            #     print("grads")
+            #     for name, param in agent_model.named_parameters():
+            #         print(name, param.grad)
             clip_grad_norm_(agent_model.parameters(), max_grad_norm)
             ensure_shared_grads(agent_model, shared_model)
             optimizer.step()
 
             running_loss += loss.item()
             episode_batches += 1
+
             if done:
                 episodes += 1
                 avg_loss = running_loss / episode_batches
+                if rank == 0:
+                    print(avg_loss)
                 running_loss = 0.0
                 episode_batches = 0
                 if summary_writer is not None and episodes % 10 == 0:

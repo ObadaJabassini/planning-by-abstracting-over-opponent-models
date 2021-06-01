@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import cpommerman
 import pommerman
@@ -9,13 +11,18 @@ class PommermanCythonEnv(PommermanBaseEnv):
 
     def __init__(self, agents, seed, training_agent=0, rescale_rewards=False):
         super().__init__(len(agents), rescale_rewards)
-        np.random.seed(seed)
+        self._seed = seed
+        self.seed(self._seed)
         self.agents = agents
         self.env_render = pommerman.make('PommeFFACompetition-v0', agents)
         self.env = cpommerman.make()
         if 0 <= training_agent <= 3:
             self.env.set_training_agent(training_agent)
         self.action_space = self.env.action_space
+
+    def seed(self, s):
+        np.random.seed(s)
+        random.seed(s)
 
     def get_observations(self):
         obs = self.env.get_observations()
@@ -39,6 +46,7 @@ class PommermanCythonEnv(PommermanBaseEnv):
         return [self.agents[i].act(state[i], self.action_space) for i in range(1, len(self.agents))]
 
     def reset(self):
+        self.seed(self._seed)
         self.env.reset()
         return self.get_observations()
 

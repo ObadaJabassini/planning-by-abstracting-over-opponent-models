@@ -8,20 +8,27 @@ import torch.nn.functional as F
 
 class AgentLoss(nn.Module):
 
-    def __init__(self, gamma, entropy_coef, gae_lambda, value_loss_coef):
+    def __init__(self,
+                 gamma,
+                 entropy_coef,
+                 gae_lambda,
+                 value_loss_coef):
         super().__init__()
         self.gamma = gamma
         self.value_loss_coef = value_loss_coef
         self.entropy_coef = entropy_coef
         self.gae_lambda = gae_lambda
 
-    def agent_loss_func(self, agent_rewards, agent_values, agent_log_probs, agent_entropies):
+    def agent_loss_func(self,
+                        agent_rewards,
+                        agent_log_probs,
+                        agent_values,
+                        agent_entropies):
         policy_loss = 0
         value_loss = 0
         R = agent_values[-1]
-        gae = torch.zeros(1).to(agent_entropies[0].device)
-        l = len(agent_rewards)
-        for i in reversed(range(l)):
+        gae = torch.zeros(1, 1).to(agent_entropies[0].device)
+        for i in reversed(range(len(agent_rewards))):
             R = self.gamma * R + agent_rewards[i]
             advantage = R - agent_values[i]
             value_loss = value_loss + 0.5 * advantage.pow(2)
@@ -32,13 +39,12 @@ class AgentLoss(nn.Module):
         return total_loss
 
     def opponent_loss_func(self,
-                           opponent_log_probs,
-                           opponent_actions_ground_truths,
-                           opponent_values,
                            opponent_rewards,
+                           opponent_log_probs,
+                           opponent_values,
+                           opponent_actions_ground_truths,
                            opponent_coefs):
         """
-
         :param opponent_log_probs: (nb_opponents, nb_steps, nb_actions)
         :param opponent_actions_ground_truths: (nb_opponents, nb_steps)
         :param opponent_values: (nb_opponents, nb_steps)
@@ -53,14 +59,15 @@ class AgentLoss(nn.Module):
             policy_loss = opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i], opponent_actions_ground_truths[i])
 
             # value loss
-            opponent_value = opponent_values[i]
-            opponent_reward = opponent_rewards[i]
-            shifted_value = torch.roll(opponent_value, -1)
-            shifted_dim = opponent_value.shape[0] - 1
-            opponent_value = opponent_value[:shifted_dim]
-            shifted_value = shifted_value[:shifted_dim]
-            predicted_values = opponent_reward + self.gamma * shifted_value
-            value_loss = opponent_coefs[i] * F.smooth_l1_loss(opponent_value, predicted_values)
+            # opponent_value = opponent_values[i]
+            # opponent_reward = opponent_rewards[i]
+            # shifted_value = torch.roll(opponent_value, -1)
+            # shifted_dim = opponent_value.shape[0] - 1
+            # opponent_value = opponent_value[:shifted_dim]
+            # shifted_value = shifted_value[:shifted_dim]
+            # predicted_values = opponent_reward + self.gamma * shifted_value
+            # value_loss = opponent_coefs[i] * F.smooth_l1_loss(opponent_value, predicted_values)
+            value_loss = 0
 
             total_loss = total_loss + policy_loss + value_loss
 
@@ -71,22 +78,20 @@ class AgentLoss(nn.Module):
                 agent_log_probs,
                 agent_values,
                 agent_entropies,
-                opponent_log_probs,
-                opponent_actions_ground_truths,
-                opponent_values,
                 opponent_rewards,
+                opponent_log_probs,
+                opponent_values,
+                opponent_actions_ground_truths,
                 opponent_coefs):
         agent_loss = self.agent_loss_func(agent_rewards,
-                                          agent_values,
                                           agent_log_probs,
+                                          agent_values,
                                           agent_entropies)
-
-        opponent_loss = self.opponent_loss_func(opponent_log_probs,
-                                                opponent_actions_ground_truths,
+        opponent_loss = self.opponent_loss_func(opponent_rewards,
+                                                opponent_log_probs,
                                                 opponent_values,
-                                                opponent_rewards,
+                                                opponent_actions_ground_truths,
                                                 opponent_coefs)
-
         total_loss = agent_loss + opponent_loss
         total_loss = total_loss.sum()
         return total_loss
