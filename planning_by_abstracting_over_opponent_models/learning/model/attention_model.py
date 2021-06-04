@@ -8,8 +8,9 @@ from planning_by_abstracting_over_opponent_models.learning.model.soft_hard_multi
 
 class AttentionModel(nn.Module):
 
-    def __init__(self, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size):
+    def __init__(self, nb_opponents, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size):
         super().__init__()
+        self.nb_opponents = nb_opponents
         self.use_hard_attention = hard_attention_rnn_hidden_size is not None
         if self.use_hard_attention:
             self.lstm = nn.LSTM(latent_dim * 2, hard_attention_rnn_hidden_size, bidirectional=True)

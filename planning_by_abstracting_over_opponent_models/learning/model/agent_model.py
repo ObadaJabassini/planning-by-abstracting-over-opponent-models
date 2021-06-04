@@ -29,7 +29,7 @@ class AgentModel(nn.Module):
         )
         agent_head_dim = latent_dim
         if self.use_attention:
-            self.attention_model = AttentionModel(latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size)
+            self.attention_model = AttentionModel(nb_opponents, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size)
             agent_head_dim *= 2
 
         self.agent_head_layer = nn.Sequential(

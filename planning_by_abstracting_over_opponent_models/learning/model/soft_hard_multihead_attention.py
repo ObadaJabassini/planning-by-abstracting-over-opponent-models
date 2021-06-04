@@ -61,7 +61,7 @@ class SoftHardMultiheadAttention(nn.Module):
             hard_attention = hard_attention.repeat(1, self.num_heads, 1, 1)
             attn_output_weights = attn_output_weights * hard_attention
             # re-normalize
-            attn_output_weights = attn_output_weights / attn_output_weights.sum(dim=-1, keepdim=True)
+            # attn_output_weights = attn_output_weights / attn_output_weights.sum(dim=-1, keepdim=True)
             attn_output_weights = attn_output_weights.view(bsz * self.num_heads, tgt_len, src_len)
         attn_output = torch.bmm(attn_output_weights, v)
         attn_output = attn_output.transpose(0, 1).contiguous().view(tgt_len, bsz, embed_dim)
