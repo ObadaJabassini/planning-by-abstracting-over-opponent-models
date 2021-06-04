@@ -55,8 +55,7 @@ class AgentModel(nn.Module):
             for opponent_latent in opponent_latents:
                 agent_latent = agent_latent * opponent_latent
             # Should we divide by the number of opponents?
-            opponent_influence = torch.ones(agent_latent.size(0), self.nb_opponents,
-                                            device=agent_latent.device) / self.nb_opponents
+            opponent_influence = torch.full((agent_latent.size(0), self.nb_opponents), 1 / self.nb_opponents, device=agent_latent.device)
 
         # output
         agent_head = self.agent_head_layer(agent_latent)

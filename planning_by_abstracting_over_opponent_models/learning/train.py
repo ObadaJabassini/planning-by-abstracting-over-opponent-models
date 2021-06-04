@@ -2,14 +2,27 @@
 
 import torch
 import torch.nn.functional as F
-from icecream import ic
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
-from planning_by_abstracting_over_opponent_models.pommerman_env.reward_shaper import RewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.ammo_usage_reward_shaper import \
+    AmmoUsageRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.catching_enemy_reward_shaper import \
+    CatchingEnemyRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.consecutive_actions_reward_shaper import \
+    ConsecutiveActionsRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.enemy_killed_reward_shaper import \
+    EnemyKilledRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.mobility_reward_shaper import \
+    MobilityRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.picking_powerup_reward_shaper import \
+    PickingPowerupRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_reward_shaper import \
+    PlantingBombRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaper import RewardShaper
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -90,7 +103,7 @@ def collect_trajectory(env,
         state, rewards, done = env.step(actions)
         agent_reward = rewards[0]
         if reward_shaper is not None and not done and agent_reward == 0:
-            agent_reward = reward_shaper.shape(state[0], agent_action, agent_reward)
+            agent_reward = reward_shaper.shape(state[0], agent_action)
         # agent
         agent_rewards.append(agent_reward)
         agent_entropies.append(agent_entropy.view(-1))
@@ -180,7 +193,16 @@ def train(rank,
                           value_loss_coef=value_loss_coef,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda).to(device)
-    reward_shaper = RewardShaper()
+    reward_shaping_components = [
+        MobilityRewardShaper(),
+        ConsecutiveActionsRewardShaper(),
+        AmmoUsageRewardShaper(),
+        EnemyKilledRewardShaper(),
+        PickingPowerupRewardShaper(),
+        PlantingBombRewardShaper(),
+        CatchingEnemyRewardShaper()
+    ]
+    reward_shaper = RewardShaper(reward_shaping_components)
     episodes = 0
     episode_batches = 0
     running_loss = 0.0
