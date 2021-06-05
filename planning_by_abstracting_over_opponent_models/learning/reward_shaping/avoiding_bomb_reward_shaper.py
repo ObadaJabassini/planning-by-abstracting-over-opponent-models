@@ -24,7 +24,7 @@ class AvoidingBombRewardShaper(RewardShapingComponent):
         pose_t = np.array(curr_state['position'])
         pose_tm1 = np.array(self.prev_state['position'])
         move_dist = np.linalg.norm(pose_t - pose_tm1)
-        if dist_delta > 0 and move_dist:
+        if dist_delta > 0 and move_dist > 0:
             return dist_delta * self.avoid_bomb_reward
         return 0
 

@@ -70,5 +70,5 @@ def monitor(rank,
                 actions.clear()
                 state = env.reset()
                 time.sleep(60)
-    except KeyboardInterrupt:
+    except:
         torch.save(shared_model.state_dict(), f"../saved_models/agent_model.pt")

@@ -10,6 +10,10 @@ from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils i
 from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.ammo_usage_reward_shaper import \
     AmmoUsageRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_bomb_reward_shaper import \
+    AvoidingBombRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_flame_reward_shaper import \
+    AvoidingFlameRewardShaper
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.catching_enemy_reward_shaper import \
     CatchingEnemyRewardShaper
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.consecutive_actions_reward_shaper import \
@@ -200,7 +204,9 @@ def train(rank,
         EnemyKilledRewardShaper(),
         PickingPowerupRewardShaper(),
         PlantingBombRewardShaper(),
-        CatchingEnemyRewardShaper()
+        CatchingEnemyRewardShaper(),
+        AvoidingBombRewardShaper(),
+        AvoidingFlameRewardShaper(),
     ]
     reward_shaper = RewardShaper(reward_shaping_components)
     episodes = 0
@@ -269,6 +275,6 @@ def train(rank,
                                               avg_loss,
                                               episodes)
                     summary_writer.flush()
-    except KeyboardInterrupt:
+    except:
         if summary_writer is not None:
             summary_writer.close()
