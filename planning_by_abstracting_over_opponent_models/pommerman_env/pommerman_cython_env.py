@@ -43,7 +43,7 @@ class PommermanCythonEnv(PommermanBaseEnv):
         return self.get_observations(), self.get_rewards(), self.get_done()
 
     def act(self, state):
-        return [self.agents[i].act(state[i], self.action_space) for i in range(1, len(self.agents))]
+        return [self.agents[i].act(state[i], self.action_space) for i in range(1, self.nb_players)]
 
     def reset(self):
         self.seed(self._seed)
