@@ -205,7 +205,7 @@ def train(rank,
         PickingPowerupRewardShaper(),
         PlantingBombRewardShaper(),
         CatchingEnemyRewardShaper(),
-        AvoidingBombRewardShaper(),
+        # AvoidingBombRewardShaper(),
         AvoidingFlameRewardShaper(),
     ]
     reward_shaper = RewardShaper(reward_shaping_components)
