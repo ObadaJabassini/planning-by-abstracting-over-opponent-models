@@ -36,7 +36,7 @@ class SMMCTS:
         self.exploration_coefs = exploration_coefs
         self.state_evaluator = state_evaluator
 
-    def search(self, env, current_node: TreeNode, fpus, random_players, pw_cs):
+    def search(self, env, current_node: TreeNode, fpus, random_players):
         if current_node.is_terminal:
             return current_node.value_estimate
         # select
@@ -44,11 +44,10 @@ class SMMCTS:
         state, rewards, is_terminal = env.step(actions)
         # expand
         if actions not in current_node.children:
-            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node, fpus, random_players,
-                                         pw_cs)
+            value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node, fpus, random_players)
         else:
             child = current_node.children[actions]
-            value_estimate = self.search(env, child, fpus, random_players, pw_cs)
+            value_estimate = self.search(env, child, fpus, random_players)
         # backpropagate
         self.backpropagate(current_node, actions, value_estimate)
         return value_estimate
@@ -56,13 +55,14 @@ class SMMCTS:
     def select(self, node):
         return node.best_actions()
 
-    def expand(self, env, state, rewards, is_terminal, actions, current_node, fpus, random_players, pw_cs):
+    def expand(self, env, state, rewards, is_terminal, actions, current_node, fpus, random_players):
         if is_terminal:
             value_estimate = torch.as_tensor(rewards)
             action_prob_estimate = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
             pw_alphas = [None] * self.nb_players
+            pw_cs = [None] * self.nb_players
         else:
-            value_estimate, action_prob_estimate, pw_alphas = self.state_evaluator.evaluate(env)
+            value_estimate, action_prob_estimate, pw_cs, pw_alphas = self.state_evaluator.evaluate(env)
         current_node.children[actions] = TreeNode(state=state,
                                                   parent=current_node,
                                                   is_terminal=is_terminal,
@@ -80,9 +80,9 @@ class SMMCTS:
     def backpropagate(self, node, actions, value_estimate):
         node.update_actions_estimates(actions, value_estimate)
 
-    def infer(self, env, iterations, fpus, random_players, pw_cs, progress_bar=False):
+    def infer(self, env, iterations, fpus, random_players, progress_bar=False):
         initial_state = env.get_observations()
-        value_estimate, action_probs_estimate, pw_alphas = self.state_evaluator.evaluate(env)
+        value_estimate, action_probs_estimate, pw_cs, pw_alphas = self.state_evaluator.evaluate(env)
         root = TreeNode(state=initial_state,
                         parent=None,
                         is_terminal=False,
@@ -100,7 +100,7 @@ class SMMCTS:
         if progress_bar:
             r = tqdm(r)
         for iteration in r:
-            self.search(env, root, fpus, random_players, pw_cs)
+            self.search(env, root, fpus, random_players)
             env.set_game_state(game_state)
         most_visited_action = root.most_visited_actions()[0]
         return most_visited_action
@@ -162,20 +162,17 @@ def play_game(game_id,
     random_players = [False] + ([ignore_opponent_actions] * (nb_players - 1))
     pw_cs = [pw_c] * nb_players
     pw_alphas = [pw_alpha] * nb_players
-    depth = None
-    heuristic_func = None
     if use_random_rollout:
         state_evaluator = RandomRolloutStateEvaluator(nb_players,
                                                       nb_actions,
-                                                      pw_alphas,
-                                                      depth=depth,
-                                                      heuristic_func=heuristic_func)
+                                                      pw_cs,
+                                                      pw_alphas)
     else:
         iterations = int(9e4)
         agent_model = create_agent_model(0, 32, 6, nb_players - 1, 3, 32, 64, 64, None, None, cpu, False)
-        agent_model.load_state_dict(torch.load(f"../models/agent_model_{iterations}.pt"))
+        agent_model.load_state_dict(torch.load(f"../saved_models/agent_model_{iterations}.pt"))
         agent_model.eval()
-        state_evaluator = NeuralNetworkStateEvaluator(0, agent_model, 1)
+        state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=1, agent_pw_alpha=1)
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
@@ -193,7 +190,6 @@ def play_game(game_id,
                                     iterations=mcts_iterations,
                                     fpus=fpus,
                                     random_players=random_players,
-                                    pw_cs=pw_cs,
                                     progress_bar=progress_bar)
         actions.insert(0, agent_action)
         state, rewards, done = env.step(actions)
@@ -224,8 +220,8 @@ parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions",
 parser.add_argument('--mcts-iterations', type=int, default=5000)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
-parser.add_argument('--pw-alpha', type=float, default=None)
 parser.add_argument('--pw-c', type=float, default=None)
+parser.add_argument('--pw-alpha', type=float, default=None)
 parser.add_argument('--use-random-rollout', dest="use_random_rollout", action="store_true")
 parser.add_argument('--use-nn', dest="use_random_rollout", action="store_false")
 parser.add_argument('--show-elapsed-time', dest="show_elapsed_time", action="store_true")

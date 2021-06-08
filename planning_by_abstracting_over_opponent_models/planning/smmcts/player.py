@@ -71,8 +71,11 @@ class MCTSPlayer(Player):
             result = self.sorted_to_original_actions[result]
         return result
 
+    def _compute_k(self, nb_visits):
+        return math.ceil(self.pw_c * (nb_visits ** self.pw_alpha))
+
     def best_action(self, nb_visits):
-        k = math.ceil(self.pw_c * (nb_visits ** self.pw_alpha)) if self.use_progressive_widening else self.nb_actions
+        k = self._compute_k(nb_visits) if self.use_progressive_widening else self.nb_actions
         k = int(k)
         result = self.uct(nb_visits, k)
         result = result.argmax().item()

@@ -6,9 +6,11 @@ from planning_by_abstracting_over_opponent_models.planning.state_evaluator impor
 
 
 class NeuralNetworkStateEvaluator(StateEvaluator):
-    def __init__(self, agent_id, agent_model, agent_pw_alpha=1):
+    def __init__(self, agent_id, nb_actions, agent_model, agent_pw_c, agent_pw_alpha=1):
         self.agent_id = agent_id
+        self.nb_actions = nb_actions
         self.agent_model = agent_model
+        self.agent_pw_c = agent_pw_c
         self.agent_pw_alpha = agent_pw_alpha
 
     def evaluate(self, env):
@@ -19,9 +21,13 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         agent_action_log, agent_value, opponents_action_log, opponent_values, opponent_influence = self.agent_model(obs)
         value_estimate = self.estimate_values(agent_value, opponent_values)
         action_probs_estimate = self.estimate_action_probabilities(agent_action_log, opponents_action_log)
-        pw_alphas = opponent_influence.view(-1).to(cpu).tolist()
+        attentions = opponent_influence.view(-1).to(cpu).tolist()
+        pw_alphas = attentions.copy()
         pw_alphas.insert(0, self.agent_pw_alpha)
-        return value_estimate, action_probs_estimate, pw_alphas
+        pw_cs = attentions.copy()
+        pw_cs = [pw_c * self.nb_actions for pw_c in pw_cs]
+        pw_cs.insert(0, self.agent_pw_c)
+        return value_estimate, action_probs_estimate, pw_cs, pw_alphas
 
     def estimate_values(self, agent_value, opponent_values):
         """
