@@ -1,8 +1,12 @@
 import torch.nn.functional as F
-from pommerman.agents import BaseAgent
+
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
 
 
-class RLAgent(BaseAgent):
+class RLAgent(PommermanAgent):
+
+    def reset(self):
+        pass
 
     def __init__(self, agent_id, agent_model, stochastic=False):
         super().__init__()

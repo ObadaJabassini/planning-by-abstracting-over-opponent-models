@@ -18,6 +18,8 @@ import numpy as np
 from pommerman import constants, utility
 from pommerman.agents import BaseAgent
 
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
+
 
 def position_is_in_corridor(board, position, perpendicular_dirs):
     d1 = perpendicular_dirs[0]
@@ -104,10 +106,13 @@ def must_place_bomb_test(obs):
     return False
 
 
-class CautiousAgent(BaseAgent):
+class CautiousAgent(PommermanAgent):
+
+    def reset(self):
+        pass
 
     def __init__(self, *args, **kwargs):
-        super(CautiousAgent, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Keep track of recently visited uninteresting positions so that we
         # don't keep visiting the same places.

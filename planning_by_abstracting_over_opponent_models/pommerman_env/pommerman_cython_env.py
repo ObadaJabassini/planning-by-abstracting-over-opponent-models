@@ -1,15 +1,17 @@
 import random
+from typing import List
 
 import numpy as np
 import cpommerman
 import pommerman
 
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_env import PommermanBaseEnv
 
 
 class PommermanCythonEnv(PommermanBaseEnv):
 
-    def __init__(self, agents, seed, training_agent=0, rescale_rewards=False):
+    def __init__(self, agents: List[PommermanAgent], seed, training_agent=0, rescale_rewards=False):
         super().__init__(len(agents), rescale_rewards)
         self._seed = seed
         self.seed(self._seed)
@@ -48,6 +50,8 @@ class PommermanCythonEnv(PommermanBaseEnv):
     def reset(self):
         self.seed(self._seed)
         self.env.reset()
+        for agent in self.agents:
+            agent.reset()
         return self.get_observations()
 
     def render(self, mode=None):

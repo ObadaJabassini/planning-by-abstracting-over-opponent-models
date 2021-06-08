@@ -1,14 +1,15 @@
 # taken directly from https://github.com/MultiAgentLearning/playground/blob/master/pommerman/agents/simple_agent.py, with minor modifications
-from collections import defaultdict
 import queue
 import random
+from collections import defaultdict
 
 import numpy as np
 from pommerman import constants, utility
-from pommerman.agents import BaseAgent
+
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
 
 
-class ModifiedSimpleAgent(BaseAgent):
+class ModifiedSimpleAgent(PommermanAgent):
     """This is a baseline agent. After you can beat it, submit your agent to
     compete.
     """
@@ -444,3 +445,6 @@ class ModifiedSimpleAgent(BaseAgent):
         if not ret:
             ret = directions
         return ret
+
+    def reset(self):
+        pass
