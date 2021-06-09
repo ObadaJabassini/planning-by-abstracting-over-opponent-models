@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=training_static
-#SBATCH -p short
+#SBATCH --job-name=training
+#SBATCH --partition=normal
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=24
 #SBATCH --error=slurm-simple.err
 #SBATCH --output=slurm-simple.out
-#SBATCH --time=00:01:00
+#SBATCH --time=24:00:00
 
 export PYTHONPATH="$HOME/obada/planning-by-abstracting-over-opponent-models"
 cd "$HOME/obada/planning-by-abstracting-over-opponent-models/planning_by_abstracting_over_opponent_models/learning"
