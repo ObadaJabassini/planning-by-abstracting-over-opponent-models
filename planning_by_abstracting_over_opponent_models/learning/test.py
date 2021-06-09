@@ -1,6 +1,5 @@
 from typing import List
 
-import pommerman.agents
 import torch
 import torch.nn.functional as F
 
