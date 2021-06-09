@@ -266,8 +266,8 @@ def train(rank,
             if done:
                 episodes += 1
                 avg_loss = running_loss / episode_batches
-                if rank == 0:
-                    print(avg_loss)
+                # if rank == 0:
+                #     print(avg_loss)
                 running_loss = 0.0
                 episode_batches = 0
                 if summary_writer is not None and episodes % 10 == 0:
