@@ -22,7 +22,8 @@ class PommermanCythonEnv(PommermanBaseEnv):
             self.env.set_training_agent(training_agent)
         self.action_space = self.env.action_space
 
-    def seed(self, s):
+    @staticmethod
+    def seed(s):
         np.random.seed(s)
         random.seed(s)
 
