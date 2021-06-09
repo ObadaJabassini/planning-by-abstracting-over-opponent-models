@@ -36,6 +36,7 @@ class Point:
 class AvoidingFlameRewardShaper(RewardShapingComponent):
 
     def __init__(self, on_flame_reward=-0.001):
+        super().__init__()
         self.on_flame_reward = on_flame_reward
 
     def update(self, curr_state, curr_action):

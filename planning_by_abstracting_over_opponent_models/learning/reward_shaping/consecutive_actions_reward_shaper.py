@@ -5,6 +5,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 class ConsecutiveActionsRewardShaper(RewardShapingComponent):
 
     def __init__(self, consecutive_actions_reward=-0.0001):
+        super().__init__()
         self.consecutive_actions_reward = consecutive_actions_reward
         self.prev_action = None
         self.cons_action_counter = 0

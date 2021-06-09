@@ -95,7 +95,7 @@ def collect_trajectory(env,
     while not done and steps < nb_steps:
         steps += 1
         obs = env.get_features(state).to(device)
-        agent_policy, agent_value, opponent_log_prob, opponent_value, _ = agent.estimate(obs)
+        agent_policy, agent_value, opponent_log_prob, opponent_value, opponent_influence = agent.estimate(obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)

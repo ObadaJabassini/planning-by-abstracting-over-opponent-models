@@ -4,12 +4,9 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 
 class AmmoUsageRewardShaper(RewardShapingComponent):
     def __init__(self, not_using_ammo_reward=-0.0001):
+        super().__init__()
         self.not_using_ammo_reward = not_using_ammo_reward
-        self.prev_state = None
         self.not_using_ammo_counter = 0
-
-    def update(self, curr_state, curr_action):
-        self.prev_state = curr_state
 
     def shape(self, curr_state, curr_action):
         if self.prev_state is not None:
@@ -22,6 +19,5 @@ class AmmoUsageRewardShaper(RewardShapingComponent):
         return 0
 
     def reset(self):
-        self.prev_state = None
+        super().reset()
         self.not_using_ammo_counter = 0
-

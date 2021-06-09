@@ -8,12 +8,9 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 class PlantingBombRewardShaper(RewardShapingComponent):
 
     def __init__(self, plant_bomb_near_wood_reward=0.05, plant_bomb_near_enemy_reward=0.1):
+        super().__init__()
         self.plant_bomb_near_wood_reward = plant_bomb_near_wood_reward
         self.plant_bomb_near_enemy_reward = plant_bomb_near_enemy_reward
-        self.prev_state = None
-
-    def update(self, curr_state, curr_action):
-        self.prev_state = curr_state
 
     def shape(self, curr_state, curr_action):
         if self.prev_state is not None:
@@ -39,6 +36,3 @@ class PlantingBombRewardShaper(RewardShapingComponent):
                 assert nr_woods + nr_enemies < 10
                 return self.plant_bomb_near_wood_reward * nr_woods + self.plant_bomb_near_enemy_reward * nr_enemies
         return 0
-
-    def reset(self):
-        self.prev_state = None

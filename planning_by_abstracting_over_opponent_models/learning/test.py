@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model, \
     str_to_opponent_class
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
 
@@ -20,7 +21,7 @@ if __name__ == '__main__':
     agent_model.load_state_dict(torch.load(f"../saved_models/agent_model.pt"))
     agent_model.eval()
     agent = RLAgent(0, agent_model)
-    agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_opponents)]
+    agents: List[PommermanAgent] = [opponent_class() for _ in range(nb_opponents)]
     agents.insert(0, agent)
     env = PommermanCythonEnv(agents, 1)
     action_space = env.action_space
