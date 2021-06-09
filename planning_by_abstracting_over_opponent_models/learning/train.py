@@ -246,8 +246,8 @@ def train(rank,
                              opponent_values,
                              opponent_actions_ground_truths,
                              opponent_coefs)
-            if rank == 0:
-                print(f"loss = {loss.item()}")
+            # if rank == 0:
+            #     print(f"loss = {loss.item()}")
                 # print("is finite:")
                 # for name, param in agent_model.named_parameters():
                 #     print(name, torch.isfinite(param).all())
