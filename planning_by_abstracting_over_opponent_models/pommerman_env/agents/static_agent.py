@@ -1,6 +1,5 @@
 # from https://github.com/BorealisAI/pommerman-baseline/blob/master/random_agent.py
 
-from pommerman.agents import BaseAgent
 from pommerman.constants import Action
 
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
