@@ -19,7 +19,7 @@ if __name__ == '__main__':
     opponent_class = str_to_opponent_class(opponent_class)
     iterations = int(9e4)
     agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 32, 64, 64, 4, 64, device, False)
-    agent_model.load_state_dict(torch.load(f"../saved_models/agent_model_1500.pt"))
+    agent_model.load_state_dict(torch.load(f"../saved_models/agent_model_{opponent_class}_1200.pt"))
     agent_model.eval()
     agent = RLAgent(0, agent_model)
     agents: List[PommermanAgent] = [opponent_class() for _ in range(nb_opponents)]
