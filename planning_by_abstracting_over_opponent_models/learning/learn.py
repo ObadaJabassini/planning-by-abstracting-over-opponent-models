@@ -41,10 +41,10 @@ parser.set_defaults(shared_opt=True)
 parser.set_defaults(monitor=True)
 
 if __name__ == '__main__':
-    Path("../saved_models").mkdir(exist_ok=True)
+    args = parser.parse_args()
+    Path(f"../saved_models/{args.opponent_class}").mkdir(exist_ok=True, parents=True)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
-    args = parser.parse_args()
     device = gpu if args.device.lower() == "gpu" else cpu
     seed = args.seed
     use_cython = args.nb_players == 4
@@ -118,4 +118,4 @@ if __name__ == '__main__':
     print("Started training.")
     for p in processes:
         p.join()
-    torch.save(shared_model.state_dict(), f"../saved_models/fully_trained_agent_model_{opponent_class}.pt")
+    # torch.save(shared_model.state_dict(), f"../saved_models/fully_trained_agent_model_{opponent_class}.pt")

@@ -212,7 +212,7 @@ def train(rank,
     episodes = 0
     episode_batches = 0
     running_loss = 0.0
-    summary_writer = SummaryWriter("runs") if rank == 0 else None
+    summary_writer = SummaryWriter(f"runs_{opponent_class}") if rank == 0 else None
     try:
         while True:
             # sync with the shared model

@@ -58,10 +58,10 @@ def monitor(rank,
             if done:
                 reward = rewards[0]
                 episodes += 1
-                with open("rewards.csv", "a") as f:
+                with open(f"rewards_{opponent_class}.csv", "a") as f:
                     f.write(f"{episodes}, {reward}\n")
                 if episodes % save_interval == 0:
-                    torch.save(shared_model.state_dict(), f"../saved_models/agent_model_{opponent_class}_{episodes}.pt")
+                    torch.save(shared_model.state_dict(), f"../saved_models/{opponent_class}/agent_model_{episodes}.pt")
                 t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
                 t1 = counter.value / (time.time() - start_time)
                 s = f"Episode: {episodes}, Time: {t}, num steps: {counter.value}, FPS: {t1:.0f}, episode reward: {reward}, episode length: {episode_length}"
