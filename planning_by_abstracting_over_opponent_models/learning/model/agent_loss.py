@@ -61,12 +61,9 @@ class AgentLoss(nn.Module):
             # value loss
             # opponent_value = opponent_values[i]
             # opponent_reward = opponent_rewards[i]
-            # shifted_value = torch.roll(opponent_value, -1)
-            # shifted_dim = opponent_value.shape[0] - 1
-            # opponent_value = opponent_value[:shifted_dim]
-            # shifted_value = shifted_value[:shifted_dim]
-            # predicted_values = opponent_reward + self.gamma * shifted_value
-            # value_loss = opponent_coefs[i] * F.smooth_l1_loss(opponent_value, predicted_values)
+            # next_state_value = opponent_reward + self.gamma * opponent_value[1:]
+            # state_value = opponent_value[:-1]
+            # value_loss = opponent_coefs[i] * F.smooth_l1_loss(state_value, next_state_value)
             value_loss = 0
 
             total_loss = total_loss + policy_loss + value_loss
