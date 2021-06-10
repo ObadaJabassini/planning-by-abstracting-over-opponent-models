@@ -24,7 +24,7 @@ if __name__ == '__main__':
     agent = RLAgent(0, agent_model)
     agents: List[PommermanAgent] = [opponent_class() for _ in range(nb_opponents)]
     agents.insert(0, agent)
-    env = PommermanCythonEnv(agents, 4)
+    env = PommermanCythonEnv(agents, 5)
     action_space = env.action_space
     state = env.reset()
     done = False
