@@ -14,6 +14,9 @@ class ModifiedSimpleAgent(PommermanAgent):
     compete.
     """
 
+    def reset_agent(self):
+        pass
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -446,5 +449,3 @@ class ModifiedSimpleAgent(PommermanAgent):
             ret = directions
         return ret
 
-    def reset(self):
-        pass

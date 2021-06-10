@@ -52,7 +52,7 @@ class PommermanCythonEnv(PommermanBaseEnv):
         self.seed(self._seed)
         self.env.reset()
         for agent in self.agents:
-            agent.reset()
+            agent.reset_agent()
         return self.get_observations()
 
     def render(self, mode=None):

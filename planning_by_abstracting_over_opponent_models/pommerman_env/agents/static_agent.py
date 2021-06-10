@@ -9,7 +9,7 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman
 class StaticAgent(PommermanAgent):
     """ Static agent"""
 
-    def reset(self):
+    def reset_agent(self):
         pass
 
     def act(self, obs, action_space):

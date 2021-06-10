@@ -108,7 +108,7 @@ def must_place_bomb_test(obs):
 
 class CautiousAgent(PommermanAgent):
 
-    def reset(self):
+    def reset_agent(self):
         pass
 
     def __init__(self, *args, **kwargs):

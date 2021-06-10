@@ -1,7 +1,9 @@
+from time import sleep
 from typing import List
 
 import torch
 import torch.nn.functional as F
+from icecream import ic
 
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model, \
@@ -16,8 +18,8 @@ if __name__ == '__main__':
     opponent_class = "static"
     opponent_class = str_to_opponent_class(opponent_class)
     iterations = int(9e4)
-    agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 32, 64, 64, None, None, device, False)
-    agent_model.load_state_dict(torch.load(f"../saved_models/agent_model.pt"))
+    agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 32, 64, 64, 4, 64, device, False)
+    agent_model.load_state_dict(torch.load(f"../saved_models/agent_model_1500.pt"))
     agent_model.eval()
     agent = RLAgent(0, agent_model)
     agents: List[PommermanAgent] = [opponent_class() for _ in range(nb_opponents)]
@@ -31,14 +33,13 @@ if __name__ == '__main__':
         agent_policy, agent_value, opponent_log_prob, opponent_value, _ = agent.estimate(obs)
         agent_probs = F.softmax(agent_policy, dim=-1).view(-1)
         agent_action = agent_probs.argmax().item()
-        opponent_log_prob = F.softmax(opponent_log_prob.squeeze(0), dim=-1)
-        print(agent_probs)
+        opponent_probs = F.softmax(opponent_log_prob.squeeze(0), dim=-1)
+        ic(agent_probs)
+        ic(opponent_probs)
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
-        print(actions)
+        ic(actions)
         # sleep(3)
         state, rewards, done = env.step(actions)
         env.render()
-        print(done)
-        print(rewards)
-        # sleep(3)
+        sleep(3)

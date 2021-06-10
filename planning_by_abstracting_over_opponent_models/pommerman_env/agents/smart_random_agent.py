@@ -10,7 +10,7 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman
 class SmartRandomAgent(PommermanAgent):
     """ random with filtered actions"""
 
-    def reset(self):
+    def reset_agent(self):
         self.last_obs = None
         self.last_last_obs = None
 
