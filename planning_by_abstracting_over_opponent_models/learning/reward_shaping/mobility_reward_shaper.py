@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaping_component import \
@@ -6,14 +8,22 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 
 class MobilityRewardShaper(RewardShapingComponent):
 
-    def __init__(self, mobility_reward=0.1):
+    def __init__(self, mobility_reward=0.01):
         super().__init__()
         self.mobility_reward = mobility_reward
+        self.last_positions = OrderedDict()
 
     def shape(self, curr_state, curr_action):
-        if self.prev_state is not None:
-            pose_t = np.array(curr_state['position'])
-            pose_tm1 = np.array(self.prev_state['position'])
-            move_dist = np.linalg.norm(pose_t - pose_tm1)
-            return self.mobility_reward if move_dist > 0 else 0
-        return 0
+        pos = tuple(curr_state['position'])
+        reward = 0
+        if len(self.last_positions) > 0 and pos not in self.last_positions:
+            reward = self.mobility_reward
+        self.last_positions[pos] = True
+        if len(self.last_positions) > 20:
+            self.last_positions.popitem(last=False)
+        return reward
+
+    def reset(self):
+        super().reset()
+        self.last_positions = OrderedDict()
+
