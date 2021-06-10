@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=training_static
+#SBATCH --job-name="training_static"
 #SBATCH --partition=normal
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
