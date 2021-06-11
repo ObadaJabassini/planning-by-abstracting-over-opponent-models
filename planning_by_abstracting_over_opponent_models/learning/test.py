@@ -15,7 +15,7 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython
 if __name__ == '__main__':
     device = cpu
     nb_opponents = 3
-    opponent_class_str = "static"
+    opponent_class_str = "simple"
     opponent_class = str_to_opponent_class(opponent_class_str)
     iterations = int(9e4)
     agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 32, 64, 64, 4, 64, device, False)
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     agent = RLAgent(0, agent_model)
     agents: List[PommermanAgent] = [opponent_class() for _ in range(nb_opponents)]
     agents.insert(0, agent)
-    env = PommermanCythonEnv(agents, 5)
+    env = PommermanCythonEnv(agents, 9)
     action_space = env.action_space
     state = env.reset()
     done = False
