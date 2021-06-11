@@ -37,10 +37,10 @@ if __name__ == '__main__':
         ic(agent_probs)
         ic(opponent_probs)
         ic(opponent_influence)
+        sleep(0.5)
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
-        ic(actions)
-        # sleep(3)
         state, rewards, done = env.step(actions)
         env.render()
-        # sleep(3)
+        ic(actions)
+        sleep(0.5)
