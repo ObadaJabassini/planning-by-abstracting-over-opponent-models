@@ -46,8 +46,8 @@ class AgentModel(nn.Module):
     def forward(self, obs):
         features = self.features_extractor(obs)
         agent_latent = self.agent_latent_layer(features)
-        opponent_results = [opponent_model(features) for opponent_model in self.opponent_models]
-        opponent_latents, opponent_policies, opponent_values = list(zip(*opponent_results))
+        opponent_outputs = [opponent_model(features) for opponent_model in self.opponent_models]
+        opponent_latents, opponent_policies, opponent_values = list(zip(*opponent_outputs))
         if self.use_attention:
             # use the attention mechanism
             agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
@@ -55,7 +55,7 @@ class AgentModel(nn.Module):
             for opponent_latent in opponent_latents:
                 agent_latent = agent_latent * opponent_latent
             # Should we divide by the number of opponents?
-            opponent_influence = torch.full((agent_latent.size(0), self.nb_opponents), 1 / self.nb_opponents, device=agent_latent.device)
+            opponent_influence = torch.ones(agent_latent.size(0), self.nb_opponents, device=agent_latent.device)
 
         # output
         agent_head = self.agent_head_layer(agent_latent)
