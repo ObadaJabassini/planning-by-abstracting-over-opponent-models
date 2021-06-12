@@ -1,0 +1,2 @@
+#!/bin/sh
+nohup python -u smmcts/test_smmcts.py --opponent-class simple --multiprocessing --nb-players 4 --nb-games 10 --nb-plays 10 --mcts-iterations 5000 --fpu 1000 --search-opponent-actions --show-elapsed-time --no-progress-bar --use-simple-agent > results.txt 2>&1 &
