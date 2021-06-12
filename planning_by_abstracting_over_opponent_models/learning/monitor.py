@@ -36,7 +36,7 @@ def monitor(rank,
     actions = deque(maxlen=1000)
     episode_length = 0
     episodes = 0
-    with open("rewards.csv", "w") as f:
+    with open(f"rewards_{opponent_class}.csv", "w") as f:
         f.write("Episode, Reward\n")
     try:
         while True:

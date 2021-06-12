@@ -211,7 +211,8 @@ def train(rank,
     reward_shaper = RewardShaper(reward_shaping_components)
     episodes = 0
     episode_batches = 0
-    running_loss = 0.0
+    running_total_loss = 0.0
+    running_cross_entropy_loss = 0.0
     summary_writer = SummaryWriter(f"runs_{opponent_class}") if rank == 0 else None
     try:
         while True:
@@ -229,50 +230,39 @@ def train(rank,
                                                                                            reward_shaper=reward_shaper)
             agent_rewards, agent_values, agent_log_probs, agent_entropies = agent_trajectory
             opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
-            # ic(agent_rewards)
-            # ic(agent_log_probs)
-            # ic(agent_values)
-            # ic(opponent_log_probs)
-            # ic(opponent_actions_ground_truths)
-            # ic(opponent_values)
             # backward step
             optimizer.zero_grad()
-            loss = criterion(agent_rewards,
-                             agent_log_probs,
-                             agent_values,
-                             agent_entropies,
-                             opponent_rewards,
-                             opponent_log_probs,
-                             opponent_values,
-                             opponent_actions_ground_truths,
-                             opponent_coefs)
-            # if rank == 0:
-            #     print(f"loss = {loss.item()}")
-                # print("is finite:")
-                # for name, param in agent_model.named_parameters():
-                #     print(name, torch.isfinite(param).all())
-            loss.backward()
-            # if rank == 0:
-            #     print("grads")
-            #     for name, param in agent_model.named_parameters():
-            #         print(name, param.grad)
+            total_loss, opponent_policy_loss, opponent_value_loss = criterion(agent_rewards,
+                                                                              agent_log_probs,
+                                                                              agent_values,
+                                                                              agent_entropies,
+                                                                              opponent_rewards,
+                                                                              opponent_log_probs,
+                                                                              opponent_values,
+                                                                              opponent_actions_ground_truths,
+                                                                              opponent_coefs)
+            total_loss.backward()
             clip_grad_norm_(agent_model.parameters(), max_grad_norm)
             ensure_shared_grads(agent_model, shared_model)
             optimizer.step()
 
-            running_loss += loss.item()
+            running_total_loss += total_loss.item()
+            running_cross_entropy_loss += opponent_policy_loss.item()
             episode_batches += 1
 
             if done:
                 episodes += 1
-                avg_loss = running_loss / episode_batches
-                # if rank == 0:
-                #     print(avg_loss)
-                running_loss = 0.0
+                avg_loss = running_total_loss / episode_batches
+                avg_cross_entropy_loss = running_cross_entropy_loss / episode_batches
+                running_total_loss = 0.0
+                running_cross_entropy_loss = 0.0
                 episode_batches = 0
                 if summary_writer is not None and episodes % 10 == 0:
                     summary_writer.add_scalar('training loss',
                                               avg_loss,
+                                              episodes)
+                    summary_writer.add_scalar('cross entropy loss',
+                                              avg_cross_entropy_loss,
                                               episodes)
                     summary_writer.flush()
     except:
