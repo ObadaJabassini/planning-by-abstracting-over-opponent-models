@@ -2,7 +2,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
     RewardShapingComponent
 
 
-class EnemyKilledRewardShaper(RewardShapingComponent):
+class EnemyKilledComponent(RewardShapingComponent):
     def __init__(self, enemy_killed_reward=0.5):
         super().__init__()
         self.enemy_killed_reward = enemy_killed_reward

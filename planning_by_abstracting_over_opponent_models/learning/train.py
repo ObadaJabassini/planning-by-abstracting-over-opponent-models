@@ -8,24 +8,24 @@ from torch.utils.tensorboard import SummaryWriter
 
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.ammo_usage_reward_shaper import \
-    AmmoUsageRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_bomb_reward_shaper import \
-    AvoidingBombRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_flame_reward_shaper import \
-    AvoidingFlameRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.catching_enemy_reward_shaper import \
-    CatchingEnemyRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.consecutive_actions_reward_shaper import \
-    ConsecutiveActionsRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.enemy_killed_reward_shaper import \
-    EnemyKilledRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.mobility_reward_shaper import \
-    MobilityRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.picking_powerup_reward_shaper import \
-    PickingPowerupRewardShaper
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_reward_shaper import \
-    PlantingBombRewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.ammo_usage_component import \
+    AmmoUsageComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_bomb_component import \
+    AvoidingBombComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_flame_component import \
+    AvoidingFlameComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.catching_enemy_component import \
+    CatchingEnemyComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.consecutive_actions_component import \
+    ConsecutiveActionsComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.enemy_killed_component import \
+    EnemyKilledComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.mobility_component import \
+    MobilityComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.picking_powerup_component import \
+    PickingPowerupComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_component import \
+    PlantingBombComponent
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaper import RewardShaper
 
 torch.autograd.set_detect_anomaly(True)
@@ -198,15 +198,15 @@ def train(rank,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda).to(device)
     reward_shaping_components = [
-        MobilityRewardShaper(),
-        ConsecutiveActionsRewardShaper(),
-        AmmoUsageRewardShaper(),
-        EnemyKilledRewardShaper(),
-        PickingPowerupRewardShaper(),
-        PlantingBombRewardShaper(),
-        CatchingEnemyRewardShaper(),
+        MobilityComponent(),
+        ConsecutiveActionsComponent(),
+        AmmoUsageComponent(),
+        EnemyKilledComponent(),
+        PickingPowerupComponent(),
+        PlantingBombComponent(),
+        CatchingEnemyComponent(),
         # AvoidingBombRewardShaper(),
-        AvoidingFlameRewardShaper(),
+        AvoidingFlameComponent(),
     ]
     reward_shaper = RewardShaper(reward_shaping_components)
     episodes = 0

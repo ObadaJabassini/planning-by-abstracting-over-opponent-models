@@ -4,7 +4,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
     RewardShapingComponent
 
 
-class PickingPowerupRewardShaper(RewardShapingComponent):
+class PickingPowerupComponent(RewardShapingComponent):
     def __init__(self, pick_powerup_reward=0.1):
         super().__init__()
         self.pick_powerup_reward = pick_powerup_reward

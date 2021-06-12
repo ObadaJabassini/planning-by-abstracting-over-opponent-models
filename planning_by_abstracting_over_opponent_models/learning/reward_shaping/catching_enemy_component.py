@@ -4,7 +4,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
     RewardShapingComponent
 
 
-class CatchingEnemyRewardShaper(RewardShapingComponent):
+class CatchingEnemyComponent(RewardShapingComponent):
 
     def __init__(self, catch_enemy_reward=0.001):
         super().__init__()

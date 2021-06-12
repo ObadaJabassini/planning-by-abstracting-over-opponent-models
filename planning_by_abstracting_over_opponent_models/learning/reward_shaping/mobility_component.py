@@ -6,7 +6,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
     RewardShapingComponent
 
 
-class MobilityRewardShaper(RewardShapingComponent):
+class MobilityComponent(RewardShapingComponent):
 
     def __init__(self, mobility_reward=0.01):
         super().__init__()

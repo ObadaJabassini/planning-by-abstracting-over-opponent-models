@@ -2,7 +2,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
     RewardShapingComponent
 
 
-class AmmoUsageRewardShaper(RewardShapingComponent):
+class AmmoUsageComponent(RewardShapingComponent):
     def __init__(self, not_using_ammo_reward=-0.0001):
         super().__init__()
         self.not_using_ammo_reward = not_using_ammo_reward

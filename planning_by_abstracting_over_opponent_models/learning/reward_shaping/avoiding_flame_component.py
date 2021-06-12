@@ -33,7 +33,7 @@ class Point:
         return self
 
 
-class AvoidingFlameRewardShaper(RewardShapingComponent):
+class AvoidingFlameComponent(RewardShapingComponent):
 
     def __init__(self, on_flame_reward=-0.001):
         super().__init__()
