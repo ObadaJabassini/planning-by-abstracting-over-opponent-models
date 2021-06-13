@@ -16,8 +16,10 @@ class SMMCTS:
         self.nb_actions = nb_actions
         self.exploration_coefs = exploration_coefs
         self.state_evaluator = state_evaluator
+        self.max_level = 0
 
-    def search(self, env, current_node: TreeNode, fpus, random_players):
+    def search(self, env, current_node: TreeNode, fpus, random_players, level):
+        self.max_level = max(self.max_level, level)
         if current_node.is_terminal:
             return current_node.value_estimate
         # select
@@ -28,7 +30,7 @@ class SMMCTS:
             value_estimate = self.expand(env, state, rewards, is_terminal, actions, current_node, fpus, random_players)
         else:
             child = current_node.children[actions]
-            value_estimate = self.search(env, child, fpus, random_players)
+            value_estimate = self.search(env, child, fpus, random_players, level + 1)
         # backpropagate
         self.backpropagate(current_node, actions, value_estimate)
         return value_estimate
@@ -77,7 +79,8 @@ class SMMCTS:
                         pw_cs=pw_cs,
                         pw_alphas=pw_alphas)
         game_state = env.get_game_state()
+        self.max_level = 0
         for iteration in range(iterations):
-            self.search(env, root, fpus, random_players)
+            self.search(env, root, fpus, random_players, level=0)
             env.set_game_state(game_state)
         return root.most_visited_actions()[0]

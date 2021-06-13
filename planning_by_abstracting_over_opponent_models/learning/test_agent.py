@@ -55,10 +55,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
-parser.add_argument('--nb-games', type=int, default=1)
-parser.add_argument('--nb-plays', type=int, default=1)
+parser.add_argument('--nb-games', type=int, default=10)
+parser.add_argument('--nb-plays', type=int, default=10)
 parser.add_argument('--opponent-class', type=str, default="static")
-parser.add_argument('--model-iteration', type=int, default=1980)
+parser.add_argument('--model-iteration', type=int, default=2580)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     if render:
         play_game(1,
                   1,
-                  seed=32,
+                  seed=randint(1, 10000),
                   agent_model=agent_model,
                   opponent_class=opponent_class,
                   nb_opponents=nb_opponents,
@@ -92,11 +92,11 @@ if __name__ == '__main__':
                   render=True)
     else:
         games = []
-        for game in range(1, nb_games + 1):
+        for game_id in range(1, nb_games + 1):
             seed = randint(0, int(1e6))
-            for play in range(1, nb_plays + 1):
-                params = (game,
-                          play,
+            for play_id in range(1, nb_plays + 1):
+                params = (game_id,
+                          play_id,
                           seed,
                           agent_model,
                           opponent_class,

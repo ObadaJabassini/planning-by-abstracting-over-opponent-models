@@ -11,8 +11,7 @@ from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import str_to_opponent_class
 from planning_by_abstracting_over_opponent_models.planning.smmcts.smmcts import SMMCTS
-from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator import \
-    NeuralNetworkStateEvaluator
+from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.neural_network_state_evaluator import NeuralNetworkStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
@@ -108,11 +107,11 @@ if __name__ == '__main__':
     opponent_class_str = args.opponent_class
     opponent_class = str_to_opponent_class(opponent_class_str)
     games = []
-    for game in range(1, nb_games + 1):
+    for game_id in range(1, nb_games + 1):
         seed = randint(0, int(1e6))
-        for play in range(1, nb_plays + 1):
-            params = (game,
-                      play,
+        for play_id in range(1, nb_plays + 1):
+            params = (game_id,
+                      play_id,
                       seed,
                       opponent_class,
                       args.nb_players,
