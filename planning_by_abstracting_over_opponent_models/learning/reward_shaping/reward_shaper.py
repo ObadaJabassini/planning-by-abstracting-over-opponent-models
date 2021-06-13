@@ -8,6 +8,8 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoidi
     AvoidingBombComponent
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_flame_component import \
     AvoidingFlameComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_illegal_moves import \
+    AvoidingIllegalMoves
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.catching_enemy_component import \
     CatchingEnemyComponent
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.consecutive_actions_component import \
@@ -49,6 +51,7 @@ def strs_to_reward_shaper(strs):
         "enemy_killed": EnemyKilledComponent,
         "mobility": MobilityComponent,
         "picking_powerup": PickingPowerupComponent,
-        "planting_bomb": PlantingBombComponent
+        "planting_bomb": PlantingBombComponent,
+        "avoiding_illegal_moves": AvoidingIllegalMoves
     }
     return RewardShaper([d[s]() for s in strs])
