@@ -80,5 +80,4 @@ class SMMCTS:
         for iteration in range(iterations):
             self.search(env, root, fpus, random_players)
             env.set_game_state(game_state)
-        most_visited_action = root.most_visited_actions()[0]
-        return most_visited_action
+        return root.most_visited_actions()[0]
