@@ -3,6 +3,22 @@ from typing import List
 
 import numpy as np
 
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.ammo_usage_component import AmmoUsageComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_bomb_component import \
+    AvoidingBombComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_flame_component import \
+    AvoidingFlameComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.catching_enemy_component import \
+    CatchingEnemyComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.consecutive_actions_component import \
+    ConsecutiveActionsComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.enemy_killed_component import \
+    EnemyKilledComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.mobility_component import MobilityComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.picking_powerup_component import \
+    PickingPowerupComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_component import \
+    PlantingBombComponent
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaping_component import \
     RewardShapingComponent
 
@@ -21,3 +37,18 @@ class RewardShaper:
             reward += comp.shape_and_update(curr_state, curr_action)
         reward = np.clip(reward, -0.9, 0.9)
         return reward
+
+
+def strs_to_reward_shaper(strs):
+    d = {
+        "ammo_usage": AmmoUsageComponent(),
+        "avoiding_bomb": AvoidingBombComponent(),
+        "avoiding_flame": AvoidingFlameComponent(),
+        "catching_enemy": CatchingEnemyComponent(),
+        "consecutive_actions": ConsecutiveActionsComponent(),
+        "enemy_killed": EnemyKilledComponent(),
+        "mobility": MobilityComponent(),
+        "picking_powerup": PickingPowerupComponent(),
+        "planting_bomb": PlantingBombComponent()
+    }
+    return RewardShaper([d[s] for s in strs])

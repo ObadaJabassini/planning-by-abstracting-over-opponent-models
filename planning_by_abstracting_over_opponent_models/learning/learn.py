@@ -30,6 +30,9 @@ parser.add_argument('--latent-dim', type=int, default=64)
 parser.add_argument('--head-dim', type=int, default=64)
 parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=64)
+parser.add_argument('--reward-shapers',
+                    type=lambda s: [str(item).strip().lower() for item in s.split(',')],
+                    default="ammo_usage, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb")
 parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
 parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
 parser.add_argument('--with-monitoring', dest='monitor', action='store_true')
@@ -41,7 +44,9 @@ parser.set_defaults(monitor=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    Path(f"../saved_models/{args.opponent_class}").mkdir(exist_ok=True, parents=True)
+    reward_shapers = args.reward_shapers
+    combined_reward_shapers = ",".join(reward_shapers)
+    Path(f"../saved_models/{args.opponent_class}/{combined_reward_shapers}").mkdir(exist_ok=True, parents=True)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     device = gpu if args.device.lower() == "gpu" else cpu
@@ -92,6 +97,7 @@ if __name__ == '__main__':
                 nb_actions,
                 nb_opponents,
                 opponent_class,
+                reward_shapers,
                 save_interval,
                 device)
         p = mp.Process(target=monitor, args=args)
@@ -102,6 +108,7 @@ if __name__ == '__main__':
                 seed,
                 use_cython,
                 shared_model,
+                optimizer,
                 counter,
                 lock,
                 model_spec,
@@ -109,8 +116,8 @@ if __name__ == '__main__':
                 nb_actions,
                 nb_opponents,
                 opponent_class,
-                device,
-                optimizer)
+                reward_shapers,
+                device)
         p = mp.Process(target=train, args=args)
         p.start()
         processes.append(p)

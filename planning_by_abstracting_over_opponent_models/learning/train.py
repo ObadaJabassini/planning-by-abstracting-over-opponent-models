@@ -1,4 +1,5 @@
 # partially inspired by https://github.com/ikostrikov/pytorch-a3c/blob/master/train.py
+from pathlib import Path
 
 import torch
 import torch.nn.functional as F
@@ -26,7 +27,8 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.pickin
     PickingPowerupComponent
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_component import \
     PlantingBombComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaper import RewardShaper
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaper import RewardShaper, \
+    strs_to_reward_shaper
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -164,6 +166,7 @@ def train(rank,
           seed,
           use_cython,
           shared_model,
+          optimizer,
           counter,
           lock,
           model_spec,
@@ -171,8 +174,9 @@ def train(rank,
           nb_actions,
           nb_opponents,
           opponent_class,
-          device,
-          optimizer):
+          reward_shapers,
+          device):
+    combined_reward_shapers = ",".join(reward_shapers)
     agents, env = create_env(rank,
                              seed,
                              use_cython,
@@ -197,23 +201,14 @@ def train(rank,
                           value_loss_coef=value_loss_coef,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda).to(device)
-    reward_shaping_components = [
-        MobilityComponent(),
-        ConsecutiveActionsComponent(),
-        AmmoUsageComponent(),
-        EnemyKilledComponent(),
-        PickingPowerupComponent(),
-        PlantingBombComponent(),
-        CatchingEnemyComponent(),
-        # AvoidingBombRewardShaper(),
-        AvoidingFlameComponent(),
-    ]
-    reward_shaper = RewardShaper(reward_shaping_components)
+    reward_shaper = strs_to_reward_shaper(reward_shapers)
     episodes = 0
     episode_batches = 0
     running_total_loss = 0.0
     running_cross_entropy_loss = 0.0
-    summary_writer = SummaryWriter(f"runs_{opponent_class}") if rank == 0 else None
+    p = f"runs/{opponent_class}/{combined_reward_shapers}"
+    Path(p).mkdir(exist_ok=True, parents=True)
+    summary_writer = SummaryWriter(p) if rank == 0 else None
     try:
         while True:
             # sync with the shared model

@@ -15,8 +15,10 @@ def monitor(rank,
             nb_actions,
             nb_opponents,
             opponent_class,
+            reward_shapers,
             save_interval,
             device):
+    combined_reward_shapers = ",".join(reward_shapers)
     agents, env = create_env(rank,
                              seed,
                              use_cython,
@@ -36,8 +38,6 @@ def monitor(rank,
     actions = deque(maxlen=1000)
     episode_length = 0
     episodes = 0
-    with open(f"rewards_{opponent_class}.csv", "w") as f:
-        f.write("Episode, Reward\n")
     try:
         while True:
             episode_length += 1
@@ -58,10 +58,8 @@ def monitor(rank,
             if done:
                 reward = rewards[0]
                 episodes += 1
-                with open(f"rewards_{opponent_class}.csv", "a") as f:
-                    f.write(f"{episodes}, {reward}\n")
                 if episodes % save_interval == 0:
-                    torch.save(shared_model.state_dict(), f"../saved_models/{opponent_class}/agent_model_{episodes}.pt")
+                    torch.save(shared_model.state_dict(), f"../saved_models/{opponent_class}/{combined_reward_shapers}/agent_model_{episodes}.pt")
                 t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
                 t1 = counter.value / (time.time() - start_time)
                 s = f"Episode: {episodes}, Time: {t}, num steps: {counter.value}, FPS: {t1:.0f}, episode reward: {reward}, episode length: {episode_length}"
@@ -71,4 +69,4 @@ def monitor(rank,
                 state = env.reset()
                 time.sleep(60)
     except:
-        torch.save(shared_model.state_dict(), f"../saved_models/agent_model.pt")
+        torch.save(shared_model.state_dict(), f"../saved_models/{opponent_class}/{combined_reward_shapers}/agent_model.pt")
