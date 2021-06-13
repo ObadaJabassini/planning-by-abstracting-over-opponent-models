@@ -1,7 +1,7 @@
 import torch
 
 from planning_by_abstracting_over_opponent_models.planning.smmcts.tree_node import TreeNode
-from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
+from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator import StateEvaluator
 
 torch.autograd.set_detect_anomaly(True)
 

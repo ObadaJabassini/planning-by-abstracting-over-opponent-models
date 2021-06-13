@@ -51,8 +51,7 @@ class AttentionModel(nn.Module):
         # (nb_opponents, batch_size, 2)
         hard_attention = self.hard_attention_layer(lstm_output)
         # (nb_opponents, batch_size, 2)
-        # should we add hard=True?
-        hard_attention = F.gumbel_softmax(hard_attention, tau=0.01, hard=True, dim=-1)
+        hard_attention = F.gumbel_softmax(hard_attention, tau=0.1, hard=True, dim=-1)
         # (nb_opponents, batch_size)
         hard_attention = hard_attention[..., 1]
         # (batch_size, nb_opponents)

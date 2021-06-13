@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from planning_by_abstracting_over_opponent_models.config import cpu
-from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
+from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator import StateEvaluator
 
 
 class NeuralNetworkStateEvaluator(StateEvaluator):

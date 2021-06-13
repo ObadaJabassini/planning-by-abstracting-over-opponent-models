@@ -54,22 +54,15 @@ class MCTSPlayer(Player):
         self.nb_action_visits = torch.zeros(nb_actions)
         self.exploration_coef = exploration_coef
         self.fpu = fpu
-        self.pw_alpha = pw_alpha
-        self.pw_c = pw_c
-        self.use_progressive_widening = pw_alpha is not None
+        self.action_probs_estimate = action_probs_estimate
+        self.use_progressive_widening = pw_alpha is not None and pw_c is not None
         if self.use_progressive_widening:
-            self.action_probs_estimate, indices = torch.sort(action_probs_estimate, dim=-1, descending=True)
+            self.pw_alpha = pw_alpha
+            self.pw_c = pw_c
+            self.action_probs_estimate, indices = torch.sort(self.action_probs_estimate, dim=-1, descending=True)
             indices = indices.tolist()
             self.sorted_to_original_actions = {k: v for k, v in enumerate(indices)}
             self.original_to_sorted_actions = {v: k for k, v in self.sorted_to_original_actions.items()}
-        else:
-            self.action_probs_estimate = action_probs_estimate
-
-    def most_visited_action(self):
-        result = self.nb_action_visits.argmax().item()
-        if self.use_progressive_widening:
-            result = self.sorted_to_original_actions[result]
-        return result
 
     def _compute_k(self, nb_visits):
         return math.ceil(self.pw_c * (nb_visits ** self.pw_alpha))
@@ -89,13 +82,19 @@ class MCTSPlayer(Player):
             result = self.sorted_to_original_actions[result]
         return result
 
+    def most_visited_action(self):
+        result = self.nb_action_visits.argmax().item()
+        if self.use_progressive_widening:
+            result = self.sorted_to_original_actions[result]
+        return result
+
     def uct(self, nb_visits, k):
         probs = self.action_probs_estimate[:k]
         x, n = self.action_estimations[:k], self.nb_action_visits[:k]
         exploitation_term = x / n
         exploration_term = self.exploration_coef * probs * torch.sqrt(math.log2(nb_visits) / n)
         uct = exploitation_term + exploration_term
-        # when an action is not explored, assign a fpu
+        # when an action is not explored, assign fpu
         uct = torch.nan_to_num(uct, self.fpu, self.fpu, self.fpu)
         return uct
 
