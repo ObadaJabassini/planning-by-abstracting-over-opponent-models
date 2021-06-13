@@ -23,7 +23,8 @@ def play_game(game_id,
               agent_model,
               opponent_class,
               nb_opponents,
-              device):
+              device,
+              render=False):
     agents: List[PommermanAgent] = [opponent_class() for _ in range(nb_opponents)]
     agent = RLAgent(0, agent_model)
     agents.insert(0, agent)
@@ -37,6 +38,8 @@ def play_game(game_id,
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
         state, rewards, done = env.step(actions)
+        if render:
+            env.render()
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
     print(f"game {game_id}, play {play_id} finished.")
@@ -47,11 +50,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
-parser.add_argument('--nb-games', type=int, default=2)
-parser.add_argument('--nb-plays', type=int, default=2)
-parser.add_argument('--opponent-class', type=str, default="simple")
-parser.add_argument('--model-iteration', type=int, default=1380)
+parser.add_argument('--nb-games', type=int, default=1)
+parser.add_argument('--nb-plays', type=int, default=1)
+parser.add_argument('--opponent-class', type=str, default="static")
+parser.add_argument('--model-iteration', type=int, default=1980)
+parser.add_argument('--rendering', dest="render", action="store_true")
+parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True)
+parser.set_defaults(render=True)
+
 
 if __name__ == '__main__':
     device = cpu
@@ -60,6 +67,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     nb_games = args.nb_games
     nb_plays = args.nb_plays
+    render = args.render
     nb_opponents = 3
     opponent_class_str = args.opponent_class
     opponent_class = str_to_opponent_class(opponent_class_str)
@@ -68,32 +76,43 @@ if __name__ == '__main__':
     agent_model.eval()
     agent_model.share_memory()
 
-    games = []
-    for game in range(1, nb_games + 1):
-        seed = randint(0, int(1e6))
-        for play in range(1, nb_plays + 1):
-            params = (game,
-                      play,
-                      seed,
-                      agent_model,
-                      opponent_class,
-                      nb_opponents,
-                      device)
-            games.append(params)
-
-    if args.multiprocessing:
-        with Pool(args.nb_processes) as pool:
-            result = pool.starmap(play_game, games)
+    if render:
+        play_game(1,
+                  1,
+                  seed=32,
+                  agent_model=agent_model,
+                  opponent_class=opponent_class,
+                  nb_opponents=nb_opponents,
+                  device=device,
+                  render=True)
     else:
-        result = [play_game(*game) for game in games]
-    win_rate = 0
-    tie_rate = 0
-    for r in result:
-        win_rate += r[2]
-        tie_rate += r[3]
-    total_games = nb_games * nb_plays
-    win_rate /= total_games
-    tie_rate /= total_games
-    lose_rate = 1 - win_rate - tie_rate
-    s = f"opponent class = {opponent_class_str}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
-    print(s)
+        games = []
+        for game in range(1, nb_games + 1):
+            seed = randint(0, int(1e6))
+            for play in range(1, nb_plays + 1):
+                params = (game,
+                          play,
+                          seed,
+                          agent_model,
+                          opponent_class,
+                          nb_opponents,
+                          device,
+                          False)
+                games.append(params)
+
+        if args.multiprocessing:
+            with Pool(args.nb_processes) as pool:
+                result = pool.starmap(play_game, games)
+        else:
+            result = [play_game(*game) for game in games]
+        win_rate = 0
+        tie_rate = 0
+        for r in result:
+            win_rate += r[2]
+            tie_rate += r[3]
+        total_games = nb_games * nb_plays
+        win_rate /= total_games
+        tie_rate /= total_games
+        lose_rate = 1 - win_rate - tie_rate
+        s = f"opponent class = {opponent_class_str}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+        print(s)
