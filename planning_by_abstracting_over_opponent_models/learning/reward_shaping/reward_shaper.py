@@ -41,14 +41,14 @@ class RewardShaper:
 
 def strs_to_reward_shaper(strs):
     d = {
-        "ammo_usage": AmmoUsageComponent(),
-        "avoiding_bomb": AvoidingBombComponent(),
-        "avoiding_flame": AvoidingFlameComponent(),
-        "catching_enemy": CatchingEnemyComponent(),
-        "consecutive_actions": ConsecutiveActionsComponent(),
-        "enemy_killed": EnemyKilledComponent(),
-        "mobility": MobilityComponent(),
-        "picking_powerup": PickingPowerupComponent(),
-        "planting_bomb": PlantingBombComponent()
+        "ammo_usage": AmmoUsageComponent,
+        "avoiding_bomb": AvoidingBombComponent,
+        "avoiding_flame": AvoidingFlameComponent,
+        "catching_enemy": CatchingEnemyComponent,
+        "consecutive_actions": ConsecutiveActionsComponent,
+        "enemy_killed": EnemyKilledComponent,
+        "mobility": MobilityComponent,
+        "picking_powerup": PickingPowerupComponent,
+        "planting_bomb": PlantingBombComponent
     }
-    return RewardShaper([d[s] for s in strs])
+    return RewardShaper([d[s]() for s in strs])
