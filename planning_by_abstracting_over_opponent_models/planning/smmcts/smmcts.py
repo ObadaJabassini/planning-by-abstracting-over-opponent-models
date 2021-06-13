@@ -40,8 +40,8 @@ class SMMCTS:
         if is_terminal:
             value_estimate = torch.as_tensor(rewards)
             action_prob_estimate = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
-            pw_alphas = [None] * self.nb_players
             pw_cs = [None] * self.nb_players
+            pw_alphas = [None] * self.nb_players
         else:
             value_estimate, action_prob_estimate, pw_cs, pw_alphas = self.state_evaluator.evaluate(env)
         current_node.children[actions] = TreeNode(state=state,
