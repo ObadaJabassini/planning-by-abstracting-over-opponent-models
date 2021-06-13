@@ -1,13 +1,14 @@
 import argparse
-# from multiprocessing import Pool, cpu_count
 import os
 import torch.multiprocessing as mp
+from icecream import ic
 from torch.multiprocessing import Pool, cpu_count
 from random import randint
 from typing import List
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model, \
@@ -34,12 +35,16 @@ def play_game(game_id,
     done = False
     while not done:
         obs = env.get_features(state).to(device)
-        agent_action = agent.act(obs, action_space)
+        action_probs, _, _, _, opponent_influence = agent.estimate(obs)
+        action_probs = F.softmax(action_probs, dim=-1).view(-1)
+        agent_action = action_probs.argmax()
+        agent_action = agent_action.item()
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
         state, rewards, done = env.step(actions)
         if render:
             env.render()
+            ic(opponent_influence)
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
     print(f"game {game_id}, play {play_id} finished.")
