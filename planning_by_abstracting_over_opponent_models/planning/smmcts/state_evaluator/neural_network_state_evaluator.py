@@ -50,8 +50,7 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         """
         agent_action_probs = F.softmax(agent_action_log, dim=-1)
         agent_action_probs = agent_action_probs.view((1, -1))
-        action_space_size = agent_action_probs.size(1)
         opponent_action_probs = F.softmax(opponent_action_log, dim=-1)
-        opponent_action_probs = opponent_action_probs.view(-1, action_space_size)
+        opponent_action_probs = opponent_action_probs.view(-1, agent_action_probs.size(1))
         probs = torch.vstack((agent_action_probs, opponent_action_probs)).to(cpu)
         return probs
