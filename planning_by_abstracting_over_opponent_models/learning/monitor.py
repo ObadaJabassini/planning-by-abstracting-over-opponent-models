@@ -56,14 +56,14 @@ def monitor(rank,
             if actions.count(actions[0]) == actions.maxlen:
                 done = True
             if done:
-                reward = rewards[0]
                 episodes += 1
                 if episodes % save_interval == 0:
                     torch.save(shared_model.state_dict(), f"../saved_models/{opponent_class}/{combined_reward_shapers}/agent_model_{episodes}.pt")
-                t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
-                t1 = counter.value / (time.time() - start_time)
-                s = f"Episode: {episodes}, Time: {t}, num steps: {counter.value}, FPS: {t1:.0f}, episode reward: {reward}, episode length: {episode_length}"
-                print(s)
+                # reward = rewards[0]
+                # t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
+                # t1 = counter.value / (time.time() - start_time)
+                # s = f"Episode: {episodes}, Time: {t}, num steps: {counter.value}, FPS: {t1:.0f}, episode reward: {reward}, episode length: {episode_length}"
+                # print(s)
                 episode_length = 0
                 actions.clear()
                 state = env.reset()
