@@ -7,28 +7,9 @@ from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
-from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
 from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.ammo_usage_component import \
-    AmmoUsageComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_bomb_component import \
-    AvoidingBombComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.avoiding_flame_component import \
-    AvoidingFlameComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.catching_enemy_component import \
-    CatchingEnemyComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.consecutive_actions_component import \
-    ConsecutiveActionsComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.enemy_killed_component import \
-    EnemyKilledComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.mobility_component import \
-    MobilityComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.picking_powerup_component import \
-    PickingPowerupComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_component import \
-    PlantingBombComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaper import RewardShaper, \
-    strs_to_reward_shaper
+from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_env
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaper import strs_to_reward_shaper
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -175,6 +156,7 @@ def train(rank,
           nb_opponents,
           opponent_class,
           reward_shapers,
+          max_grad_norm,
           device):
     combined_reward_shapers = ",".join(reward_shapers)
     agents, env = create_env(rank,
@@ -189,7 +171,6 @@ def train(rank,
     agent_model = agents[0].agent_model
     state = env.reset()
     # RL
-    max_grad_norm = 0.5
     gamma = 0.99
     entropy_coef = 0.01
     value_loss_coef = 0.5
@@ -237,7 +218,8 @@ def train(rank,
                                                                               opponent_actions_ground_truths,
                                                                               opponent_coefs)
             total_loss.backward()
-            clip_grad_norm_(agent_model.parameters(), max_grad_norm)
+            if max_grad_norm is not None:
+                clip_grad_norm_(agent_model.parameters(), max_grad_norm)
             ensure_shared_grads(agent_model, shared_model)
             optimizer.step()
 

@@ -22,7 +22,7 @@ parser.add_argument('--seed', type=int, default=32)
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--opponent-class', type=str, default="static")
-parser.add_argument('--nb-steps', type=int, default=20)
+parser.add_argument('--nb-steps', type=int, default=16)
 parser.add_argument('--save-interval', type=int, default=int(60))
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=64)
@@ -30,6 +30,7 @@ parser.add_argument('--latent-dim', type=int, default=128)
 parser.add_argument('--head-dim', type=int, default=128)
 parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=128)
+parser.add_argument('--max-grad-norm', type=float, default=None)
 d = "ammo_usage, avoiding_flame, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
@@ -53,6 +54,7 @@ if __name__ == '__main__':
     device = gpu if args.device.lower() == "gpu" else cpu
     seed = args.seed
     use_cython = args.nb_players == 4
+    max_grad_norm = args.max_grad_norm
     nb_processes = args.nb_processes
     nb_opponents = args.nb_players - 1
     opponent_class = args.opponent_class
@@ -118,6 +120,7 @@ if __name__ == '__main__':
                 nb_opponents,
                 opponent_class,
                 reward_shapers,
+                max_grad_norm,
                 device)
         p = mp.Process(target=train, args=args)
         p.start()
