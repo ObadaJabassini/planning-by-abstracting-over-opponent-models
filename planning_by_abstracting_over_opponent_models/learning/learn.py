@@ -4,6 +4,7 @@ import os
 import warnings
 from multiprocessing import cpu_count
 from pathlib import Path
+from random import randint
 
 import torch
 import torch.multiprocessing as mp
@@ -18,12 +19,12 @@ warnings.filterwarnings('ignore')
 torch.autograd.set_detect_anomaly(True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--seed', type=int, default=32)
+parser.add_argument('--seed', type=int, default=randint(1, 1000))
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 parser.add_argument('--opponent-class', type=str, default="static")
 parser.add_argument('--nb-steps', type=int, default=16)
-parser.add_argument('--save-interval', type=int, default=int(60))
+parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=64)
 parser.add_argument('--latent-dim', type=int, default=128)
