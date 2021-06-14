@@ -22,7 +22,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=randint(1, 1000))
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
-parser.add_argument('--opponent-class', type=str, default="static")
+ss = "static, static, static"
+parser.add_argument('--opponent-classes',
+                    type=lambda s: [str(item).strip().lower() for item in s.split(',')],
+                    default=ss)
 parser.add_argument('--nb-steps', type=int, default=16)
 parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
@@ -48,8 +51,10 @@ parser.set_defaults(monitor=True)
 if __name__ == '__main__':
     args = parser.parse_args()
     reward_shapers = args.reward_shapers
+    opponent_classes = args.opponent_classes
     combined_reward_shapers = ",".join(reward_shapers)
-    Path(f"../saved_models/{args.opponent_class}/{combined_reward_shapers}").mkdir(exist_ok=True, parents=True)
+    combined_opponent_classes = ",".join(opponent_classes)
+    Path(f"../saved_models/{combined_opponent_classes}/{combined_reward_shapers}").mkdir(exist_ok=True, parents=True)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     device = gpu if args.device.lower() == "gpu" else cpu
@@ -58,7 +63,6 @@ if __name__ == '__main__':
     max_grad_norm = args.max_grad_norm
     nb_processes = args.nb_processes
     nb_opponents = args.nb_players - 1
-    opponent_class = args.opponent_class
     nb_steps = args.nb_steps
     save_interval = args.save_interval
     model_spec = {
@@ -96,11 +100,10 @@ if __name__ == '__main__':
                 seed,
                 use_cython,
                 shared_model,
-                counter,
                 model_spec,
                 nb_actions,
                 nb_opponents,
-                opponent_class,
+                opponent_classes,
                 reward_shapers,
                 save_interval,
                 device)
@@ -119,7 +122,7 @@ if __name__ == '__main__':
                 nb_steps,
                 nb_actions,
                 nb_opponents,
-                opponent_class,
+                opponent_classes,
                 reward_shapers,
                 max_grad_norm,
                 device)
@@ -129,4 +132,3 @@ if __name__ == '__main__':
     print("Started training.")
     for p in processes:
         p.join()
-    # torch.save(shared_model.state_dict(), f"../saved_models/fully_trained_agent_model_{opponent_class}.pt")

@@ -1,12 +1,12 @@
 from typing import List
 
-import pommerman
 from pommerman.agents import RandomAgent
 
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.smart_random_agent import SmartRandomAgent, \
     SmartRandomAgentNoBomb
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.static_agent import StaticAgent
@@ -15,7 +15,7 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 
 
-def str_to_opponent_class(s):
+def str_to_opponent_class(s: str):
     return {
         "static": StaticAgent,
         "random": RandomAgent,
@@ -23,7 +23,7 @@ def str_to_opponent_class(s):
         "smart": SmartRandomAgent,
         "simple": ModifiedSimpleAgent,
         "cautious": CautiousAgent
-    }[s.lower()]
+    }[s.strip().lower()]
 
 
 def create_env(rank,
@@ -32,7 +32,7 @@ def create_env(rank,
                model_spec,
                nb_actions,
                nb_opponents,
-               opponent_class,
+               opponent_classes,
                device,
                train=True):
     agent_model = create_agent_model(rank,
@@ -43,8 +43,7 @@ def create_env(rank,
                                      train=train,
                                      **model_spec)
     agent = RLAgent(0, agent_model)
-    opponent_class = str_to_opponent_class(opponent_class)
-    agents: List[pommerman.agents.BaseAgent] = [opponent_class() for _ in range(nb_opponents)]
+    agents: List[PommermanAgent] = [str_to_opponent_class(opponent_class)() for opponent_class in opponent_classes]
     agents.insert(0, agent)
     r = seed + rank
     env: PommermanBaseEnv = PommermanCythonEnv(agents, r) if use_cython else PommermanPythonEnv(agents, r)

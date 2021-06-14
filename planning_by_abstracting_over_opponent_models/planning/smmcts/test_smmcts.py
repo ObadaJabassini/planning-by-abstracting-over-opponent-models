@@ -1,6 +1,10 @@
 import argparse
 import math
-from multiprocessing import Pool, cpu_count
+import os
+
+import torch.multiprocessing as mp
+from icecream import ic
+from torch.multiprocessing import Pool, cpu_count
 from random import randint
 
 import numpy as np
@@ -11,11 +15,11 @@ from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import str_to_opponent_class
 from planning_by_abstracting_over_opponent_models.planning.smmcts.smmcts import SMMCTS
-from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.neural_network_state_evaluator import NeuralNetworkStateEvaluator
+from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.neural_network_state_evaluator import \
+    NeuralNetworkStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
-from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 
 
 class DummyAgent(pommerman.agents.BaseAgent):
@@ -27,44 +31,21 @@ class DummyAgent(pommerman.agents.BaseAgent):
 def play_game(game_id,
               play_id,
               seed,
-              opponent_class,
+              opponent_classes,
               nb_players,
-              use_cython,
-              mcts_iterations,
-              exploration_coef,
-              fpu,
-              ignore_opponent_actions,
-              pw_c,
-              pw_alpha,
-              use_random_rollout):
-    nb_actions = 6
-    exploration_coefs = [exploration_coef] * nb_players
-    fpus = [fpu] * nb_players
-    random_players = [False] + ([ignore_opponent_actions] * (nb_players - 1))
-    pw_cs = [pw_c] * nb_players
-    pw_alphas = [pw_alpha] * nb_players
-    if use_random_rollout:
-        state_evaluator = RandomRolloutStateEvaluator(nb_players,
-                                                      nb_actions,
-                                                      pw_cs,
-                                                      pw_alphas)
-    else:
-        iterations = int(9e4)
-        agent_model = create_agent_model(0, 32, 6, nb_players - 1, 3, 32, 64, 64, None, None, cpu, False)
-        agent_model.load_state_dict(torch.load(f"../saved_models/agent_model_{iterations}.pt"))
-        agent_model.eval()
-        state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=1, agent_pw_alpha=1)
+              nb_actions,
+              exploration_coefs,
+              state_evaluator,
+              mcts_iterations):
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
                     state_evaluator=state_evaluator)
-    agents = [opponent_class() for _ in range(nb_players - 1)]
+    agents = [opponent_class() for opponent_class in opponent_classes]
     agents.insert(0, DummyAgent())
-    env = PommermanCythonEnv(agents=agents, seed=seed, rescale_rewards=True) if use_cython else \
-        PommermanPythonEnv(agents=agents, seed=seed, rescale_rewards=True)
+    env = PommermanCythonEnv(agents=agents, seed=seed)
     state = env.reset()
     done = False
-    frames = []
     while not done:
         actions = env.act(state)
         agent_action = smmcts.infer(env,
@@ -89,6 +70,7 @@ parser.add_argument('--opponent-class', type=str, default="simple")
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=5000)
+parser.add_argument('--model-iterations', type=int, default=1920)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
@@ -100,12 +82,35 @@ parser.set_defaults(ignore_opponent_actions=True)
 parser.set_defaults(use_random_rollout=True)
 
 if __name__ == '__main__':
+    os.environ['OMP_NUM_THREADS'] = '1'
+    mp.set_start_method('spawn')
     args = parser.parse_args()
-    args.use_cython = args.nb_players == 4
+    nb_actions = 6
+    nb_players = args.nb_players
     nb_games = args.nb_games
     nb_plays = args.nb_plays
-    opponent_class_str = args.opponent_class
-    opponent_class = str_to_opponent_class(opponent_class_str)
+    mcts_iterations = args.mcts_iterations
+    opponent_classes = args.opponent_classes
+    combined_opponent_classes = ",".join(opponent_classes)
+    opponent_classes = [str_to_opponent_class(cl) for cl in opponent_classes]
+    exploration_coefs = [args.exploration_coef] * nb_players
+    fpus = [args.fpu] * nb_players
+    random_players = [False] + ([args.ignore_opponent_actions] * (nb_players - 1))
+    pw_cs = [args.pw_c] * nb_players
+    pw_alphas = [args.pw_alpha] * nb_players
+    if args.use_random_rollout:
+        state_evaluator = RandomRolloutStateEvaluator(nb_players,
+                                                      nb_actions,
+                                                      pw_cs,
+                                                      pw_alphas)
+    else:
+        agent_model = create_agent_model(0, randint(1, 1000), nb_actions, nb_players - 1, 4, 64, 128, 128, 4, 128, cpu,
+                                         False)
+        agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
+        agent_model.eval()
+        agent_model.share_memory()
+        state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=1, agent_pw_alpha=1)
+
     games = []
     for game_id in range(1, nb_games + 1):
         seed = randint(0, int(1e6))
@@ -113,16 +118,12 @@ if __name__ == '__main__':
             params = (game_id,
                       play_id,
                       seed,
-                      opponent_class,
-                      args.nb_players,
-                      args.use_cython,
-                      args.mcts_iterations,
-                      args.exploration_coef,
-                      args.fpu,
-                      args.ignore_opponent_actions,
-                      args.pw_c,
-                      args.pw_alpha,
-                      args.use_random_rollout)
+                      opponent_classes,
+                      nb_players,
+                      nb_actions,
+                      exploration_coefs,
+                      state_evaluator,
+                      mcts_iterations)
             games.append(params)
     if args.multiprocessing:
         with Pool(args.nb_processes) as pool:
@@ -138,5 +139,5 @@ if __name__ == '__main__':
     win_rate /= total_games
     tie_rate /= total_games
     lose_rate = 1 - win_rate - tie_rate
-    s = f"opponent class = {opponent_class_str}, ignore = {args.ignore_opponent_actions}, fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+    s = f"opponent classes = {combined_opponent_classes}, ignore = {args.ignore_opponent_actions}, fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
     print(s)

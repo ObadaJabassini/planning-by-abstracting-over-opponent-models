@@ -154,18 +154,19 @@ def train(rank,
           nb_steps,
           nb_actions,
           nb_opponents,
-          opponent_class,
+          opponent_classes,
           reward_shapers,
           max_grad_norm,
           device):
     combined_reward_shapers = ",".join(reward_shapers)
+    combined_opponent_classes = ",".join(opponent_classes)
     agents, env = create_env(rank,
                              seed,
                              use_cython,
                              model_spec,
                              nb_actions,
                              nb_opponents,
-                             opponent_class,
+                             opponent_classes,
                              device,
                              train=True)
     agent_model = agents[0].agent_model
@@ -187,7 +188,7 @@ def train(rank,
     episode_batches = 0
     running_total_loss = 0.0
     running_cross_entropy_loss = 0.0
-    p = f"runs/{opponent_class}/{combined_reward_shapers}"
+    p = f"runs/{combined_opponent_classes}/{combined_reward_shapers}"
     Path(p).mkdir(exist_ok=True, parents=True)
     summary_writer = SummaryWriter(p) if rank == 0 else None
     try:

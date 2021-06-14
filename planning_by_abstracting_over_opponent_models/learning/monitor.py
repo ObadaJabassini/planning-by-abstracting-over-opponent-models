@@ -10,22 +10,22 @@ def monitor(rank,
             seed,
             use_cython,
             shared_model,
-            counter,
             model_spec,
             nb_actions,
             nb_opponents,
-            opponent_class,
+            opponent_classes,
             reward_shapers,
             save_interval,
             device):
     combined_reward_shapers = ",".join(reward_shapers)
+    combined_opponent_classes = ",".join(opponent_classes)
     agents, env = create_env(rank,
                              seed,
                              use_cython,
                              model_spec,
                              nb_actions,
                              nb_opponents,
-                             opponent_class,
+                             opponent_classes,
                              device,
                              train=False)
     agent = agents[0]
@@ -33,7 +33,6 @@ def monitor(rank,
     action_space = env.action_space
     state = env.reset()
     done = True
-    start_time = time.time()
     # a quick hack to prevent the agent from stucking
     actions = deque(maxlen=1000)
     episode_length = 0
@@ -58,15 +57,10 @@ def monitor(rank,
             if done:
                 episodes += 1
                 if episodes % save_interval == 0:
-                    torch.save(shared_model.state_dict(), f"../saved_models/{opponent_class}/{combined_reward_shapers}/agent_model_{episodes}.pt")
-                # reward = rewards[0]
-                # t = time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))
-                # t1 = counter.value / (time.time() - start_time)
-                # s = f"Episode: {episodes}, Time: {t}, num steps: {counter.value}, FPS: {t1:.0f}, episode reward: {reward}, episode length: {episode_length}"
-                # print(s)
+                    torch.save(shared_model.state_dict(), f"../saved_models/{combined_opponent_classes}/{combined_reward_shapers}/agent_model_{episodes}.pt")
                 episode_length = 0
                 actions.clear()
                 state = env.reset()
                 time.sleep(60)
     except:
-        torch.save(shared_model.state_dict(), f"../saved_models/{opponent_class}/{combined_reward_shapers}/agent_model.pt")
+        torch.save(shared_model.state_dict(), f"../saved_models/{combined_opponent_classes}/{combined_reward_shapers}/agent_model.pt")
