@@ -19,7 +19,7 @@ class MobilityComponent(RewardShapingComponent):
         if len(self.last_positions) > 0 and pos not in self.last_positions:
             reward = self.mobility_reward
         self.last_positions[pos] = True
-        if len(self.last_positions) > 20:
+        if len(self.last_positions) > 30:
             self.last_positions.popitem(last=False)
         return reward
 

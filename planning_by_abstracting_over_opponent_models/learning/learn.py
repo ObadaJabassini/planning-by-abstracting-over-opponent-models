@@ -30,7 +30,7 @@ parser.add_argument('--latent-dim', type=int, default=64)
 parser.add_argument('--head-dim', type=int, default=64)
 parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=64)
-d = "ammo_usage, avoiding_flame, avoiding_bomb, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb, avoiding_illegal_moves"
+d = "ammo_usage, avoiding_flame, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=d)
