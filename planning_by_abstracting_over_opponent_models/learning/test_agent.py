@@ -76,7 +76,7 @@ if __name__ == '__main__':
     nb_opponents = 3
     opponent_class_str = args.opponent_class
     opponent_class = str_to_opponent_class(opponent_class_str)
-    agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 64, 64, 64, 4, 64, device, False)
+    agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 64, 128, 128, 4, 128, device, False)
     agent_model.load_state_dict(torch.load(f"../saved_models/{opponent_class_str}/agent_model_{args.model_iteration}.pt"))
     agent_model.eval()
     agent_model.share_memory()
