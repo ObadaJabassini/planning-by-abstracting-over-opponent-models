@@ -9,7 +9,9 @@ from torch.nn.modules.linear import _LinearWithBias
 
 class SoftHardMultiheadAttention(nn.Module):
 
-    def __init__(self, embed_dim, num_heads,
+    def __init__(self,
+                 embed_dim,
+                 num_heads,
                  dropout_p=0.):
         super().__init__()
         self.embed_dim = embed_dim
