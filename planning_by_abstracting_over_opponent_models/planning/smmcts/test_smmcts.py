@@ -104,12 +104,22 @@ if __name__ == '__main__':
                                                       pw_cs,
                                                       pw_alphas)
     else:
-        agent_model = create_agent_model(0, randint(1, 1000), nb_actions, nb_players - 1, 4, 64, 128, 128, 4, 128, cpu,
+        agent_model = create_agent_model(0,
+                                         randint(1, 1000),
+                                         nb_actions,
+                                         nb_players - 1,
+                                         4,
+                                         64,
+                                         128,
+                                         128,
+                                         4,
+                                         128,
+                                         cpu,
                                          False)
         agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
         agent_model.eval()
         agent_model.share_memory()
-        state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=1, agent_pw_alpha=1)
+        state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=nb_actions, agent_pw_alpha=1)
 
     games = []
     for game_id in range(1, nb_games + 1):
