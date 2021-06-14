@@ -47,7 +47,7 @@ class AgentLoss(nn.Module):
         """
         :param opponent_log_probs: (nb_opponents, nb_steps, nb_actions)
         :param opponent_actions_ground_truths: (nb_opponents, nb_steps)
-        :param opponent_values: (nb_opponents, nb_steps)
+        :param opponent_values: (nb_opponents, nb_steps + 1)
         :param opponent_rewards: (nb_opponents, nb_steps)
         :param opponent_coefs: (nb_opponents)
         :return:
@@ -61,11 +61,11 @@ class AgentLoss(nn.Module):
                                                                             opponent_actions_ground_truths[i])
 
             # value loss
-            # opponent_value = opponent_values[i]
-            # opponent_reward = opponent_rewards[i]
-            # next_state_value = opponent_reward + self.gamma * opponent_value[1:]
-            # state_value = opponent_value[:-1]
-            # value_loss = value_loss + opponent_coefs[i] * F.smooth_l1_loss(state_value, next_state_value)
+            opponent_value = opponent_values[i]
+            opponent_reward = opponent_rewards[i]
+            next_state_value = opponent_reward + self.gamma * opponent_value[1:]
+            state_value = opponent_value[:-1]
+            value_loss = value_loss + opponent_coefs[i] * F.smooth_l1_loss(state_value, next_state_value)
 
         return policy_loss, value_loss
 
