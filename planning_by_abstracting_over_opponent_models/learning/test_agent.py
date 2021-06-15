@@ -12,8 +12,8 @@ from torch.multiprocessing import Pool, cpu_count
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model, \
     str_to_agent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
-from ..pommerman_env.agents.rl_agent import RLAgent
 
 
 def play_game(game_id,
@@ -54,11 +54,11 @@ parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_t
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
 parser.add_argument('--nb-games', type=int, default=10)
 parser.add_argument('--nb-plays', type=int, default=10)
-ss = "static, static, static"
+ss = "simple, simple, simple"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=840)
+parser.add_argument('--model-iteration', type=int, default=960)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True)
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     opponent_classes = args.opponent_classes
     combined_opponent_classes = ",".join(opponent_classes)
     opponent_classes = [str_to_agent(oc) for oc in opponent_classes]
-    agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 64, 128, 128, 4, 128, device, False)
+    agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 32, 64, 64, 4, 64, device, False)
     agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iteration}.pt"))
     agent_model.eval()
     agent_model.share_memory()
@@ -118,5 +118,5 @@ if __name__ == '__main__':
         win_rate /= total_games
         tie_rate /= total_games
         lose_rate = 1 - win_rate - tie_rate
-        s = f"opponent class = {opponent_class_str}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+        s = f"opponent classes = {combined_opponent_classes}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
         print(s)
