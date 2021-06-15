@@ -15,7 +15,8 @@ class AgentModel(nn.Module):
                  head_dim,
                  latent_dim,
                  nb_soft_attention_heads=None,
-                 hard_attention_rnn_hidden_size=None):
+                 hard_attention_rnn_hidden_size=None,
+                 approximate_hard_attention=True):
         super().__init__()
         self.features_extractor = features_extractor
         self.nb_opponents = nb_opponents
@@ -29,7 +30,7 @@ class AgentModel(nn.Module):
         )
         agent_head_dim = latent_dim
         if self.use_attention:
-            self.attention_model = AttentionModel(nb_opponents, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size)
+            self.attention_model = AttentionModel(nb_opponents, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size, approximate_hard_attention)
             agent_head_dim *= 2
 
         self.agent_head_layer = nn.Sequential(
@@ -77,6 +78,7 @@ def create_agent_model(rank,
                        head_dim,
                        nb_soft_attention_heads,
                        hard_attention_rnn_hidden_size,
+                       approximate_hard_attention,
                        device,
                        train=True):
     torch.manual_seed(seed + rank)
@@ -93,6 +95,7 @@ def create_agent_model(rank,
                              head_dim=head_dim,
                              latent_dim=latent_dim,
                              nb_soft_attention_heads=nb_soft_attention_heads,
-                             hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size).to(device)
+                             hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size,
+                             approximate_hard_attention=approximate_hard_attention).to(device)
     agent_model.train(train)
     return agent_model

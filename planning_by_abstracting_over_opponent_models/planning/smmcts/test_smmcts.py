@@ -114,6 +114,7 @@ if __name__ == '__main__':
                                          128,
                                          4,
                                          128,
+                                         True,
                                          cpu,
                                          False)
         agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))

@@ -8,11 +8,12 @@ from planning_by_abstracting_over_opponent_models.learning.model.soft_hard_multi
 
 class AttentionModel(nn.Module):
 
-    def __init__(self, nb_opponents, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size):
+    def __init__(self, nb_opponents, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size, approximate_hard_attention=True):
         super().__init__()
         self.nb_opponents = nb_opponents
         self.use_hard_attention = hard_attention_rnn_hidden_size is not None
         if self.use_hard_attention:
+            self.approximate_hard_attention = approximate_hard_attention
             self.lstm = nn.LSTM(latent_dim * 2, hard_attention_rnn_hidden_size, bidirectional=True)
             self.hard_attention_layer = nn.Linear(hard_attention_rnn_hidden_size * 2, 2)
         self.multihead_attention = SoftHardMultiheadAttention(embed_dim=latent_dim, num_heads=nb_soft_attention_heads)
@@ -51,7 +52,8 @@ class AttentionModel(nn.Module):
         # (nb_opponents, batch_size, 2)
         hard_attention = self.hard_attention_layer(lstm_output)
         # (nb_opponents, batch_size, 2)
-        hard_attention = F.gumbel_softmax(hard_attention, tau=0.01, hard=True, dim=-1)
+        t = not self.approximate_hard_attention
+        hard_attention = F.gumbel_softmax(hard_attention, tau=0.01, hard=t, dim=-1)
         # (nb_opponents, batch_size)
         hard_attention = hard_attention[..., 1]
         # (batch_size, nb_opponents)

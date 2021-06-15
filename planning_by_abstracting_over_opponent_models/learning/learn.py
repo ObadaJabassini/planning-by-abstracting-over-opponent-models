@@ -35,6 +35,8 @@ parser.add_argument('--latent-dim', type=int, default=64)
 parser.add_argument('--head-dim', type=int, default=64)
 parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=64)
+parser.add_argument('--approximate-hard-attention', dest='approximate_hard_attention', action='store_true')
+parser.add_argument('--exact-hard-attention', dest='approximate_hard_attention', action='store_false')
 parser.add_argument('--max-grad-norm', type=float, default=0.5)
 d = "ammo_usage, avoiding_flame, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
@@ -48,6 +50,7 @@ parser.add_argument('--device', type=str, default="cpu")
 parser.add_argument('--check-point', type=str, default=None)
 parser.set_defaults(shared_opt=True)
 parser.set_defaults(monitor=True)
+parser.set_defaults(approximate_hard_attention=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -72,7 +75,8 @@ if __name__ == '__main__':
         "latent_dim": args.latent_dim,
         "head_dim": args.head_dim,
         "nb_soft_attention_heads": args.nb_soft_attention_heads,
-        "hard_attention_rnn_hidden_size": args.hard_attention_rnn_hidden_size
+        "hard_attention_rnn_hidden_size": args.hard_attention_rnn_hidden_size,
+        "approximate_hard_attention": args.approximate_hard_attention
     }
     nb_actions = 6
     shared_model = create_agent_model(rank=nb_processes + 1,
