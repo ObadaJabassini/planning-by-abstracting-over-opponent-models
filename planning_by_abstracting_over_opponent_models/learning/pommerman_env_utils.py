@@ -1,11 +1,8 @@
-from typing import List
-
-from pommerman.agents import RandomAgent
 
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.random_agent import RandomAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.smart_random_agent import SmartRandomAgent, \
     SmartRandomAgentNoBomb
@@ -43,7 +40,7 @@ def create_env(rank,
                                      train=train,
                                      **model_spec)
     agent = RLAgent(0, agent_model)
-    agents: List[PommermanAgent] = [str_to_opponent_class(opponent_class)() for opponent_class in opponent_classes]
+    agents = [str_to_opponent_class(opponent_class)() for opponent_class in opponent_classes]
     agents.insert(0, agent)
     r = seed + rank
     env: PommermanBaseEnv = PommermanCythonEnv(agents, r) if use_cython else PommermanPythonEnv(agents, r)
