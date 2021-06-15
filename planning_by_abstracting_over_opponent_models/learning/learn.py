@@ -52,8 +52,8 @@ parser.set_defaults(monitor=True)
 if __name__ == '__main__':
     args = parser.parse_args()
     reward_shapers = args.reward_shapers
-    opponent_classes = args.opponent_classes
     combined_reward_shapers = ",".join(reward_shapers)
+    opponent_classes = args.opponent_classes
     combined_opponent_classes = ",".join(opponent_classes)
     Path(f"../saved_models/{combined_opponent_classes}/{combined_reward_shapers}").mkdir(exist_ok=True, parents=True)
     os.environ['OMP_NUM_THREADS'] = '1'

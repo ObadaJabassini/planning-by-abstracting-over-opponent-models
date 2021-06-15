@@ -12,7 +12,7 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 
 
-def str_to_opponent_class(s: str):
+def str_to_agent(s: str):
     return {
         "static": StaticAgent,
         "random": RandomAgent,
@@ -40,7 +40,7 @@ def create_env(rank,
                                      train=train,
                                      **model_spec)
     agent = RLAgent(0, agent_model)
-    agents = [str_to_opponent_class(opponent_class)() for opponent_class in opponent_classes]
+    agents = [str_to_agent(opponent_class)() for opponent_class in opponent_classes]
     agents.insert(0, agent)
     r = seed + rank
     env: PommermanBaseEnv = PommermanCythonEnv(agents, r) if use_cython else PommermanPythonEnv(agents, r)

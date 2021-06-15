@@ -13,7 +13,7 @@ import torch
 
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
-from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import str_to_opponent_class
+from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import str_to_agent
 from planning_by_abstracting_over_opponent_models.planning.smmcts.smmcts import SMMCTS
 from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.neural_network_state_evaluator import \
     NeuralNetworkStateEvaluator
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     mcts_iterations = args.mcts_iterations
     opponent_classes = args.opponent_classes
     combined_opponent_classes = ",".join(opponent_classes)
-    opponent_classes = [str_to_opponent_class(cl) for cl in opponent_classes]
+    opponent_classes = [str_to_agent(cl) for cl in opponent_classes]
     exploration_coefs = [args.exploration_coef] * nb_players
     fpus = [args.fpu] * nb_players
     random_players = [False] + ([args.ignore_opponent_actions] * (nb_players - 1))

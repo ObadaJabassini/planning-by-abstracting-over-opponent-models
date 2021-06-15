@@ -1,32 +1,29 @@
 import argparse
 import os
-import torch.multiprocessing as mp
-from icecream import ic
-from torch.multiprocessing import Pool, cpu_count
 from random import randint
-from typing import List
 
 import numpy as np
 import torch
+import torch.multiprocessing as mp
 import torch.nn.functional as F
+from icecream import ic
+from torch.multiprocessing import Pool, cpu_count
 
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import create_agent_model, \
-    str_to_opponent_class
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
+    str_to_agent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
+from ..pommerman_env.agents.rl_agent import RLAgent
 
 
 def play_game(game_id,
               play_id,
               seed,
               agent_model,
-              opponent_class,
-              nb_opponents,
+              opponent_classes,
               device,
               render=False):
-    agents: List[PommermanAgent] = [opponent_class() for _ in range(nb_opponents)]
+    agents = [opponent_class() for opponent_class in opponent_classes]
     agent = RLAgent(0, agent_model)
     agents.insert(0, agent)
     env = PommermanCythonEnv(agents, seed)
@@ -57,7 +54,10 @@ parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_t
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
 parser.add_argument('--nb-games', type=int, default=10)
 parser.add_argument('--nb-plays', type=int, default=10)
-parser.add_argument('--opponent-class', type=str, default="static")
+ss = "static, static, static"
+parser.add_argument('--opponent-classes',
+                    type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
+                    default=ss)
 parser.add_argument('--model-iteration', type=int, default=840)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
@@ -74,20 +74,20 @@ if __name__ == '__main__':
     nb_plays = args.nb_plays
     render = args.render
     nb_opponents = 3
-    opponent_class_str = args.opponent_class
-    opponent_class = str_to_opponent_class(opponent_class_str)
+    opponent_classes = args.opponent_classes
+    combined_opponent_classes = ",".join(opponent_classes)
+    opponent_classes = [str_to_agent(oc) for oc in opponent_classes]
     agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 64, 128, 128, 4, 128, device, False)
-    agent_model.load_state_dict(torch.load(f"../saved_models/{opponent_class_str}/agent_model_{args.model_iteration}.pt"))
+    agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iteration}.pt"))
     agent_model.eval()
     agent_model.share_memory()
 
     if render:
-        play_game(1,
-                  1,
+        play_game(game_id=1,
+                  play_id=1,
                   seed=randint(1, 10000),
                   agent_model=agent_model,
-                  opponent_class=opponent_class,
-                  nb_opponents=nb_opponents,
+                  opponent_classes=opponent_classes,
                   device=device,
                   render=True)
     else:
@@ -99,8 +99,7 @@ if __name__ == '__main__':
                           play_id,
                           seed,
                           agent_model,
-                          opponent_class,
-                          nb_opponents,
+                          opponent_classes,
                           device,
                           False)
                 games.append(params)
