@@ -54,11 +54,11 @@ parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_t
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
 parser.add_argument('--nb-games', type=int, default=10)
 parser.add_argument('--nb-plays', type=int, default=10)
-ss = "static, static, static"
+ss = "random, simple, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=1020)
+parser.add_argument('--model-iteration', type=int, default=1200)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True)
@@ -77,7 +77,19 @@ if __name__ == '__main__':
     opponent_classes = args.opponent_classes
     combined_opponent_classes = ",".join(opponent_classes)
     opponent_classes = [str_to_agent(oc) for oc in opponent_classes]
-    agent_model = create_agent_model(0, 32, 6, nb_opponents, 4, 32, 64, 64, 4, 64, device, False)
+    agent_model = create_agent_model(rank=1,
+                                     seed=randint(1, 1000),
+                                     nb_actions=6,
+                                     nb_opponents=nb_opponents,
+                                     nb_conv_layers=4,
+                                     nb_filters=32,
+                                     latent_dim=64,
+                                     head_dim=64,
+                                     nb_soft_attention_heads=4,
+                                     hard_attention_rnn_hidden_size=64,
+                                     approximate_hard_attention=True,
+                                     device=device,
+                                     train=False)
     agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iteration}.pt"))
     agent_model.eval()
     agent_model.share_memory()

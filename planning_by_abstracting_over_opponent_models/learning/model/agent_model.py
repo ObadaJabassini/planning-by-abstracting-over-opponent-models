@@ -14,24 +14,28 @@ class AgentModel(nn.Module):
                  opponent_nb_actions,
                  head_dim,
                  latent_dim,
-                 nb_soft_attention_heads=None,
-                 hard_attention_rnn_hidden_size=None,
-                 approximate_hard_attention=True):
+                 nb_soft_attention_heads=4,
+                 hard_attention_rnn_hidden_size=64,
+                 approximate_hard_attention=True,
+                 attention_operation="concat"):
         super().__init__()
         self.features_extractor = features_extractor
         self.nb_opponents = nb_opponents
         self.nb_soft_attention_heads = nb_soft_attention_heads
-        self.use_attention = nb_soft_attention_heads is not None
         features_size = self.features_extractor.output_size
 
         self.agent_latent_layer = nn.Sequential(
             nn.Linear(features_size, latent_dim),
             nn.ELU()
         )
-        agent_head_dim = latent_dim
-        if self.use_attention:
-            self.attention_model = AttentionModel(nb_opponents, latent_dim, nb_soft_attention_heads, hard_attention_rnn_hidden_size, approximate_hard_attention)
-            agent_head_dim *= 2
+        self.attention_model = AttentionModel(
+            nb_opponents=nb_opponents,
+            latent_dim=latent_dim,
+            nb_soft_attention_heads=nb_soft_attention_heads,
+            hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size,
+            approximate_hard_attention=approximate_hard_attention,
+            attention_operation=attention_operation)
+        agent_head_dim = self.attention_model.output_size
 
         self.agent_head_layer = nn.Sequential(
             nn.Linear(agent_head_dim, head_dim),
@@ -49,14 +53,8 @@ class AgentModel(nn.Module):
         agent_latent = self.agent_latent_layer(features)
         opponent_outputs = [opponent_model(features) for opponent_model in self.opponent_models]
         opponent_latents, opponent_policies, opponent_values = list(zip(*opponent_outputs))
-        if self.use_attention:
-            # use the attention mechanism
-            agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
-        else:
-            for opponent_latent in opponent_latents:
-                agent_latent = agent_latent * opponent_latent
-            opponent_influence = torch.ones(agent_latent.size(0), self.nb_opponents, device=agent_latent.device)
-
+        # use the attention mechanism
+        agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
         # output
         agent_head = self.agent_head_layer(agent_latent)
         agent_policy = self.agent_policy_layer(agent_head)
@@ -79,6 +77,7 @@ def create_agent_model(rank,
                        nb_soft_attention_heads,
                        hard_attention_rnn_hidden_size,
                        approximate_hard_attention,
+                       attention_operation,
                        device,
                        train=True):
     torch.manual_seed(seed + rank)
@@ -96,6 +95,7 @@ def create_agent_model(rank,
                              latent_dim=latent_dim,
                              nb_soft_attention_heads=nb_soft_attention_heads,
                              hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size,
-                             approximate_hard_attention=approximate_hard_attention).to(device)
+                             approximate_hard_attention=approximate_hard_attention,
+                             attention_operation=attention_operation).to(device)
     agent_model.train(train)
     return agent_model
