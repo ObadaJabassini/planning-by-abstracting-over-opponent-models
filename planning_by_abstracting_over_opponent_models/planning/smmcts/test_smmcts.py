@@ -104,19 +104,20 @@ if __name__ == '__main__':
                                                       pw_cs,
                                                       pw_alphas)
     else:
-        agent_model = create_agent_model(0,
-                                         randint(1, 1000),
-                                         nb_actions,
-                                         nb_players - 1,
-                                         4,
-                                         64,
-                                         128,
-                                         128,
-                                         4,
-                                         128,
-                                         True,
-                                         cpu,
-                                         False)
+        agent_model = create_agent_model(rank=0,
+                                         seed=randint(1, 1000),
+                                         nb_actions=nb_actions,
+                                         nb_opponents=nb_players - 1,
+                                         nb_conv_layers=4,
+                                         nb_filters=32,
+                                         latent_dim=64,
+                                         head_dim=64,
+                                         nb_soft_attention_heads=4,
+                                         hard_attention_rnn_hidden_size=128,
+                                         approximate_hard_attention=True,
+                                         attention_operation="add",
+                                         device=cpu,
+                                         train=False)
         agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
         agent_model.eval()
         agent_model.share_memory()
