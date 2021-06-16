@@ -57,7 +57,6 @@ class AttentionModel(nn.Module):
         return agent_latent * attn_output
 
     def compute_hard_attention(self, agent_latent_stacked, opponent_latents_stacked):
-        # hard attention
         # (nb_opponents, batch_size, latent_dim)
         agent_latent_stacked_repeated = agent_latent_stacked.repeat(self.nb_opponents, 1, 1)
         # (nb_opponents, batch_size, latent_dim * 2)
