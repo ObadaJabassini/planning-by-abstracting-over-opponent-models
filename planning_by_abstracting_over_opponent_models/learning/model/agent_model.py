@@ -28,6 +28,7 @@ class AgentModel(nn.Module):
             nn.Linear(features_size, latent_dim),
             nn.ELU()
         )
+
         self.attention_model = AttentionModel(
             nb_opponents=nb_opponents,
             latent_dim=latent_dim,
