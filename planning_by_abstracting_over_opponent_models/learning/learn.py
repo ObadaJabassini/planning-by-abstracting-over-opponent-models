@@ -56,10 +56,9 @@ parser.set_defaults(approximate_hard_attention=True)
 if __name__ == '__main__':
     args = parser.parse_args()
     reward_shapers = args.reward_shapers
-    combined_reward_shapers = ",".join(reward_shapers)
     opponent_classes = args.opponent_classes
     combined_opponent_classes = ",".join(opponent_classes)
-    Path(f"../saved_models/{combined_opponent_classes}/{combined_reward_shapers}").mkdir(exist_ok=True, parents=True)
+    Path(f"../saved_models/{combined_opponent_classes}").mkdir(exist_ok=True, parents=True)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     device = gpu if args.device.lower() == "gpu" else cpu
@@ -111,7 +110,6 @@ if __name__ == '__main__':
                 nb_actions,
                 nb_opponents,
                 opponent_classes,
-                reward_shapers,
                 save_interval,
                 device)
         p = mp.Process(target=monitor, args=args)

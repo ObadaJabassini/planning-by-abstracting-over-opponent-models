@@ -14,10 +14,8 @@ def monitor(rank,
             nb_actions,
             nb_opponents,
             opponent_classes,
-            reward_shapers,
             save_interval,
             device):
-    combined_reward_shapers = ",".join(reward_shapers)
     combined_opponent_classes = ",".join(opponent_classes)
     agents, env = create_env(rank,
                              seed,
@@ -57,10 +55,10 @@ def monitor(rank,
             if done:
                 episodes += 1
                 if episodes % save_interval == 0:
-                    torch.save(shared_model.state_dict(), f"../saved_models/{combined_opponent_classes}/{combined_reward_shapers}/agent_model_{episodes}.pt")
+                    torch.save(shared_model.state_dict(), f"../saved_models/{combined_opponent_classes}/agent_model_{episodes}.pt")
                 episode_length = 0
                 actions.clear()
                 state = env.reset()
                 time.sleep(60)
     except:
-        torch.save(shared_model.state_dict(), f"../saved_models/{combined_opponent_classes}/{combined_reward_shapers}/agent_model.pt")
+        torch.save(shared_model.state_dict(), f"../saved_models/{combined_opponent_classes}/agent_model.pt")
