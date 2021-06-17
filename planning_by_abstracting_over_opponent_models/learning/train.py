@@ -187,6 +187,7 @@ def train(rank,
     episode_batches = 0
     running_total_loss = 0.0
     running_cross_entropy_loss = 0.0
+    running_value_loss = 0.0
     p = f"runs/{combined_opponent_classes}"
     Path(p).mkdir(exist_ok=True, parents=True)
     summary_writer = SummaryWriter(p) if rank == 0 else None
@@ -225,14 +226,17 @@ def train(rank,
 
             running_total_loss += total_loss.item()
             running_cross_entropy_loss += opponent_policy_loss.item()
+            running_value_loss += opponent_value_loss.item()
             episode_batches += 1
 
             if done:
                 episodes += 1
                 avg_loss = running_total_loss / episode_batches
                 avg_cross_entropy_loss = running_cross_entropy_loss / episode_batches
+                avg_value_loss = running_value_loss / episode_batches
                 running_total_loss = 0.0
                 running_cross_entropy_loss = 0.0
+                running_value_loss = 0.0
                 episode_batches = 0
                 if summary_writer is not None and episodes % 10 == 0:
                     summary_writer.add_scalar('training loss',
@@ -240,6 +244,9 @@ def train(rank,
                                               episodes)
                     summary_writer.add_scalar('cross entropy loss',
                                               avg_cross_entropy_loss,
+                                              episodes)
+                    summary_writer.add_scalar('opponent value loss',
+                                              avg_value_loss,
                                               episodes)
                     summary_writer.flush()
     except:
