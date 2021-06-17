@@ -19,13 +19,8 @@ from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluato
     NeuralNetworkStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.dummy_agent import DummyAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
-
-
-class DummyAgent(pommerman.agents.BaseAgent):
-
-    def act(self, obs, action_space):
-        pass
 
 
 def play_game(game_id,
@@ -35,11 +30,14 @@ def play_game(game_id,
               nb_players,
               nb_actions,
               exploration_coefs,
+              fpus,
               state_evaluator,
               mcts_iterations):
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
+                    fpus=fpus,
+                    random_players=random_players,
                     state_evaluator=state_evaluator)
     agents = [opponent_class() for opponent_class in opponent_classes]
     agents.insert(0, DummyAgent())
@@ -48,10 +46,7 @@ def play_game(game_id,
     done = False
     while not done:
         actions = env.act(state)
-        agent_action = smmcts.infer(env,
-                                    iterations=mcts_iterations,
-                                    fpus=fpus,
-                                    random_players=random_players)
+        agent_action = smmcts.infer(env, iterations=mcts_iterations)
         actions.insert(0, agent_action)
         state, rewards, done = env.step(actions)
     win = int(rewards[0] == 1)
@@ -137,6 +132,7 @@ if __name__ == '__main__':
                       nb_players,
                       nb_actions,
                       exploration_coefs,
+                      fpus,
                       state_evaluator,
                       mcts_iterations)
             games.append(params)
