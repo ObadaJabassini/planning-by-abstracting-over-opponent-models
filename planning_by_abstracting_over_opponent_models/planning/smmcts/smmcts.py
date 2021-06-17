@@ -1,3 +1,5 @@
+import gc
+
 import torch
 
 from planning_by_abstracting_over_opponent_models.planning.smmcts.tree_node import TreeNode
@@ -87,4 +89,7 @@ class SMMCTS:
         for iteration in range(iterations):
             self.search(env=env, current_node=root, level=0)
             env.set_game_state(game_state)
-        return root.most_visited_actions()[0]
+        action = root.most_visited_actions()[0]
+        del root
+        gc.collect()
+        return action

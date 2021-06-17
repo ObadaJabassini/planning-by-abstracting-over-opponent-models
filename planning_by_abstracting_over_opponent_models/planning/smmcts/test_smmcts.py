@@ -63,8 +63,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
-parser.add_argument('--nb-games', type=int, default=1)
-parser.add_argument('--nb-plays', type=int, default=1)
+parser.add_argument('--nb-games', type=int, default=2)
+parser.add_argument('--nb-plays', type=int, default=2)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 ss = "simple, simple, simple"
 parser.add_argument('--opponent-classes',
@@ -125,7 +125,6 @@ if __name__ == '__main__':
         agent_model.eval()
         agent_model.share_memory()
         state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=nb_actions, agent_pw_alpha=1)
-
     games = []
     for game_id in range(1, nb_games + 1):
         seed = randint(0, int(1e6))
