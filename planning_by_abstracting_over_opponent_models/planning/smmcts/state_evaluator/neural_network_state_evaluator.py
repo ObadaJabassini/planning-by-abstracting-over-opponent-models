@@ -6,12 +6,13 @@ from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluato
 
 
 class NeuralNetworkStateEvaluator(StateEvaluator):
-    def __init__(self, agent_id, nb_actions, agent_model, agent_pw_c, agent_pw_alpha=1):
+    def __init__(self, agent_id, nb_actions, agent_model, agent_pw_c, agent_pw_alpha=1, threshold=1e-3):
         self.agent_id = agent_id
         self.nb_actions = nb_actions
         self.agent_model = agent_model
         self.agent_pw_c = agent_pw_c
         self.agent_pw_alpha = agent_pw_alpha
+        self.threshold = threshold
 
     def evaluate(self, env):
         state = env.get_observations()
@@ -21,7 +22,9 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         agent_action_log, agent_value, opponents_action_log, opponent_values, opponent_influence = self.agent_model(obs)
         value_estimate = self.estimate_values(agent_value, opponent_values)
         action_probs_estimate = self.estimate_action_probabilities(agent_action_log, opponents_action_log)
-        attentions = opponent_influence.view(-1).to(cpu).tolist()
+        attentions = opponent_influence.view(-1).to(cpu).numpy()
+        attentions[attentions <= self.threshold] = 0
+        attentions = attentions.tolist()
         pw_alphas = attentions.copy()
         pw_alphas.insert(0, self.agent_pw_alpha)
         pw_cs = attentions.copy()

@@ -65,7 +65,10 @@ class MCTSPlayer(Player):
             self.original_to_sorted_actions = {v: k for k, v in self.sorted_to_original_actions.items()}
 
     def _compute_k(self, nb_visits):
-        return math.ceil(self.pw_c * (nb_visits ** self.pw_alpha))
+        k = self.pw_c * (nb_visits ** self.pw_alpha)
+        k = math.ceil(k)
+        k = max(k, 1)
+        return k
 
     def best_action(self, nb_visits):
         k = self._compute_k(nb_visits) if self.use_progressive_widening else self.nb_actions
