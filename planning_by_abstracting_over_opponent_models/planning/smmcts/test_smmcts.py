@@ -66,11 +66,14 @@ parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="stor
 parser.add_argument('--nb-games', type=int, default=1)
 parser.add_argument('--nb-plays', type=int, default=1)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
-parser.add_argument('--opponent-class', type=str, default="simple")
+ss = "simple, simple, simple"
+parser.add_argument('--opponent-classes',
+                    type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
+                    default=ss)
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=5000)
-parser.add_argument('--model-iterations', type=int, default=1920)
+parser.add_argument('--model-iterations', type=int, default=1320)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
@@ -78,8 +81,8 @@ parser.add_argument('--pw-alpha', type=float, default=None)
 parser.add_argument('--use-random-rollout', dest="use_random_rollout", action="store_true")
 parser.add_argument('--use-nn', dest="use_random_rollout", action="store_false")
 parser.set_defaults(multiprocessing=True)
-parser.set_defaults(ignore_opponent_actions=True)
-parser.set_defaults(use_random_rollout=True)
+parser.set_defaults(ignore_opponent_actions=False)
+parser.set_defaults(use_random_rollout=False)
 
 if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
@@ -113,12 +116,12 @@ if __name__ == '__main__':
                                          latent_dim=64,
                                          head_dim=64,
                                          nb_soft_attention_heads=4,
-                                         hard_attention_rnn_hidden_size=128,
+                                         hard_attention_rnn_hidden_size=64,
                                          approximate_hard_attention=True,
                                          attention_operation="add",
                                          device=cpu,
                                          train=False)
-        agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
+        agent_model.load_state_dict(torch.load(f"../../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
         agent_model.eval()
         agent_model.share_memory()
         state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=nb_actions, agent_pw_alpha=1)
