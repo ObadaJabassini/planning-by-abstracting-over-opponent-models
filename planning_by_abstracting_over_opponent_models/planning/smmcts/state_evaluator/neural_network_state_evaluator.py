@@ -22,7 +22,7 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         agent_action_log, agent_value, opponents_action_log, opponent_values, opponent_influence = self.agent_model(obs)
         value_estimate = self.estimate_values(agent_value, opponent_values)
         action_probs_estimate = self.estimate_action_probabilities(agent_action_log, opponents_action_log)
-        attentions = opponent_influence.view(-1).to(cpu).numpy()
+        attentions = opponent_influence.view(-1).to(cpu).detach().numpy()
         attentions[attentions <= self.threshold] = 0
         attentions = attentions.tolist()
         pw_alphas = attentions.copy()

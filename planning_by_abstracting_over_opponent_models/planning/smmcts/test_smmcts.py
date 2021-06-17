@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+import time
 
 import torch.multiprocessing as mp
 from icecream import ic
@@ -31,8 +32,10 @@ def play_game(game_id,
               nb_actions,
               exploration_coefs,
               fpus,
+              random_players,
               state_evaluator,
               mcts_iterations):
+    start_time = time.time()
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
@@ -51,6 +54,8 @@ def play_game(game_id,
         state, rewards, done = env.step(actions)
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
+    elapsed_time = time.time() - start_time
+    print(f"game id: {game_id}, play id: {play_id}, elapsed_time: {elapsed_time}")
     return game_id, play_id, win, tie
 
 
@@ -133,6 +138,7 @@ if __name__ == '__main__':
                       nb_actions,
                       exploration_coefs,
                       fpus,
+                      random_players,
                       state_evaluator,
                       mcts_iterations)
             games.append(params)
