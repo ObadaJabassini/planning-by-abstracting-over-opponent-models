@@ -4,8 +4,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24
-#SBATCH --error=slurm-simple.err
-#SBATCH --output=slurm-simple.out
+#SBATCH --error=slurm-smmcts-simple.err
+#SBATCH --output=slurm-smmcts-simple.out
 #SBATCH --time=48:05:00
 
 export PYTHONPATH="$HOME/obada/planning-by-abstracting-over-opponent-models"
