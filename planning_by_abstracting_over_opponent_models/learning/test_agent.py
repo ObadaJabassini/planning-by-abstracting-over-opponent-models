@@ -61,8 +61,7 @@ parser.add_argument('--opponent-classes',
 parser.add_argument('--model-iteration', type=int, default=2700)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
-parser.set_defaults(multiprocessing=True)
-parser.set_defaults(render=True)
+parser.set_defaults(multiprocessing=True, render=True)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ from pommerman import constants, utility
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.pommerman_agent import PommermanAgent
 
 
-class ModifiedSimpleAgent(PommermanAgent):
+class SimpleAgent(PommermanAgent):
     """This is a baseline agent. After you can beat it, submit your agent to
     compete.
     """

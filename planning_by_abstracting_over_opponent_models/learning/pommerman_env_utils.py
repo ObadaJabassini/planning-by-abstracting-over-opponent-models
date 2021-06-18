@@ -1,7 +1,7 @@
 
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
-from planning_by_abstracting_over_opponent_models.pommerman_env.agents.modified_simple_agent import ModifiedSimpleAgent
+from planning_by_abstracting_over_opponent_models.pommerman_env.agents.simple_agent import SimpleAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.random_agent import RandomAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.rl_agent import RLAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.smart_random_agent import SmartRandomAgent, \
@@ -18,7 +18,7 @@ def str_to_agent(s: str):
         "random": RandomAgent,
         "smart_no_bomb": SmartRandomAgentNoBomb,
         "smart": SmartRandomAgent,
-        "simple": ModifiedSimpleAgent,
+        "simple": SimpleAgent,
         "cautious": CautiousAgent
     }[s.strip().lower()]
 

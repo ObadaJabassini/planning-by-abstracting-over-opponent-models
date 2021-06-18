@@ -48,9 +48,7 @@ parser.add_argument('--with-monitoring', dest='monitor', action='store_true')
 parser.add_argument('--no-monitoring', dest='monitor', action='store_false')
 parser.add_argument('--device', type=str, default="cpu")
 parser.add_argument('--check-point', type=str, default=None)
-parser.set_defaults(shared_opt=True)
-parser.set_defaults(monitor=True)
-parser.set_defaults(approximate_hard_attention=True)
+parser.set_defaults(shared_opt=True, monitor=True, approximate_hard_attention=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()

@@ -78,9 +78,7 @@ parser.add_argument('--pw-c', type=float, default=None)
 parser.add_argument('--pw-alpha', type=float, default=None)
 parser.add_argument('--use-random-rollout', dest="use_random_rollout", action="store_true")
 parser.add_argument('--use-nn', dest="use_random_rollout", action="store_false")
-parser.set_defaults(multiprocessing=True)
-parser.set_defaults(ignore_opponent_actions=False)
-parser.set_defaults(use_random_rollout=False)
+parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False, use_random_rollout=False)
 
 if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'

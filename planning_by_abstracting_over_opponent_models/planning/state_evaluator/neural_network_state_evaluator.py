@@ -24,11 +24,10 @@ class NeuralNetworkStateEvaluator(StateEvaluator):
         action_probs_estimate = self.estimate_action_probabilities(agent_action_log, opponents_action_log)
         attentions = opponent_influence.view(-1).to(cpu).detach()
         attentions[attentions <= self.threshold] = 0
-        attentions = attentions.tolist()
-        pw_alphas = attentions.copy()
+        pw_alphas = attentions.tolist().copy()
         pw_alphas.insert(0, self.agent_pw_alpha)
-        pw_cs = attentions.copy()
-        pw_cs = [pw_c * self.nb_actions for pw_c in pw_cs]
+        pw_cs = attentions * self.nb_actions
+        pw_cs = pw_cs.tolist()
         pw_cs.insert(0, self.agent_pw_c)
         return value_estimate, action_probs_estimate, pw_cs, pw_alphas
 
