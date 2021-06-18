@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from planning_by_abstracting_over_opponent_models.learning.model.attention_model import AttentionModel
+from planning_by_abstracting_over_opponent_models.learning.model.attention.attention_model import AttentionModel
 from planning_by_abstracting_over_opponent_models.learning.model.features_extractor import FeaturesExtractor
 from planning_by_abstracting_over_opponent_models.learning.model.opponent_model import OpponentModel
 
@@ -16,8 +16,7 @@ class AgentModel(nn.Module):
                  latent_dim,
                  nb_soft_attention_heads=4,
                  hard_attention_rnn_hidden_size=64,
-                 approximate_hard_attention=True,
-                 attention_operation="concat"):
+                 approximate_hard_attention=True):
         super().__init__()
         self.features_extractor = features_extractor
         self.nb_opponents = nb_opponents
@@ -30,18 +29,16 @@ class AgentModel(nn.Module):
         )
 
         self.attention_model = AttentionModel(
-            nb_opponents=nb_opponents,
             latent_dim=latent_dim,
             nb_soft_attention_heads=nb_soft_attention_heads,
             hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size,
-            approximate_hard_attention=approximate_hard_attention,
-            attention_operation=attention_operation)
-        agent_head_dim = self.attention_model.output_size
+            approximate_hard_attention=approximate_hard_attention)
 
         self.agent_head_layer = nn.Sequential(
-            nn.Linear(agent_head_dim, head_dim),
+            nn.Linear(latent_dim, head_dim),
             nn.ELU()
         )
+        self.dropout = nn.Dropout(0.5)
         self.agent_policy_layer = nn.Linear(head_dim, agent_nb_actions)
         self.agent_value_layer = nn.Linear(head_dim, 1)
 
@@ -58,6 +55,7 @@ class AgentModel(nn.Module):
         agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
         # output
         agent_head = self.agent_head_layer(agent_latent)
+        agent_head = self.dropout(agent_head)
         agent_policy = self.agent_policy_layer(agent_head)
         agent_value = self.agent_value_layer(agent_head)
 
@@ -78,7 +76,6 @@ def create_agent_model(rank,
                        nb_soft_attention_heads,
                        hard_attention_rnn_hidden_size,
                        approximate_hard_attention,
-                       attention_operation,
                        device,
                        train=True):
     torch.manual_seed(seed + rank)
@@ -96,7 +93,6 @@ def create_agent_model(rank,
                              latent_dim=latent_dim,
                              nb_soft_attention_heads=nb_soft_attention_heads,
                              hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size,
-                             approximate_hard_attention=approximate_hard_attention,
-                             attention_operation=attention_operation).to(device)
+                             approximate_hard_attention=approximate_hard_attention).to(device)
     agent_model.train(train)
     return agent_model

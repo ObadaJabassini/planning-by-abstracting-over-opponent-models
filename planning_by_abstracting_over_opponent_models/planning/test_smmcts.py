@@ -71,7 +71,7 @@ parser.add_argument('--opponent-classes',
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=5000)
-parser.add_argument('--model-iterations', type=int, default=1320)
+parser.add_argument('--model-iterations', type=int, default=2700)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
@@ -116,7 +116,6 @@ if __name__ == '__main__':
                                          nb_soft_attention_heads=4,
                                          hard_attention_rnn_hidden_size=64,
                                          approximate_hard_attention=True,
-                                         attention_operation="add",
                                          device=cpu,
                                          train=False)
         agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))

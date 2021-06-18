@@ -88,7 +88,6 @@ if __name__ == '__main__':
                                      nb_soft_attention_heads=4,
                                      hard_attention_rnn_hidden_size=64,
                                      approximate_hard_attention=True,
-                                     attention_operation="add",
                                      device=device,
                                      train=False)
     agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iteration}.pt"))
