@@ -1,4 +1,4 @@
-from planning_by_abstracting_over_opponent_models.planning.smmcts.player import MCTSPlayer, RandomPlayer
+from planning_by_abstracting_over_opponent_models.planning.player import MCTSPlayer, RandomPlayer
 
 
 class TreeNode:

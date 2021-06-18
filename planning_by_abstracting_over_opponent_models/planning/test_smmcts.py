@@ -4,21 +4,19 @@ import os
 import time
 
 import torch.multiprocessing as mp
-from icecream import ic
 from torch.multiprocessing import Pool, cpu_count
 from random import randint
 
 import numpy as np
-import pommerman
 import torch
 
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import str_to_agent
-from planning_by_abstracting_over_opponent_models.planning.smmcts.smmcts import SMMCTS
-from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.neural_network_state_evaluator import \
+from planning_by_abstracting_over_opponent_models.planning.smmcts import SMMCTS
+from planning_by_abstracting_over_opponent_models.planning.state_evaluator.neural_network_state_evaluator import \
     NeuralNetworkStateEvaluator
-from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator.random_rollout_state_evaluator import \
+from planning_by_abstracting_over_opponent_models.planning.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.dummy_agent import DummyAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
@@ -121,7 +119,7 @@ if __name__ == '__main__':
                                          attention_operation="add",
                                          device=cpu,
                                          train=False)
-        agent_model.load_state_dict(torch.load(f"../../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
+        agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
         agent_model.eval()
         agent_model.share_memory()
         state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=nb_actions, agent_pw_alpha=1)

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from planning_by_abstracting_over_opponent_models.planning.smmcts.state_evaluator import StateEvaluator
+from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 
 
 class RandomRolloutStateEvaluator(StateEvaluator):
