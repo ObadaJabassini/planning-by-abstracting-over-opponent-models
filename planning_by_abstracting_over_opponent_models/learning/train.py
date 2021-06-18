@@ -242,7 +242,7 @@ def train(rank,
                     summary_writer.add_scalar('training loss',
                                               avg_loss,
                                               episodes)
-                    summary_writer.add_scalar('cross entropy loss',
+                    summary_writer.add_scalar('opponent cross entropy loss',
                                               avg_cross_entropy_loss,
                                               episodes)
                     summary_writer.add_scalar('opponent value loss',
