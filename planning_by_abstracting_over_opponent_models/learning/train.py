@@ -185,12 +185,12 @@ def train(rank,
     reward_shaper = strs_to_reward_shaper(reward_shapers)
     episodes = 0
     episode_batches = 0
-    running_total_loss = 0.0
-    running_cross_entropy_loss = 0.0
-    running_value_loss = 0.0
     p = f"runs/{combined_opponent_classes}"
     Path(p).mkdir(exist_ok=True, parents=True)
     summary_writer = SummaryWriter(p) if rank == 0 else None
+    running_total_loss = 0.0
+    running_cross_entropy_loss = 0.0
+    running_value_loss = 0.0
     try:
         while True:
             # sync with the shared model
