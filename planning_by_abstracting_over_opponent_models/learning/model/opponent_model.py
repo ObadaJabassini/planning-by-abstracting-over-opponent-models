@@ -11,7 +11,7 @@ class OpponentModel(nn.Module):
 
     def forward(self, features):
         latent = self.latent_layer(features)
-        head = self.head_layer(latent)
-        policy = self.policy_layer(head)
-        value = self.value_layer(head)
+        latent = self.head_layer(latent)
+        policy = self.policy_layer(latent)
+        value = self.value_layer(latent)
         return latent, policy, value

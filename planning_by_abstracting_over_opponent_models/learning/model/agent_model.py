@@ -51,8 +51,8 @@ class AgentModel(nn.Module):
         agent_latent = self.agent_latent_layer(features)
         opponent_outputs = [opponent_model(features) for opponent_model in self.opponent_models]
         opponent_latents, opponent_policies, opponent_values = list(zip(*opponent_outputs))
-        # use the attention mechanism
         agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
+
         # output
         agent_head = self.agent_head_layer(agent_latent)
         agent_head = self.dropout(agent_head)
