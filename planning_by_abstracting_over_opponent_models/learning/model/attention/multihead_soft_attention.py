@@ -34,8 +34,8 @@ class SoftAttention(nn.Module):
         # (batch_size, nb_opponents, embed_dim)
         opponent_latents = self.w_c(opponent_latents)
         # (batch_size, nb_opponents, embed_dim)
-        scores = scores.unsqueeze(2).repeat(1, 1, self.embed_dim)
-        opponent_latents = scores * opponent_latents
+        repeated_scores = scores.unsqueeze(2).repeat(1, 1, self.embed_dim)
+        opponent_latents = repeated_scores * opponent_latents
         # (batch_size, embed_dim)
         result = torch.sum(opponent_latents, dim=1)
         return result, scores

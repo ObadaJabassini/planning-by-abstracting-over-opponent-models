@@ -41,7 +41,7 @@ def play_game(game_id,
         state, rewards, done = env.step(actions)
         if render:
             env.render()
-            ic(opponent_influence)
+            ic(opponent_influence.shape)
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
     print(f"game {game_id}, play {play_id} finished.")
@@ -58,7 +58,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=2700)
+parser.add_argument('--model-iteration', type=int, default=960)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True, render=True)
