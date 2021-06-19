@@ -23,14 +23,14 @@ class HardAttention(nn.Module):
             agent_opponent_stacked = torch.cat((agent_latent_stacked_repeated, opponent_latents), dim=-1)
             # (nb_opponents, batch_size, hard_attention_rnn_hidden_size * 2)
             lstm_output, _ = self.lstm(agent_opponent_stacked)
-            # (nb_opponents, batch_size, 2)
+            # (batch_size, nb_opponents, hard_attention_rnn_hidden_size * 2)
+            lstm_output = lstm_output.permute(1, 0, 2)
+            # (batch_size, nb_opponents, 2)
             hard_attention = self.output_layer(lstm_output)
-            # (nb_opponents, batch_size, 2)
+            # (batch_size, nb_opponents, 2)
             hard_attention = F.gumbel_softmax(hard_attention, tau=0.01, hard=self.hard, dim=-1)
-            # (nb_opponents, batch_size)
-            hard_attention = hard_attention[..., 1]
             # (batch_size, nb_opponents)
-            hard_attention = hard_attention.T
+            hard_attention = hard_attention[..., 1]
             return hard_attention
         return torch.ones(agent_latent.shape[0], len(opponent_latents), device=agent_latent.device)
 
