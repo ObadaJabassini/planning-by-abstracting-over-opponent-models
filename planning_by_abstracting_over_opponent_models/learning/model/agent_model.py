@@ -38,7 +38,7 @@ class AgentModel(nn.Module):
             nn.Linear(latent_dim, head_dim),
             nn.ELU()
         )
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.1)
         self.agent_policy_layer = nn.Linear(head_dim, agent_nb_actions)
         self.agent_value_layer = nn.Linear(head_dim, 1)
 
