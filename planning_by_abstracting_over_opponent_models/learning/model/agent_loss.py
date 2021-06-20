@@ -53,19 +53,19 @@ class AgentLoss(nn.Module):
         :return:
         """
         nb_opponents = opponent_log_probs.shape[0]
-        policy_loss = 0
-        value_loss = 0
+        policy_loss = torch.zeros(1)
+        value_loss = torch.zeros(1)
         for i in range(nb_opponents):
             # policy loss
             policy_loss = policy_loss + opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i],
                                                                             opponent_actions_ground_truths[i])
 
             # value loss
-            opponent_value = opponent_values[i]
-            opponent_reward = opponent_rewards[i]
-            next_state_value = opponent_reward + self.gamma * opponent_value[1:]
-            state_value = opponent_value[:-1]
-            value_loss = value_loss + opponent_coefs[i] * F.smooth_l1_loss(state_value, next_state_value)
+            # opponent_value = opponent_values[i]
+            # opponent_reward = opponent_rewards[i]
+            # next_state_value = opponent_reward + self.gamma * opponent_value[1:]
+            # state_value = opponent_value[:-1]
+            # value_loss = value_loss + opponent_coefs[i] * F.smooth_l1_loss(state_value, next_state_value)
 
         return policy_loss, value_loss
 
