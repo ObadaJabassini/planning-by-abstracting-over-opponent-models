@@ -42,7 +42,7 @@ class AgentModel(nn.Module):
         self.agent_policy_layer = nn.Linear(head_dim, agent_nb_actions)
         self.agent_value_layer = nn.Linear(head_dim, 1)
 
-        self.opponent_models = [OpponentModel(features_size, latent_dim, head_dim, opponent_nb_actions) for _ in
+        self.opponent_models = [OpponentModel(features_size, latent_dim, opponent_nb_actions) for _ in
                                 range(nb_opponents)]
         self.opponent_models = nn.ModuleList(self.opponent_models)
 
