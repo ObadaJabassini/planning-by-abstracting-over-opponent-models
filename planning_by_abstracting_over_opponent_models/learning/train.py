@@ -235,28 +235,25 @@ def train(rank,
 
             if done:
                 episodes += 1
-                avg_loss = running_total_loss / episode_batches
-                avg_cross_entropy_loss = running_cross_entropy_loss / episode_batches
-                avg_value_loss = running_value_loss / episode_batches
-                episode_batches = 0
-                running_total_loss = 0.0
-                running_cross_entropy_loss = 0.0
-                running_value_loss = 0.0
-                running_reward = 0.0
                 if summary_writer is not None and episodes % 10 == 0:
                     summary_writer.add_scalar('training loss',
-                                              avg_loss,
+                                              running_total_loss / episode_batches,
                                               episodes)
                     summary_writer.add_scalar('opponent cross entropy loss',
-                                              avg_cross_entropy_loss,
+                                              running_cross_entropy_loss / episode_batches,
                                               episodes)
                     summary_writer.add_scalar('opponent value loss',
-                                              avg_value_loss,
+                                              running_value_loss / episode_batches,
                                               episodes)
                     summary_writer.add_scalar("reward",
                                               running_reward,
                                               episodes)
                     summary_writer.flush()
+                episode_batches = 0
+                running_total_loss = 0.0
+                running_cross_entropy_loss = 0.0
+                running_value_loss = 0.0
+                running_reward = 0.0
     except:
         if summary_writer is not None:
             summary_writer.close()
