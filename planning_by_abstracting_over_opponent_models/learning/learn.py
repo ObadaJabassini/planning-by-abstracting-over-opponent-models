@@ -32,7 +32,6 @@ parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
 parser.add_argument('--latent-dim', type=int, default=64)
-parser.add_argument('--head-dim', type=int, default=64)
 parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=64)
 parser.add_argument('--approximate-hard-attention', dest='approximate_hard_attention', action='store_true')
@@ -70,7 +69,6 @@ if __name__ == '__main__':
         "nb_conv_layers": args.nb_conv_layers,
         "nb_filters": args.nb_filters,
         "latent_dim": args.latent_dim,
-        "head_dim": args.head_dim,
         "nb_soft_attention_heads": args.nb_soft_attention_heads,
         "hard_attention_rnn_hidden_size": args.hard_attention_rnn_hidden_size,
         "approximate_hard_attention": args.approximate_hard_attention,

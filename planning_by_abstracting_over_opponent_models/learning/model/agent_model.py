@@ -12,7 +12,6 @@ class AgentModel(nn.Module):
                  agent_nb_actions,
                  nb_opponents,
                  opponent_nb_actions,
-                 head_dim,
                  latent_dim,
                  nb_soft_attention_heads=4,
                  hard_attention_rnn_hidden_size=64,
@@ -35,12 +34,12 @@ class AgentModel(nn.Module):
             approximate_hard_attention=approximate_hard_attention)
 
         self.agent_head_layer = nn.Sequential(
-            nn.Linear(latent_dim, head_dim),
+            nn.Linear(latent_dim, latent_dim),
             nn.ELU()
         )
         self.dropout = nn.Dropout(0.1)
-        self.agent_policy_layer = nn.Linear(head_dim, agent_nb_actions)
-        self.agent_value_layer = nn.Linear(head_dim, 1)
+        self.agent_policy_layer = nn.Linear(latent_dim, agent_nb_actions)
+        self.agent_value_layer = nn.Linear(latent_dim, 1)
 
         self.opponent_models = [OpponentModel(features_size, latent_dim, opponent_nb_actions) for _ in
                                 range(nb_opponents)]
@@ -72,7 +71,6 @@ def create_agent_model(rank,
                        nb_conv_layers,
                        nb_filters,
                        latent_dim,
-                       head_dim,
                        nb_soft_attention_heads,
                        hard_attention_rnn_hidden_size,
                        approximate_hard_attention,
@@ -89,7 +87,6 @@ def create_agent_model(rank,
                              nb_opponents=nb_opponents,
                              agent_nb_actions=nb_actions,
                              opponent_nb_actions=nb_actions,
-                             head_dim=head_dim,
                              latent_dim=latent_dim,
                              nb_soft_attention_heads=nb_soft_attention_heads,
                              hard_attention_rnn_hidden_size=hard_attention_rnn_hidden_size,

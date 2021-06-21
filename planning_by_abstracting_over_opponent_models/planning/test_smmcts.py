@@ -110,7 +110,6 @@ if __name__ == '__main__':
                                          nb_conv_layers=4,
                                          nb_filters=32,
                                          latent_dim=64,
-                                         head_dim=64,
                                          nb_soft_attention_heads=4,
                                          hard_attention_rnn_hidden_size=64,
                                          approximate_hard_attention=True,
