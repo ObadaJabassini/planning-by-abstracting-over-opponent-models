@@ -75,6 +75,7 @@ def collect_trajectory(env,
     agent = agents[0]
     done = False
     steps = 0
+    running_reward = 0.0
     while not done and steps < nb_steps:
         steps += 1
         obs = env.get_features(state).to(device)
@@ -91,6 +92,7 @@ def collect_trajectory(env,
         agent_reward = rewards[0]
         if reward_shaper is not None and not done and agent_reward == 0:
             agent_reward = reward_shaper.shape(state[0], agent_action)
+        running_reward += agent_reward
         # agent
         agent_rewards.append(agent_reward)
         agent_entropies.append(agent_entropy.view(-1))
@@ -133,7 +135,7 @@ def collect_trajectory(env,
                                                         opponent_rewards,
                                                         opponent_values,
                                                         device)
-    return steps, state, done, agent_trajectory, opponent_trajectory
+    return steps, state, done, running_reward, agent_trajectory, opponent_trajectory
 
 
 def ensure_shared_grads(model, shared_model):
@@ -191,20 +193,21 @@ def train(rank,
     running_total_loss = 0.0
     running_cross_entropy_loss = 0.0
     running_value_loss = 0.0
+    running_reward = 0.0
     try:
         while True:
             # sync with the shared model
             agent_model.load_state_dict(shared_model.state_dict())
-            steps, state, done, agent_trajectory, opponent_trajectory = collect_trajectory(env=env,
-                                                                                           state=state,
-                                                                                           lock=lock,
-                                                                                           counter=counter,
-                                                                                           agents=agents,
-                                                                                           nb_opponents=nb_opponents,
-                                                                                           nb_actions=nb_actions,
-                                                                                           nb_steps=nb_steps,
-                                                                                           device=device,
-                                                                                           reward_shaper=reward_shaper)
+            steps, state, done, reward, agent_trajectory, opponent_trajectory = collect_trajectory(env=env,
+                                                                                                   state=state,
+                                                                                                   lock=lock,
+                                                                                                   counter=counter,
+                                                                                                   agents=agents,
+                                                                                                   nb_opponents=nb_opponents,
+                                                                                                   nb_actions=nb_actions,
+                                                                                                   nb_steps=nb_steps,
+                                                                                                   device=device,
+                                                                                                   reward_shaper=reward_shaper)
             agent_rewards, agent_values, agent_log_probs, agent_entropies = agent_trajectory
             opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
             # backward step
@@ -227,6 +230,7 @@ def train(rank,
             running_total_loss += total_loss.item()
             running_cross_entropy_loss += opponent_policy_loss.item()
             running_value_loss += opponent_value_loss.item()
+            running_reward += reward
             episode_batches += 1
 
             if done:
@@ -234,10 +238,11 @@ def train(rank,
                 avg_loss = running_total_loss / episode_batches
                 avg_cross_entropy_loss = running_cross_entropy_loss / episode_batches
                 avg_value_loss = running_value_loss / episode_batches
+                episode_batches = 0
                 running_total_loss = 0.0
                 running_cross_entropy_loss = 0.0
                 running_value_loss = 0.0
-                episode_batches = 0
+                running_reward = 0.0
                 if summary_writer is not None and episodes % 10 == 0:
                     summary_writer.add_scalar('training loss',
                                               avg_loss,
@@ -247,6 +252,9 @@ def train(rank,
                                               episodes)
                     summary_writer.add_scalar('opponent value loss',
                                               avg_value_loss,
+                                              episodes)
+                    summary_writer.add_scalar("reward",
+                                              running_reward,
                                               episodes)
                     summary_writer.flush()
     except:
