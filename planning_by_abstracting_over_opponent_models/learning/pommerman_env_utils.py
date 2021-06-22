@@ -1,4 +1,3 @@
-
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.cautious_agent import CautiousAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.simple_agent import SimpleAgent
@@ -12,15 +11,16 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_python_env import PommermanPythonEnv
 
 
-def str_to_agent(s: str):
-    return {
+def str_to_agent(s):
+    d = {
         "static": StaticAgent,
         "random": RandomAgent,
         "smart_no_bomb": SmartRandomAgentNoBomb,
         "smart": SmartRandomAgent,
         "simple": SimpleAgent,
         "cautious": CautiousAgent
-    }[s.strip().lower()]
+    }
+    return d[s.strip().lower()]
 
 
 def create_env(rank,
