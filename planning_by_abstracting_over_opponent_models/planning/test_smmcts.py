@@ -18,10 +18,6 @@ from planning_by_abstracting_over_opponent_models.planning.policy_estimator.neur
 from planning_by_abstracting_over_opponent_models.planning.policy_estimator.uniform_policy_estimator import \
     UniformPolicyEstimator
 from planning_by_abstracting_over_opponent_models.planning.smmcts import SMMCTS
-from planning_by_abstracting_over_opponent_models.planning.state_evaluator.neural_network_state_evaluator import \
-    NeuralNetworkStateEvaluator
-from planning_by_abstracting_over_opponent_models.planning.state_evaluator.random_rollout_state_evaluator import \
-    RandomRolloutStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.value_estimator.neural_network_value_estimator import \
     NeuralNetworkValueEstimator
 from planning_by_abstracting_over_opponent_models.planning.value_estimator.random_rollout_value_estimator import \
