@@ -7,7 +7,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 
 class PlantingBombComponent(RewardShapingComponent):
 
-    def __init__(self, plant_bomb_near_wood_reward=0.05, plant_bomb_near_enemy_reward=0.1):
+    def __init__(self, plant_bomb_near_wood_reward=0.025, plant_bomb_near_enemy_reward=0.1):
         super().__init__()
         self.plant_bomb_near_wood_reward = plant_bomb_near_wood_reward
         self.plant_bomb_near_enemy_reward = plant_bomb_near_enemy_reward
