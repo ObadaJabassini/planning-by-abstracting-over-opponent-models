@@ -7,7 +7,7 @@ from planning_by_abstracting_over_opponent_models.planning.policy_estimator impo
 
 class NeuralNetworkPolicyEstimator(PolicyEstimator):
 
-    def __init__(self, agent_id, agent_model, nb_actions, agent_pw_c, agent_pw_alpha, threshold=1e-3):
+    def __init__(self, agent_id, agent_model, nb_actions, agent_pw_c=None, agent_pw_alpha=None, threshold=1e-3):
         self.agent_id = agent_id
         self.agent_model = agent_model
         self.nb_actions = nb_actions
