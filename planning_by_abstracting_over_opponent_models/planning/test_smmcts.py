@@ -13,11 +13,19 @@ import torch
 from planning_by_abstracting_over_opponent_models.config import cpu
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import str_to_agent
+from planning_by_abstracting_over_opponent_models.planning.policy_estimator.neural_network_policy_estimator import \
+    NeuralNetworkPolicyEstimator
+from planning_by_abstracting_over_opponent_models.planning.policy_estimator.uniform_policy_estimator import \
+    UniformPolicyEstimator
 from planning_by_abstracting_over_opponent_models.planning.smmcts import SMMCTS
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator.neural_network_state_evaluator import \
     NeuralNetworkStateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator.random_rollout_state_evaluator import \
     RandomRolloutStateEvaluator
+from planning_by_abstracting_over_opponent_models.planning.value_estimator.neural_network_value_estimator import \
+    NeuralNetworkValueEstimator
+from planning_by_abstracting_over_opponent_models.planning.value_estimator.random_rollout_value_estimator import \
+    RandomRolloutValueEstimator
 from planning_by_abstracting_over_opponent_models.pommerman_env.agents.dummy_agent import DummyAgent
 from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_cython_env import PommermanCythonEnv
 
@@ -31,7 +39,8 @@ def play_game(game_id,
               exploration_coefs,
               fpus,
               random_players,
-              state_evaluator,
+              value_estimator,
+              policy_estimator,
               mcts_iterations):
     start_time = time.time()
     smmcts = SMMCTS(nb_players=nb_players,
@@ -39,7 +48,8 @@ def play_game(game_id,
                     exploration_coefs=exploration_coefs,
                     fpus=fpus,
                     random_players=random_players,
-                    state_evaluator=state_evaluator)
+                    value_estimator=value_estimator,
+                    policy_estimator=policy_estimator)
     agents = [opponent_class() for opponent_class in opponent_classes]
     agents.insert(0, DummyAgent())
     env = PommermanCythonEnv(agents=agents, seed=seed)
@@ -76,9 +86,9 @@ parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
 parser.add_argument('--pw-alpha', type=float, default=None)
-parser.add_argument('--use-random-rollout', dest="use_random_rollout", action="store_true")
-parser.add_argument('--use-nn', dest="use_random_rollout", action="store_false")
-parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False, use_random_rollout=False)
+parser.add_argument('--value-estimation', type=str, default="rollout", choices=["rollout", "neural_network"])
+parser.add_argument('--policy-estimation', type=str, default="uniform", choices=["uniform", "neural_network"])
+parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
 if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
@@ -97,28 +107,39 @@ if __name__ == '__main__':
     random_players = [False] + ([args.ignore_opponent_actions] * (nb_players - 1))
     pw_cs = [args.pw_c] * nb_players
     pw_alphas = [args.pw_alpha] * nb_players
-    if args.use_random_rollout:
-        state_evaluator = RandomRolloutStateEvaluator(nb_players,
-                                                      nb_actions,
-                                                      pw_cs,
-                                                      pw_alphas)
+    agent_model = create_agent_model(rank=0,
+                                     seed=randint(1, 1000),
+                                     nb_actions=nb_actions,
+                                     nb_opponents=nb_players - 1,
+                                     nb_conv_layers=4,
+                                     nb_filters=32,
+                                     latent_dim=64,
+                                     nb_soft_attention_heads=4,
+                                     hard_attention_rnn_hidden_size=64,
+                                     approximate_hard_attention=True,
+                                     device=cpu,
+                                     train=False)
+    agent_model.load_state_dict(
+        torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
+    agent_model.eval()
+    agent_model.share_memory()
+    if args.value_estimation == "rollout":
+        value_estimator = RandomRolloutValueEstimator(nb_players=nb_players, nb_actions=nb_actions)
     else:
-        agent_model = create_agent_model(rank=0,
-                                         seed=randint(1, 1000),
-                                         nb_actions=nb_actions,
-                                         nb_opponents=nb_players - 1,
-                                         nb_conv_layers=4,
-                                         nb_filters=32,
-                                         latent_dim=64,
-                                         nb_soft_attention_heads=4,
-                                         hard_attention_rnn_hidden_size=64,
-                                         approximate_hard_attention=True,
-                                         device=cpu,
-                                         train=False)
-        agent_model.load_state_dict(torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
-        agent_model.eval()
-        agent_model.share_memory()
-        state_evaluator = NeuralNetworkStateEvaluator(0, nb_actions, agent_model, agent_pw_c=nb_actions, agent_pw_alpha=1)
+        value_estimator = NeuralNetworkValueEstimator(agent_id=0, agent_model=agent_model)
+
+    if args.policy_estimation == "uniform":
+        policy_estimator = UniformPolicyEstimator(nb_players=nb_players,
+                                                  nb_actions=nb_actions,
+                                                  pw_cs=pw_cs,
+                                                  pw_alphas=pw_alphas)
+    else:
+        policy_estimator = NeuralNetworkPolicyEstimator(agent_id=0,
+                                                        agent_model=agent_model,
+                                                        nb_actions=nb_actions,
+                                                        agent_pw_c=None,
+                                                        agent_pw_alpha=None)
+
     games = []
     for game_id in range(1, nb_games + 1):
         seed = randint(0, int(1e6))
@@ -132,7 +153,8 @@ if __name__ == '__main__':
                       exploration_coefs,
                       fpus,
                       random_players,
-                      state_evaluator,
+                      value_estimator,
+                      policy_estimator,
                       mcts_iterations)
             games.append(params)
     if args.multiprocessing:

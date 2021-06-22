@@ -2,8 +2,10 @@ import gc
 
 import torch
 
+from planning_by_abstracting_over_opponent_models.planning.policy_estimator import PolicyEstimator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
 from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
+from planning_by_abstracting_over_opponent_models.planning.value_estimator import ValueEstimator
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -15,13 +17,15 @@ class SMMCTS:
                  exploration_coefs,
                  fpus,
                  random_players,
-                 state_evaluator: StateEvaluator):
+                 value_estimator: ValueEstimator,
+                 policy_estimator: PolicyEstimator):
         self.nb_players = nb_players
         self.nb_actions = nb_actions
         self.exploration_coefs = exploration_coefs
         self.fpus = fpus
         self.random_players = random_players
-        self.state_evaluator = state_evaluator
+        self.value_estimator = value_estimator
+        self.policy_estimator = policy_estimator
         self.max_level = 0
 
     def search(self, env, current_node: TreeNode, level):
@@ -47,16 +51,17 @@ class SMMCTS:
     def expand(self, env, state, rewards, is_terminal, actions, current_node):
         if is_terminal:
             value_estimate = torch.as_tensor(rewards)
-            action_prob_estimate = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
+            action_probs_estimate = torch.full((self.nb_players, self.nb_actions), 1 / self.nb_actions)
             pw_cs = [None] * self.nb_players
             pw_alphas = [None] * self.nb_players
         else:
-            value_estimate, action_prob_estimate, pw_cs, pw_alphas = self.state_evaluator.evaluate(env)
+            value_estimate = self.value_estimator.estimate(env)
+            action_probs_estimate, pw_cs, pw_alphas = self.policy_estimator.estimate(env)
         current_node.children[actions] = TreeNode(state=state,
                                                   parent=current_node,
                                                   is_terminal=is_terminal,
                                                   value_estimate=value_estimate,
-                                                  action_probs_estimate=action_prob_estimate,
+                                                  action_probs_estimate=action_probs_estimate,
                                                   nb_players=self.nb_players,
                                                   nb_actions=self.nb_actions,
                                                   exploration_coefs=self.exploration_coefs,
@@ -71,7 +76,8 @@ class SMMCTS:
 
     def infer(self, env, iterations):
         initial_state = env.get_observations()
-        value_estimate, action_probs_estimate, pw_cs, pw_alphas = self.state_evaluator.evaluate(env)
+        value_estimate = self.value_estimator.estimate(env)
+        action_probs_estimate, pw_cs, pw_alphas = self.policy_estimator.estimate(env)
         root = TreeNode(state=initial_state,
                         parent=None,
                         is_terminal=False,
