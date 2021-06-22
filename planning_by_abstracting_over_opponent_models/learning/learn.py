@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=randint(1, 1000))
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
-ss = "random, random, random"
+ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=ss)
