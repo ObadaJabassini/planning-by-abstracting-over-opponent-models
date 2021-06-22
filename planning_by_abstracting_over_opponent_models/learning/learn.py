@@ -27,7 +27,7 @@ ss = "random, random, random"
 parser.add_argument('--opponent-classes',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=ss)
-parser.add_argument('--nb-steps', type=int, default=20)
+parser.add_argument('--nb-steps', type=int, default=32)
 parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     optimizer = None
     if args.shared_opt:
         optimizer = SharedAdam(shared_model.parameters(),
-                               lr=1e-4,
+                               lr=1e-5,
                                betas=(0.9, 0.999),
                                eps=1e-8,
                                weight_decay=1e-5)
