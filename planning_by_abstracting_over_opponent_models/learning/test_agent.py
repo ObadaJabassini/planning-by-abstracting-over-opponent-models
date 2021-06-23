@@ -1,6 +1,7 @@
 import argparse
 import os
 from random import randint
+from time import sleep
 
 import numpy as np
 import torch
@@ -32,16 +33,20 @@ def play_game(game_id,
     done = False
     while not done:
         obs = env.get_features(state).to(device)
-        action_probs, _, _, _, opponent_influence = agent.estimate(obs)
+        action_probs, _, opponent_log_prob, _, opponent_influence = agent.estimate(obs)
+        if render:
+            ic(opponent_influence)
         action_probs = F.softmax(action_probs, dim=-1).view(-1)
         agent_action = action_probs.argmax()
         agent_action = agent_action.item()
+        # opponent_log_prob = opponent_log_prob.view(nb_opponents, -1)
+        # opponent_log_prob = F.softmax(opponent_log_prob, dim=-1)
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
         state, rewards, done = env.step(actions)
         if render:
+            sleep(2)
             env.render()
-            ic(opponent_influence)
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
     print(f"game {game_id}, play {play_id} finished.")
