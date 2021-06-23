@@ -52,6 +52,7 @@ def play_game(game_id,
     state = env.reset()
     done = False
     while not done:
+        print("step")
         actions = env.act(state)
         agent_action = smmcts.infer(env, iterations=mcts_iterations)
         actions.insert(0, agent_action)
@@ -70,20 +71,20 @@ parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="stor
 parser.add_argument('--nb-games', type=int, default=2)
 parser.add_argument('--nb-plays', type=int, default=2)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
-ss = "simple, simple, simple"
+ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=5000)
-parser.add_argument('--model-iterations', type=int, default=2700)
+parser.add_argument('--model-iterations', type=int, default=1380)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
 parser.add_argument('--pw-alpha', type=float, default=None)
 parser.add_argument('--value-estimation', type=str, default="rollout", choices=["rollout", "neural_network"])
-parser.add_argument('--policy-estimation', type=str, default="uniform", choices=["uniform", "neural_network"])
+parser.add_argument('--policy-estimation', type=str, default="neural_network", choices=["uniform", "neural_network"])
 parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
 if __name__ == '__main__':
@@ -111,12 +112,12 @@ if __name__ == '__main__':
                                      nb_filters=32,
                                      latent_dim=64,
                                      nb_soft_attention_heads=4,
-                                     hard_attention_rnn_hidden_size=64,
+                                     hard_attention_rnn_hidden_size=None,
                                      approximate_hard_attention=True,
                                      device=cpu,
                                      train=False)
-    agent_model.load_state_dict(
-        torch.load(f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"))
+    f = f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"
+    agent_model.load_state_dict(torch.load(f))
     agent_model.eval()
     agent_model.share_memory()
     if args.value_estimation == "rollout":

@@ -4,7 +4,6 @@ import torch
 
 from planning_by_abstracting_over_opponent_models.planning.policy_estimator import PolicyEstimator
 from planning_by_abstracting_over_opponent_models.planning.tree_node import TreeNode
-from planning_by_abstracting_over_opponent_models.planning.state_evaluator import StateEvaluator
 from planning_by_abstracting_over_opponent_models.planning.value_estimator import ValueEstimator
 
 torch.autograd.set_detect_anomaly(True)
