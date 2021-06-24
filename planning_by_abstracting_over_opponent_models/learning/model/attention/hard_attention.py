@@ -13,9 +13,12 @@ class HardAttention(nn.Module):
             self.output_layer = nn.Linear(hard_attention_rnn_hidden_size * 2, 2)
 
     def forward(self, agent_latent, opponent_latents):
+        """
+        :param agent_latent: (batch_size, latent_dim)
+        :param opponent_latents: (nb_opponents, batch_size, latent_dim)
+        :return:
+        """
         if self.hard_attention_rnn_hidden_size is not None:
-            # (nb_opponents, batch_size, latent_dim)
-            opponent_latents = torch.stack(opponent_latents, dim=0)
             nb_opponents = opponent_latents.shape[0]
             # (nb_opponents, batch_size, latent_dim)
             agent_latent_stacked_repeated = agent_latent.unsqueeze(0).repeat(nb_opponents, 1, 1)
@@ -32,5 +35,5 @@ class HardAttention(nn.Module):
             # (batch_size, nb_opponents)
             hard_attention = hard_attention[..., 1]
             return hard_attention
-        return torch.ones(agent_latent.shape[0], len(opponent_latents), device=agent_latent.device)
+        return torch.ones(agent_latent.shape[0], opponent_latents.shape[0], device=agent_latent.device)
 

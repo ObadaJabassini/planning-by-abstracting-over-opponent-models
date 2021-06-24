@@ -42,13 +42,26 @@ class SoftAttentionHead(nn.Module):
 class MultiheadSoftAttention(nn.Module):
     def __init__(self, latent_dim, embed_dim, nb_heads):
         super().__init__()
+        self.agent_embedding_layer = nn.Linear(latent_dim, embed_dim, bias=False)
         self.heads = nn.ModuleList([SoftAttentionHead(latent_dim, embed_dim) for _ in range(nb_heads)])
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_normal_(self.agent_embedding_layer.weight)
 
     def forward(self, agent_latent, opponent_latents, hard_attention) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        :param agent_latent: (batch_size, latent_dim)
+        :param opponent_latents: (nb_opponents, batch_size, latent_dim)
+        :param hard_attention: (batch_size, nb_opponents)
+        :return:
+        """
         # (batch_size, nb_opponents, latent_dim)
-        opponent_latents = torch.stack(opponent_latents, dim=1)
+        opponent_latents = opponent_latents.permute(1, 0, 2)
         outputs = [head(agent_latent, opponent_latents, hard_attention) for head in self.heads]
         embeddings, scores = list(zip(*outputs))
         embeddings = torch.mean(torch.stack(embeddings), dim=0)
         scores = torch.mean(torch.stack(scores), dim=0)
-        return embeddings, scores
+        agent_latent = self.agent_embedding_layer(agent_latent)
+        agent_latent = agent_latent + embeddings
+        return agent_latent, scores

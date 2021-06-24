@@ -20,18 +20,11 @@ class AttentionModel(nn.Module):
         self.multihead_soft_attention = MultiheadSoftAttention(latent_dim=latent_dim,
                                                                embed_dim=latent_dim,
                                                                nb_heads=nb_soft_attention_heads)
-        self.embedding_agent_layer = nn.Linear(latent_dim, latent_dim, bias=False)
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        nn.init.xavier_normal_(self.embedding_agent_layer.weight)
 
     def forward(self, agent_latent, opponent_latents):
+        opponent_latents = torch.stack(opponent_latents, dim=0)
         hard_attention = self.hard_attention(agent_latent, opponent_latents)
-        # soft attention
-        attention_output, attention_scores = self.multihead_soft_attention.forward(agent_latent=agent_latent,
-                                                                                   opponent_latents=opponent_latents,
-                                                                                   hard_attention=hard_attention)
-        agent_latent = self.embedding_agent_layer(agent_latent)
-        agent_latent = agent_latent + attention_output
-        return agent_latent, attention_scores
+        attention_output, attention_scores = self.multihead_soft_attention(agent_latent=agent_latent,
+                                                                           opponent_latents=opponent_latents,
+                                                                           hard_attention=hard_attention)
+        return attention_output, attention_scores
