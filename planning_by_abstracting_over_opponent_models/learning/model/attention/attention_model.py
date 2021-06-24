@@ -22,6 +22,7 @@ class AttentionModel(nn.Module):
                                                                nb_heads=nb_soft_attention_heads)
 
     def forward(self, agent_latent, opponent_latents):
+        # (nb_opponents, batch_size, latent_dim)
         opponent_latents = torch.stack(opponent_latents, dim=0)
         hard_attention = self.hard_attention(agent_latent, opponent_latents)
         attention_output, attention_scores = self.multihead_soft_attention(agent_latent=agent_latent,
