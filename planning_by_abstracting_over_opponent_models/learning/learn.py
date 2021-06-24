@@ -21,7 +21,7 @@ torch.autograd.set_detect_anomaly(True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=randint(1, 1000))
-parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1, help='how many training processes to use')
+parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 ss = "static, static, static"
 parser.add_argument('--opponent-classes',
@@ -32,7 +32,7 @@ parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
 parser.add_argument('--latent-dim', type=int, default=64)
-parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
+parser.add_argument('--nb-soft-attention-heads', type=int, default=6)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
 parser.add_argument('--approximate-hard-attention', dest='approximate_hard_attention', action='store_true')
 parser.add_argument('--exact-hard-attention', dest='approximate_hard_attention', action='store_false')
