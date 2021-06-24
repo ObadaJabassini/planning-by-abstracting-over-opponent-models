@@ -88,6 +88,4 @@ class AgentLoss(nn.Module):
                                                                             opponent_values,
                                                                             opponent_actions_ground_truths,
                                                                             opponent_coefs)
-        total_loss = agent_policy_loss + agent_value_loss + opponent_policy_loss + opponent_value_loss
-        total_loss = total_loss.sum()
-        return total_loss, opponent_policy_loss, opponent_value_loss
+        return agent_policy_loss, agent_value_loss, opponent_policy_loss, opponent_value_loss

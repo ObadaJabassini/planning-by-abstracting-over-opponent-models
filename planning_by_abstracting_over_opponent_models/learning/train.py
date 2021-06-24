@@ -191,8 +191,10 @@ def train(rank,
     Path(p).mkdir(exist_ok=True, parents=True)
     summary_writer = SummaryWriter(p) if rank == 0 else None
     running_total_loss = 0.0
-    running_cross_entropy_loss = 0.0
-    running_value_loss = 0.0
+    running_agent_policy_loss = 0.0
+    running_agent_value_loss = 0.0
+    running_opponent_policy_loss = 0.0
+    running_opponent_value_loss = 0.0
     running_reward = 0.0
     try:
         while True:
@@ -212,15 +214,17 @@ def train(rank,
             opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
             # backward step
             optimizer.zero_grad()
-            total_loss, opponent_policy_loss, opponent_value_loss = criterion(agent_rewards,
-                                                                              agent_log_probs,
-                                                                              agent_values,
-                                                                              agent_entropies,
-                                                                              opponent_rewards,
-                                                                              opponent_log_probs,
-                                                                              opponent_values,
-                                                                              opponent_actions_ground_truths,
-                                                                              opponent_coefs)
+            agent_policy_loss, agent_value_loss, opponent_policy_loss, opponent_value_loss = criterion(
+                agent_rewards,
+                agent_log_probs,
+                agent_values,
+                agent_entropies,
+                opponent_rewards,
+                opponent_log_probs,
+                opponent_values,
+                opponent_actions_ground_truths,
+                opponent_coefs)
+            total_loss = agent_policy_loss + agent_value_loss + opponent_policy_loss + opponent_value_loss
             total_loss.backward()
             if max_grad_norm is not None:
                 clip_grad_norm_(agent_model.parameters(), max_grad_norm)
@@ -228,22 +232,30 @@ def train(rank,
             optimizer.step()
 
             running_total_loss += total_loss.item()
-            running_cross_entropy_loss += opponent_policy_loss.item()
-            running_value_loss += opponent_value_loss.item()
+            running_agent_policy_loss += agent_policy_loss.item()
+            running_agent_value_loss += agent_value_loss.item()
+            running_opponent_policy_loss += opponent_policy_loss.item()
+            running_opponent_value_loss += opponent_value_loss.item()
             running_reward += reward
             episode_batches += 1
 
             if done:
                 episodes += 1
                 if summary_writer is not None and episodes % 10 == 0:
-                    summary_writer.add_scalar('training loss',
+                    summary_writer.add_scalar('total loss',
                                               running_total_loss / episode_batches,
                                               episodes)
-                    summary_writer.add_scalar('opponent cross entropy loss',
-                                              running_cross_entropy_loss / episode_batches,
+                    summary_writer.add_scalar('agent policy loss',
+                                              running_agent_policy_loss / episode_batches,
+                                              episodes)
+                    summary_writer.add_scalar('agent value loss',
+                                              running_agent_value_loss / episode_batches,
+                                              episodes)
+                    summary_writer.add_scalar('opponent policy loss',
+                                              running_opponent_policy_loss / episode_batches,
                                               episodes)
                     summary_writer.add_scalar('opponent value loss',
-                                              running_value_loss / episode_batches,
+                                              running_opponent_value_loss / episode_batches,
                                               episodes)
                     summary_writer.add_scalar("reward",
                                               running_reward,
@@ -251,8 +263,10 @@ def train(rank,
                     summary_writer.flush()
                 episode_batches = 0
                 running_total_loss = 0.0
-                running_cross_entropy_loss = 0.0
-                running_value_loss = 0.0
+                running_agent_policy_loss = 0.0
+                running_agent_value_loss = 0.0
+                running_opponent_policy_loss = 0.0
+                running_opponent_value_loss = 0.0
                 running_reward = 0.0
     except:
         if summary_writer is not None:
