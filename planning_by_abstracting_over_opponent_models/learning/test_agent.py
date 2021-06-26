@@ -59,11 +59,11 @@ parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_t
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
 parser.add_argument('--nb-games', type=int, default=10)
 parser.add_argument('--nb-plays', type=int, default=10)
-ss = "simple, simple, simple"
+ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=2700)
+parser.add_argument('--model-iteration', type=int, default=1620)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True, render=True)
