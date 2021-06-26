@@ -7,11 +7,10 @@ from pommerman.constants import Item
 
 class PommermanBaseEnv(abc.ABC):
 
-    def __init__(self, nb_players, rescale_rewards=False):
+    def __init__(self, nb_players):
         self.board_size = 11
         self.max_steps = 800
         self.nb_players = nb_players
-        self.rescale_rewards = rescale_rewards
 
     @abc.abstractmethod
     def get_observations(self):
@@ -51,8 +50,6 @@ class PommermanBaseEnv(abc.ABC):
 
     def transform_rewards(self, rewards):
         rewards = np.asarray(rewards[:self.nb_players])
-        if self.rescale_rewards:
-            rewards = (rewards + 1) / 2
         return rewards
 
     def get_agent_position_map(self, state, index):
@@ -85,16 +82,10 @@ class PommermanBaseEnv(abc.ABC):
             blast_strength_map = np.full(board_tuple, agent_state["blast_strength"]).astype(float)
             can_kick_map = np.full(board_tuple, int(agent_state["can_kick"])).astype(float)
             teammate_existence_map = np.zeros(board_tuple).astype(float)
-            if self.nb_players == 2:
-                other_index = 1 - agent_id
-                opponents_position_map = [agent_position_maps[other_index],
-                                          np.zeros(board_tuple),
-                                          np.zeros(board_tuple)]
-            else:
-                opposite_index, next_index, prev_index = (agent_id + 2) % 4, (agent_id + 1) % 4, (agent_id - 1) % 4
-                opponents_position_map = [agent_position_maps[opposite_index],
-                                          agent_position_maps[next_index],
-                                          agent_position_maps[prev_index]]
+            next_index, opposite_index, prev_index = (agent_id + 1) % 4, (agent_id + 2) % 4, (agent_id + 3) % 4
+            opponents_position_map = [agent_position_maps[next_index],
+                                      agent_position_maps[opposite_index],
+                                      agent_position_maps[prev_index]]
             features_map = [
                 bomb_blast_strength_map,
                 bomb_life_map,
@@ -113,8 +104,7 @@ class PommermanBaseEnv(abc.ABC):
                 kick_position_map,
                 current_step_map
             ]
-            features_map = np.stack(features_map, axis=0).astype(float)
-            features[agent_id] = features_map
+            features[agent_id] = np.stack(features_map, axis=0).astype(float)
         features = torch.from_numpy(features).float()
         # (nb_players, 18, 11, 11), swap width and height
         features = features.permute(0, 1, 3, 2)

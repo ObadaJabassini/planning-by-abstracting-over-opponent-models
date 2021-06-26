@@ -11,8 +11,8 @@ from planning_by_abstracting_over_opponent_models.pommerman_env.pommerman_base_e
 
 class PommermanCythonEnv(PommermanBaseEnv):
 
-    def __init__(self, agents: List[PommermanAgent], seed, training_agent=0, rescale_rewards=False):
-        super().__init__(len(agents), rescale_rewards)
+    def __init__(self, agents: List[PommermanAgent], seed, training_agent=0):
+        super().__init__(len(agents))
         self._seed = seed
         self.seed(self._seed)
         self.agents = agents
