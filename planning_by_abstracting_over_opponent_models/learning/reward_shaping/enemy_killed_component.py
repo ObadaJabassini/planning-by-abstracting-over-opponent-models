@@ -11,5 +11,5 @@ class EnemyKilledComponent(RewardShapingComponent):
         if self.prev_state is not None:
             l1 = len(self.prev_state["alive"])
             l2 = len(curr_state["alive"])
-            return self.enemy_killed_reward if l2 < l1 else 0
+            return self.enemy_killed_reward if l1 > l2 else 0
         return 0

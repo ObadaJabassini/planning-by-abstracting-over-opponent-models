@@ -185,6 +185,7 @@ def train(rank,
                           entropy_coef=entropy_coef,
                           gae_lambda=gae_lambda).to(device)
     reward_shaper = strs_to_reward_shaper(reward_shapers)
+    reward_shaper.reset()
     episodes = 0
     episode_batches = 0
     p = f"runs/{combined_opponent_classes}"

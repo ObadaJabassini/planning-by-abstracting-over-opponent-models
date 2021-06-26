@@ -16,7 +16,8 @@ class PlantingBombComponent(RewardShapingComponent):
         if self.prev_state is not None:
             bombs_pose = np.argwhere(curr_state['bomb_life'] != 0)
             if curr_state['ammo'] < self.prev_state['ammo']:
-                enemy_surroundings = [(-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0)]
+                # enemy_surroundings = [(-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0)]
+                enemy_surroundings = [(0, 1), (1, 0), (0, -1), (-1, 0)]
                 wall_surroundings = [(0, 1), (1, 0), (0, -1), (-1, 0)]
                 mybomb_pose = self.prev_state['position']  # equal to agent previous position
                 # validate if the bomb actually exists there
