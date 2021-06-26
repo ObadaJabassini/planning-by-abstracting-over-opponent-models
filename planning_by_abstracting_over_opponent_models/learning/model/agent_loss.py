@@ -27,7 +27,7 @@ class AgentLoss(nn.Module):
         policy_loss = 0
         value_loss = 0
         R = agent_values[-1]
-        gae = torch.zeros(1).to(agent_entropies[0].device)
+        gae = torch.zeros(1, 1).to(agent_entropies[0].device)
         for i in reversed(range(len(agent_rewards))):
             R = self.gamma * R + agent_rewards[i]
             advantage = R - agent_values[i]

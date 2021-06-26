@@ -27,7 +27,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=ss)
-parser.add_argument('--nb-steps', type=int, default=16)
+parser.add_argument('--nb-steps', type=int, default=256)
 parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
@@ -43,11 +43,9 @@ parser.add_argument('--reward-shapers',
                     default=d)
 parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
 parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
-parser.add_argument('--with-monitoring', dest='monitor', action='store_true')
-parser.add_argument('--no-monitoring', dest='monitor', action='store_false')
 parser.add_argument('--device', type=str, default="cpu")
 parser.add_argument('--check-point', type=str, default=None)
-parser.set_defaults(shared_opt=True, monitor=True, approximate_hard_attention=True)
+parser.set_defaults(shared_opt=True, approximate_hard_attention=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -95,20 +93,12 @@ if __name__ == '__main__':
     processes = []
     counter = mp.Value('i', 0)
     lock = mp.Lock()
-    if args.monitor:
-        args = (nb_processes,
-                seed,
-                use_cython,
-                shared_model,
-                model_spec,
-                nb_actions,
-                nb_opponents,
-                opponent_classes,
-                save_interval,
-                device)
-        p = mp.Process(target=monitor, args=args)
-        p.start()
-        processes.append(p)
+    args = (shared_model,
+            opponent_classes,
+            save_interval)
+    p = mp.Process(target=monitor, args=args)
+    p.start()
+    processes.append(p)
     for rank in range(nb_processes - 1):
         args = (rank,
                 seed,

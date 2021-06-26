@@ -46,7 +46,7 @@ def reshape_tensors_for_loss_func(steps,
     opponent_rewards = torch.stack(opponent_rewards).to(device)
     assert opponent_rewards.shape == (steps, nb_opponents), f"{opponent_rewards.shape} != {(steps, nb_opponents)}"
     opponent_rewards = opponent_rewards.T
-    # (nb_steps + 1, nb_opponents), not sure!
+    # (nb_steps + 1, nb_opponents)
     opponent_values = torch.stack(opponent_values)
     assert opponent_values.shape == (steps + 1, nb_opponents), f"{opponent_values.shape} != {(steps + 1, nb_opponents)}"
     opponent_values = opponent_values.T
@@ -93,11 +93,14 @@ def collect_trajectory(env,
         if reward_shaper is not None and not done and agent_reward == 0:
             agent_reward = reward_shaper.shape(state[0], agent_action)
         running_reward += agent_reward
+        with lock:
+            counter.value += 1
+
         # agent
         agent_rewards.append(agent_reward)
-        agent_entropies.append(agent_entropy.view(-1))
-        agent_log_probs.append(agent_log_prob.view(-1))
-        agent_values.append(agent_value.view(-1))
+        agent_entropies.append(agent_entropy)
+        agent_log_probs.append(agent_log_prob)
+        agent_values.append(agent_value)
 
         # opponents
         opponent_reward = rewards[1:]
@@ -107,19 +110,15 @@ def collect_trajectory(env,
         opponent_actions = torch.LongTensor(opponent_actions)
         opponent_actions_ground_truths.append(opponent_actions)
         opponent_values.append(opponent_value.view(-1))
-
-        with lock:
-            counter.value += 1
     if done:
         state = env.reset()
         reward_shaper.reset()
-        r = torch.zeros(1, device=device)
+        r = torch.zeros(1, 1, device=device)
         opponent_value = torch.zeros(nb_opponents, device=device)
     else:
         obs = env.get_features(state).to(device)
         _, agent_value, _, opponent_value, _ = agent.estimate(obs)
-        r = agent_value.view(1)
-        r = r.detach()
+        r = agent_value.detach()
         opponent_value = opponent_value.view(-1)
     r = r.to(device)
     opponent_value = opponent_value.to(device)
