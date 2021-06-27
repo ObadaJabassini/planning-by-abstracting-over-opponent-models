@@ -19,8 +19,10 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.enemy_
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.mobility_component import MobilityComponent
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.picking_powerup_component import \
     PickingPowerupComponent
-from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_component import \
-    PlantingBombComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_near_enemy_component import \
+    PlantingBombNearEnemyComponent
+from planning_by_abstracting_over_opponent_models.learning.reward_shaping.planting_bomb_near_wall_component import \
+    PlantingBombNearWallComponent
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaping_component import \
     RewardShapingComponent
 
@@ -51,7 +53,8 @@ def strs_to_reward_shaper(strs):
         "enemy_killed": EnemyKilledComponent,
         "mobility": MobilityComponent,
         "picking_powerup": PickingPowerupComponent,
-        "planting_bomb": PlantingBombComponent,
+        "planting_bomb_near_wall": PlantingBombNearWallComponent,
+        "planting_bomb_near_enemy": PlantingBombNearEnemyComponent,
         "avoiding_illegal_moves": AvoidingIllegalMoves
     }
     return RewardShaper([d[s]() for s in strs])
