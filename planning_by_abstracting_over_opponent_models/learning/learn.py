@@ -27,7 +27,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=ss)
-parser.add_argument('--nb-steps', type=int, default=8)
+parser.add_argument('--nb-steps', type=int, default=20)
 parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
@@ -37,7 +37,8 @@ parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
 parser.add_argument('--approximate-hard-attention', dest='approximate_hard_attention', action='store_true')
 parser.add_argument('--exact-hard-attention', dest='approximate_hard_attention', action='store_false')
 parser.add_argument('--max-grad-norm', type=float, default=1)
-d = "ammo_usage, avoiding_flame, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb, avoiding_illegal_moves"
+# d = "ammo_usage, avoiding_flame, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb, avoiding_illegal_moves"
+d = "enemy_killed, mobility, picking_powerup, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=d)
