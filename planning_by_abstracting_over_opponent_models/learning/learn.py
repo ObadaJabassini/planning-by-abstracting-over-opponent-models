@@ -27,7 +27,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=ss)
-parser.add_argument('--nb-steps', type=int, default=256)
+parser.add_argument('--nb-steps', type=int, default=8)
 parser.add_argument('--save-interval', type=int, default=60)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
