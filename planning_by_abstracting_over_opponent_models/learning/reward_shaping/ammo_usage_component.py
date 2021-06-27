@@ -14,7 +14,7 @@ class AmmoUsageComponent(RewardShapingComponent):
                 self.not_using_ammo_counter += 1
             else:
                 self.not_using_ammo_counter = 0
-            if self.not_using_ammo_counter >= 10:
+            if self.not_using_ammo_counter >= 20:
                 return self.not_using_ammo_reward
         return 0
 
