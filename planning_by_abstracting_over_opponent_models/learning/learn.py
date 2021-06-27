@@ -36,7 +36,7 @@ parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
 parser.add_argument('--approximate-hard-attention', dest='approximate_hard_attention', action='store_true')
 parser.add_argument('--exact-hard-attention', dest='approximate_hard_attention', action='store_false')
-parser.add_argument('--max-grad-norm', type=float, default=1)
+parser.add_argument('--max-grad-norm', type=float, default=0.5)
 # d = "ammo_usage, avoiding_flame, catching_enemy, consecutive_actions, enemy_killed, mobility, picking_powerup, planting_bomb, avoiding_illegal_moves"
 d = "enemy_killed, mobility, picking_powerup, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
