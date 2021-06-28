@@ -38,7 +38,6 @@ parser.add_argument('--approximate-hard-attention', dest='approximate_hard_atten
 parser.add_argument('--exact-hard-attention', dest='approximate_hard_attention', action='store_false')
 parser.add_argument('--max-grad-norm', type=float, default=0.5)
 d = "enemy_killed, mobility, picking_powerup, planting_bomb_near_enemy, planting_bomb_near_wall, avoiding_illegal_moves"
-# d = "enemy_killed, mobility, picking_powerup, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=d)
