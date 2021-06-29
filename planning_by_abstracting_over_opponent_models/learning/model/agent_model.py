@@ -49,7 +49,7 @@ class AgentModel(nn.Module):
         features = self.features_extractor(obs)
         agent_latent = self.agent_latent_layer(features)
         opponent_outputs = [opponent_model(features) for opponent_model in self.opponent_models]
-        opponent_latents, opponent_policies, opponent_values = list(zip(*opponent_outputs))
+        opponent_latents, opponent_policies = list(zip(*opponent_outputs))
         agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
 
         # output
@@ -59,9 +59,8 @@ class AgentModel(nn.Module):
         agent_value = self.agent_value_layer(agent_head)
 
         opponent_policies = torch.stack(opponent_policies, dim=1)
-        opponent_values = torch.stack(opponent_values, dim=1)
 
-        return agent_policy, agent_value, opponent_policies, opponent_values, opponent_influence
+        return agent_policy, agent_value, opponent_policies, opponent_influence
 
 
 def create_agent_model(rank,

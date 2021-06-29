@@ -20,7 +20,7 @@ class NeuralNetworkPolicyEstimator(PolicyEstimator):
         obs = env.get_features(state)
         obs = obs[self.agent_id]
         obs = obs.unsqueeze(0)
-        agent_action_log, _, opponents_action_log, _, opponent_influence = self.agent_model(obs)
+        agent_action_log, _, opponents_action_log, opponent_influence = self.agent_model(obs)
         action_probs = self.estimate_action_probabilities(agent_action_log, opponents_action_log)
         attentions = opponent_influence.view(-1).to(cpu).detach()
         attentions[attentions <= self.threshold] = 0

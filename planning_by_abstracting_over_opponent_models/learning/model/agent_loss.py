@@ -39,53 +39,36 @@ class AgentLoss(nn.Module):
         return policy_loss, value_loss
 
     def opponent_loss_func(self,
-                           opponent_rewards,
                            opponent_log_probs,
-                           opponent_values,
                            opponent_actions_ground_truths,
                            opponent_coefs):
         """
         :param opponent_log_probs: (nb_opponents, nb_steps, nb_actions)
         :param opponent_actions_ground_truths: (nb_opponents, nb_steps)
-        :param opponent_values: (nb_opponents, nb_steps + 1)
-        :param opponent_rewards: (nb_opponents, nb_steps)
         :param opponent_coefs: (nb_opponents)
         :return:
         """
         nb_opponents = opponent_log_probs.shape[0]
         policy_loss = torch.zeros(1)
-        value_loss = torch.zeros(1)
         for i in range(nb_opponents):
             # policy loss
             policy_loss = policy_loss + opponent_coefs[i] * F.cross_entropy(opponent_log_probs[i],
                                                                             opponent_actions_ground_truths[i])
-
-            # value loss
-            # opponent_value = opponent_values[i]
-            # opponent_reward = opponent_rewards[i]
-            # next_state_value = opponent_reward + self.gamma * opponent_value[1:]
-            # state_value = opponent_value[:-1]
-            # value_loss = value_loss + opponent_coefs[i] * F.smooth_l1_loss(state_value, next_state_value)
-
-        return policy_loss, value_loss
+        return policy_loss
 
     def forward(self,
                 agent_rewards,
                 agent_log_probs,
                 agent_values,
                 agent_entropies,
-                opponent_rewards,
                 opponent_log_probs,
-                opponent_values,
                 opponent_actions_ground_truths,
                 opponent_coefs):
         agent_policy_loss, agent_value_loss = self.agent_loss_func(agent_rewards,
                                                                    agent_log_probs,
                                                                    agent_values,
                                                                    agent_entropies)
-        opponent_policy_loss, opponent_value_loss = self.opponent_loss_func(opponent_rewards,
-                                                                            opponent_log_probs,
-                                                                            opponent_values,
-                                                                            opponent_actions_ground_truths,
-                                                                            opponent_coefs)
-        return agent_policy_loss, agent_value_loss, opponent_policy_loss, opponent_value_loss
+        opponent_policy_loss = self.opponent_loss_func(opponent_log_probs,
+                                                       opponent_actions_ground_truths,
+                                                       opponent_coefs)
+        return agent_policy_loss, agent_value_loss, opponent_policy_loss

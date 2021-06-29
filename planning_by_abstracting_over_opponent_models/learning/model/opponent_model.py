@@ -6,10 +6,8 @@ class OpponentModel(nn.Module):
         super().__init__()
         self.latent_layer = nn.Sequential(nn.Linear(features_size, latent_dim), nn.ELU())
         self.policy_layer = nn.Linear(latent_dim, nb_actions)
-        self.value_layer = nn.Linear(latent_dim, 1)
 
     def forward(self, features):
         latent = self.latent_layer(features)
         policy = self.policy_layer(latent)
-        value = self.value_layer(latent)
-        return latent, policy, value
+        return latent, policy

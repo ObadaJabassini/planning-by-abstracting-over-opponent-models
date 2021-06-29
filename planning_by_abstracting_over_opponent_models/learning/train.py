@@ -19,8 +19,6 @@ def reshape_tensors_for_loss_func(steps,
                                   nb_actions,
                                   opponent_log_probs,
                                   opponent_actions_ground_truths,
-                                  opponent_rewards,
-                                  opponent_values,
                                   device):
     # (nb_steps, nb_opponents, nb_actions)
     opponent_log_probs = torch.stack(opponent_log_probs)
@@ -42,16 +40,7 @@ def reshape_tensors_for_loss_func(steps,
         nb_opponents, steps), f"{opponent_actions_ground_truths.shape} != {(nb_opponents, steps)}"
     opponent_actions_ground_truths = opponent_actions_ground_truths.to(device)
 
-    # (nb_steps, nb_opponents)
-    opponent_rewards = torch.stack(opponent_rewards).to(device)
-    assert opponent_rewards.shape == (steps, nb_opponents), f"{opponent_rewards.shape} != {(steps, nb_opponents)}"
-    opponent_rewards = opponent_rewards.T
-    # (nb_steps + 1, nb_opponents)
-    opponent_values = torch.stack(opponent_values)
-    assert opponent_values.shape == (steps + 1, nb_opponents), f"{opponent_values.shape} != {(steps + 1, nb_opponents)}"
-    opponent_values = opponent_values.T
-
-    return opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths
+    return opponent_log_probs, opponent_actions_ground_truths
 
 
 def collect_trajectory(env,
@@ -70,8 +59,6 @@ def collect_trajectory(env,
     agent_entropies = []
     opponent_log_probs = []
     opponent_actions_ground_truths = []
-    opponent_rewards = []
-    opponent_values = []
     agent = agents[0]
     done = False
     steps = 0
@@ -79,7 +66,7 @@ def collect_trajectory(env,
     while not done and steps < nb_steps:
         steps += 1
         obs = env.get_features(state).to(device)
-        agent_policy, agent_value, opponent_log_prob, opponent_value, opponent_influence = agent.estimate(obs)
+        agent_policy, agent_value, opponent_log_prob, opponent_influence = agent.estimate(obs)
         agent_prob = F.softmax(agent_policy, dim=-1)
         agent_log_prob = F.log_softmax(agent_policy, dim=-1)
         agent_entropy = -(agent_log_prob * agent_prob).sum(1, keepdim=True)
@@ -103,27 +90,19 @@ def collect_trajectory(env,
         agent_values.append(agent_value)
 
         # opponents
-        opponent_reward = rewards[1:]
-        opponent_reward = torch.FloatTensor(opponent_reward)
-        opponent_rewards.append(opponent_reward)
         opponent_log_probs.append(opponent_log_prob.squeeze(0))
         opponent_actions = torch.LongTensor(opponent_actions)
         opponent_actions_ground_truths.append(opponent_actions)
-        opponent_values.append(opponent_value.view(-1))
     if done:
         state = env.reset()
         reward_shaper.reset()
         r = torch.zeros(1, 1, device=device)
-        opponent_value = torch.zeros(nb_opponents, device=device)
     else:
         obs = env.get_features(state).to(device)
         _, agent_value, _, opponent_value, _ = agent.estimate(obs)
         r = agent_value.detach()
-        opponent_value = opponent_value.view(-1)
     r = r.to(device)
-    opponent_value = opponent_value.to(device)
     agent_values.append(r)
-    opponent_values.append(opponent_value)
 
     agent_trajectory = (agent_rewards, agent_values, agent_log_probs, agent_entropies)
     opponent_trajectory = reshape_tensors_for_loss_func(steps,
@@ -131,8 +110,6 @@ def collect_trajectory(env,
                                                         nb_actions,
                                                         opponent_log_probs,
                                                         opponent_actions_ground_truths,
-                                                        opponent_rewards,
-                                                        opponent_values,
                                                         device)
     return steps, state, done, running_reward, agent_trajectory, opponent_trajectory
 
@@ -194,7 +171,6 @@ def train(rank,
     running_agent_policy_loss = 0.0
     running_agent_value_loss = 0.0
     running_opponent_policy_loss = 0.0
-    running_opponent_value_loss = 0.0
     running_reward = 0.0
     try:
         while True:
@@ -211,20 +187,18 @@ def train(rank,
                                                                                                    device=device,
                                                                                                    reward_shaper=reward_shaper)
             agent_rewards, agent_values, agent_log_probs, agent_entropies = agent_trajectory
-            opponent_rewards, opponent_values, opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
+            opponent_log_probs, opponent_actions_ground_truths = opponent_trajectory
             # backward step
             optimizer.zero_grad()
-            agent_policy_loss, agent_value_loss, opponent_policy_loss, opponent_value_loss = criterion(
+            agent_policy_loss, agent_value_loss, opponent_policy_loss = criterion(
                 agent_rewards,
                 agent_log_probs,
                 agent_values,
                 agent_entropies,
-                opponent_rewards,
                 opponent_log_probs,
-                opponent_values,
                 opponent_actions_ground_truths,
                 opponent_coefs)
-            total_loss = agent_policy_loss + agent_value_loss + opponent_policy_loss + opponent_value_loss
+            total_loss = agent_policy_loss + agent_value_loss + opponent_policy_loss
             total_loss.backward()
             if max_grad_norm is not None:
                 clip_grad_norm_(agent_model.parameters(), max_grad_norm)
@@ -235,7 +209,6 @@ def train(rank,
             running_agent_policy_loss += agent_policy_loss.item()
             running_agent_value_loss += agent_value_loss.item()
             running_opponent_policy_loss += opponent_policy_loss.item()
-            running_opponent_value_loss += opponent_value_loss.item()
             running_reward += reward
             episode_batches += 1
 
@@ -254,9 +227,6 @@ def train(rank,
                     summary_writer.add_scalar('opponent policy loss',
                                               running_opponent_policy_loss / episode_batches,
                                               episodes)
-                    summary_writer.add_scalar('opponent value loss',
-                                              running_opponent_value_loss / episode_batches,
-                                              episodes)
                     summary_writer.add_scalar("reward",
                                               running_reward,
                                               episodes)
@@ -266,7 +236,6 @@ def train(rank,
                 running_agent_policy_loss = 0.0
                 running_agent_value_loss = 0.0
                 running_opponent_policy_loss = 0.0
-                running_opponent_value_loss = 0.0
                 running_reward = 0.0
     except:
         if summary_writer is not None:
