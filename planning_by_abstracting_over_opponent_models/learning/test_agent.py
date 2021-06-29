@@ -30,6 +30,7 @@ def play_game(game_id,
     env = PommermanCythonEnv(agents, seed)
     action_space = env.action_space
     state = env.reset()
+    rewards = [0] * (nb_opponents + 1)
     done = False
     while not done:
         obs = env.get_features(state).to(device)
@@ -63,7 +64,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=6)
+parser.add_argument('--model-iteration', type=int, default=11)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True, render=True)
