@@ -18,7 +18,6 @@ class AgentModel(nn.Module):
                  approximate_hard_attention=True):
         super().__init__()
         self.features_extractor = features_extractor
-        self.nb_opponents = nb_opponents
         self.nb_soft_attention_heads = nb_soft_attention_heads
         features_size = self.features_extractor.output_size
 

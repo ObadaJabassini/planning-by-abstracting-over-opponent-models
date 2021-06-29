@@ -23,16 +23,18 @@ class SoftAttentionHead(nn.Module):
     # opponent_latent (batch_size, nb_opponents, latent_dim)
     # hard attention (batch_size, nb_opponents)
     def forward(self, agent_latent, opponent_latents, hard_attention):
+        # (batch_size, nb_opponents + 1, latent_dim)
+        opponent_latents = torch.cat((agent_latent.unsqueeze(1), opponent_latents), dim=1)
         # (batch_size, embed_dim, 1)
         agent_latent = self.w_s(agent_latent).unsqueeze(2)
-        # (batch_size, nb_opponents, embed_dim)
+        # (batch_size, nb_opponents + 1, embed_dim)
         attention_opponent_latents = self.w_t(opponent_latents)
-        # (batch_size, nb_opponents)
+        # (batch_size, nb_opponents + 1)
         scores = torch.bmm(attention_opponent_latents, agent_latent).squeeze(2)
         scores = F.softmax(scores, dim=-1)
-        # (batch_size, nb_opponents)
+        # (batch_size, nb_opponents + 1)
         # scores = scores * hard_attention
-        # (batch_size, nb_opponents, embed_dim)
+        # (batch_size, nb_opponents + 1, embed_dim)
         opponent_latents = self.w_c(opponent_latents)
         # (batch_size, embed_dim)
         result = torch.bmm(scores.unsqueeze(1), opponent_latents).squeeze(1)
@@ -42,12 +44,7 @@ class SoftAttentionHead(nn.Module):
 class MultiheadSoftAttention(nn.Module):
     def __init__(self, latent_dim, embed_dim, nb_heads):
         super().__init__()
-        self.agent_embedding_layer = nn.Linear(latent_dim, embed_dim, bias=False)
         self.heads = nn.ModuleList([SoftAttentionHead(latent_dim, embed_dim) for _ in range(nb_heads)])
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        nn.init.xavier_normal_(self.agent_embedding_layer.weight)
 
     def forward(self, agent_latent, opponent_latents, hard_attention) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -60,8 +57,6 @@ class MultiheadSoftAttention(nn.Module):
         opponent_latents = opponent_latents.permute(1, 0, 2)
         outputs = [head(agent_latent, opponent_latents, hard_attention) for head in self.heads]
         embeddings, scores = list(zip(*outputs))
-        embeddings = torch.mean(torch.stack(embeddings), dim=0)
+        agent_latent = torch.mean(torch.stack(embeddings), dim=0)
         scores = torch.mean(torch.stack(scores), dim=0)
-        agent_latent = self.agent_embedding_layer(agent_latent)
-        agent_latent = agent_latent + embeddings
         return agent_latent, scores
