@@ -52,6 +52,8 @@ class AgentModel(nn.Module):
         opponent_latents, opponent_policies = list(zip(*opponent_outputs))
         agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
 
+        print(opponent_influence.shape)
+
         # output
         agent_head = self.agent_head_layer(agent_latent)
         # agent_head = self.dropout(agent_head)
