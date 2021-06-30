@@ -4,7 +4,6 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
-from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
 from planning_by_abstracting_over_opponent_models.learning.model.agent_loss import AgentLoss
@@ -99,7 +98,7 @@ def collect_trajectory(env,
         r = torch.zeros(1, 1, device=device)
     else:
         obs = env.get_features(state).to(device)
-        _, agent_value, _, opponent_value, _ = agent.estimate(obs)
+        _, agent_value, _, _ = agent.estimate(obs)
         r = agent_value.detach()
     r = r.to(device)
     agent_values.append(r)
@@ -153,9 +152,7 @@ def train(rank,
     entropy_coef = 0.01
     value_loss_coef = 0.5
     gae_lambda = 0.95
-    opponent_coefs = torch.tensor([0.01] * nb_opponents, device=device)
-    if optimizer is None:
-        optimizer = Adam(agent_model.parameters(), lr=1e-4, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-5)
+    opponent_coefs = [0.05] * nb_opponents
     criterion = AgentLoss(gamma=gamma,
                           value_loss_coef=value_loss_coef,
                           entropy_coef=entropy_coef,

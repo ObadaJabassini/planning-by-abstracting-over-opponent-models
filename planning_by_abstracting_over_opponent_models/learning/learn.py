@@ -27,25 +27,23 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=ss)
-parser.add_argument('--nb-steps', type=int, default=20)
+parser.add_argument('--nb-steps', type=int, default=32)
 parser.add_argument('--save-interval', type=int, default=3600)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
-parser.add_argument('--latent-dim', type=int, default=64)
+parser.add_argument('--latent-dim', type=int, default=128)
 parser.add_argument('--nb-soft-attention-heads', type=int, default=4)
 parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
 parser.add_argument('--approximate-hard-attention', dest='approximate_hard_attention', action='store_true')
 parser.add_argument('--exact-hard-attention', dest='approximate_hard_attention', action='store_false')
-parser.add_argument('--max-grad-norm', type=float, default=0.75)
-d = "enemy_killed, mobility, picking_powerup, planting_bomb_near_enemy, planting_bomb_near_wall, avoiding_illegal_moves"
+parser.add_argument('--max-grad-norm', type=float, default=0.5)
+d = "enemy_killed, mobility, picking_powerup, planting_bomb_near_enemy, catching_enemy, planting_bomb_near_wall, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=d)
-parser.add_argument('--shared-opt', dest='shared_opt', action='store_true')
-parser.add_argument('--no-shared-opt', dest='shared_opt', action='store_false')
 parser.add_argument('--device', type=str, default="cpu")
 parser.add_argument('--check-point', type=str, default=None)
-parser.set_defaults(shared_opt=True, approximate_hard_attention=True)
+parser.set_defaults(approximate_hard_attention=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -82,14 +80,12 @@ if __name__ == '__main__':
     if args.check_point is not None:
         shared_model.load_state_dict(torch.load(args.check_point))
     shared_model.share_memory()
-    optimizer = None
-    if args.shared_opt:
-        optimizer = SharedAdam(shared_model.parameters(),
-                               lr=1e-4,
-                               betas=(0.9, 0.999),
-                               eps=1e-8,
-                               weight_decay=1e-5)
-        optimizer.share_memory()
+    optimizer = SharedAdam(shared_model.parameters(),
+                           lr=1e-4,
+                           betas=(0.9, 0.999),
+                           eps=1e-8,
+                           weight_decay=1e-5)
+    optimizer.share_memory()
     processes = []
     counter = mp.Value('i', 0)
     lock = mp.Lock()

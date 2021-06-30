@@ -34,16 +34,17 @@ def play_game(game_id,
     done = False
     while not done:
         obs = env.get_features(state).to(device)
-        action_probs, _, opponent_log_prob, _, opponent_influence = agent.estimate(obs)
-        if render:
-            ic(opponent_influence)
+        action_probs, _, opponent_log_prob, opponent_influence = agent.estimate(obs)
         action_probs = F.softmax(action_probs, dim=-1).view(-1)
         agent_action = action_probs.argmax()
         agent_action = agent_action.item()
-        # opponent_log_prob = opponent_log_prob.view(nb_opponents, -1)
-        # opponent_log_prob = F.softmax(opponent_log_prob, dim=-1)
+        opponent_log_prob = opponent_log_prob.view(nb_opponents, -1)
+        opponent_log_prob = F.softmax(opponent_log_prob, dim=-1)
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
+        if render:
+            ic(opponent_log_prob)
+            ic(opponent_influence)
         state, rewards, done = env.step(actions)
         if render:
             # sleep(0.3)
@@ -64,7 +65,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=11)
+parser.add_argument('--model-iteration', type=int, default=19)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True, render=True)

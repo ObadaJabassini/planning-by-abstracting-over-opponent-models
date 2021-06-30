@@ -36,7 +36,6 @@ class AgentModel(nn.Module):
             nn.Linear(latent_dim, latent_dim),
             nn.ELU()
         )
-        # self.dropout = nn.Dropout(0.1)
         self.agent_policy_layer = nn.Linear(latent_dim, agent_nb_actions)
         self.agent_value_layer = nn.Linear(latent_dim, 1)
 
@@ -52,11 +51,9 @@ class AgentModel(nn.Module):
         opponent_latents, opponent_policies = list(zip(*opponent_outputs))
         agent_latent, opponent_influence = self.attention_model(agent_latent, opponent_latents)
 
-        print(opponent_influence.shape)
 
         # output
         agent_head = self.agent_head_layer(agent_latent)
-        # agent_head = self.dropout(agent_head)
         agent_policy = self.agent_policy_layer(agent_head)
         agent_value = self.agent_value_layer(agent_head)
 
