@@ -10,7 +10,7 @@ from random import randint
 import numpy as np
 import torch
 
-from planning_by_abstracting_over_opponent_models.config import cpu
+from planning_by_abstracting_over_opponent_models.config import cpu, gpu
 from planning_by_abstracting_over_opponent_models.learning.model.agent_model import create_agent_model
 from planning_by_abstracting_over_opponent_models.learning.pommerman_env_utils import str_to_agent
 from planning_by_abstracting_over_opponent_models.planning.policy_estimator.neural_network_policy_estimator import \
@@ -52,7 +52,6 @@ def play_game(game_id,
     state = env.reset()
     done = False
     while not done:
-        print("step")
         actions = env.act(state)
         agent_action = smmcts.infer(env, iterations=mcts_iterations)
         actions.insert(0, agent_action)
@@ -71,14 +70,14 @@ parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="stor
 parser.add_argument('--nb-games', type=int, default=2)
 parser.add_argument('--nb-plays', type=int, default=2)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
-ss = "static, static, static"
+ss = "simple, simple, simple"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=5000)
-parser.add_argument('--model-iterations', type=int, default=1380)
+parser.add_argument('--mcts-iterations', type=int, default=10)
+parser.add_argument('--model-iterations', type=int, default=27)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
@@ -110,7 +109,7 @@ if __name__ == '__main__':
                                      nb_opponents=nb_players - 1,
                                      nb_conv_layers=4,
                                      nb_filters=32,
-                                     latent_dim=64,
+                                     latent_dim=128,
                                      nb_soft_attention_heads=4,
                                      hard_attention_rnn_hidden_size=None,
                                      approximate_hard_attention=True,
@@ -133,10 +132,7 @@ if __name__ == '__main__':
     else:
         policy_estimator = NeuralNetworkPolicyEstimator(agent_id=0,
                                                         agent_model=agent_model,
-                                                        nb_actions=nb_actions,
-                                                        agent_pw_c=None,
-                                                        agent_pw_alpha=None)
-
+                                                        nb_actions=nb_actions)
     games = []
     for game_id in range(1, nb_games + 1):
         seed = randint(0, int(1e6))

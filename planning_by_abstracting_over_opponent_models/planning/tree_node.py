@@ -24,7 +24,7 @@ class TreeNode:
         :param nb_players: the number of players
         :param nb_actions: the number of actions
         :param exploration_coefs: the exploration coefficient for each agent, shape: (nb_players, nb_actions)
-        :param pw_alphas: progressive widening's alphas
+        :param pw_alphas: progressive widening alphas
         """
         self.state = state
         self.parent = parent

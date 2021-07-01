@@ -7,12 +7,10 @@ from planning_by_abstracting_over_opponent_models.planning.policy_estimator impo
 
 class NeuralNetworkPolicyEstimator(PolicyEstimator):
 
-    def __init__(self, agent_id, agent_model, nb_actions, agent_pw_c=None, agent_pw_alpha=None, threshold=1e-3):
+    def __init__(self, agent_id, agent_model, nb_actions, threshold=1e-3):
         self.agent_id = agent_id
         self.agent_model = agent_model
         self.nb_actions = nb_actions
-        self.agent_pw_c = agent_pw_c
-        self.agent_pw_alpha = agent_pw_alpha
         self.threshold = threshold
 
     def estimate(self, env):
@@ -25,9 +23,7 @@ class NeuralNetworkPolicyEstimator(PolicyEstimator):
         attentions = opponent_influence.view(-1).to(cpu).detach()
         attentions[attentions <= self.threshold] = 0
         pw_alphas = attentions.tolist().copy()
-        pw_alphas.insert(0, self.agent_pw_alpha)
         pw_cs = (attentions * self.nb_actions).tolist()
-        pw_cs.insert(0, self.agent_pw_c)
         return action_probs, pw_cs, pw_alphas
 
     def estimate_action_probabilities(self, agent_action_log, opponent_action_log):
