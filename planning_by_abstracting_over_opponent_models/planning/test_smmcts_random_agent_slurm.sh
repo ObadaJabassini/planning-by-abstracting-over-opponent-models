@@ -10,4 +10,4 @@
 
 export PYTHONPATH="$HOME/obada/planning-by-abstracting-over-opponent-models"
 cd "$HOME/obada/planning-by-abstracting-over-opponent-models/planning_by_abstracting_over_opponent_models/planning"
-python -u test_smmcts.py --model-iterations 1380 --policy-estimation neural_network --opponent-classes "random, random, random" --nb-games 10 --nb-plays 10 --mcts-iterations 5000 --fpu 1000
+python -u test_smmcts.py --policy-estimation neural_network --opponent-classes "random, random, random" --nb-games 10 --nb-plays 10 --mcts-iterations 5000 --fpu 1000
