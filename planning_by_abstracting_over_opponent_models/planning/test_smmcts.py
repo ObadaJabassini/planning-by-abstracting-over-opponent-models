@@ -82,7 +82,6 @@ parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
 parser.add_argument('--pw-alpha', type=float, default=None)
-parser.add_argument('--value-estimation', type=str, default="rollout", choices=["rollout", "neural_network"])
 parser.add_argument('--policy-estimation', type=str, default="neural_network", choices=["uniform", "neural_network"])
 parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
@@ -119,11 +118,7 @@ if __name__ == '__main__':
     agent_model.load_state_dict(torch.load(f))
     agent_model.eval()
     agent_model.share_memory()
-    if args.value_estimation == "rollout":
-        value_estimator = RandomRolloutValueEstimator(nb_players=nb_players, nb_actions=nb_actions)
-    else:
-        value_estimator = NeuralNetworkValueEstimator(agent_id=0, agent_model=agent_model)
-
+    value_estimator = RandomRolloutValueEstimator(nb_players=nb_players, nb_actions=nb_actions)
     if args.policy_estimation == "uniform":
         policy_estimator = UniformPolicyEstimator(nb_players=nb_players,
                                                   nb_actions=nb_actions,
@@ -155,14 +150,19 @@ if __name__ == '__main__':
             result = pool.starmap(play_game, games)
     else:
         result = [play_game(*game) for game in games]
-    win_rate = 0
-    tie_rate = 0
+    wins = 0
+    ties = 0
     for r in result:
-        win_rate += r[2]
-        tie_rate += r[3]
+        wins += r[2]
+        ties += r[3]
     total_games = nb_games * nb_plays
-    win_rate /= total_games
-    tie_rate /= total_games
-    lose_rate = 1 - win_rate - tie_rate
-    s = f"opponent classes = {combined_opponent_classes}, ignore = {args.ignore_opponent_actions}, fpu = {args.fpu}, win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
-    print(s)
+    losses = total_games - wins - ties
+    win_rate = wins / total_games
+    tie_rate = ties / total_games
+    lose_rate = losses / total_games
+    s1 = f"opponent classes = {combined_opponent_classes}, ignore = {args.ignore_opponent_actions}, fpu = {args.fpu}"
+    s2 = f"wins = {wins}, ties = {ties}, losses = {losses}"
+    s3 = f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+    print(s1)
+    print(s2)
+    print(s3)
