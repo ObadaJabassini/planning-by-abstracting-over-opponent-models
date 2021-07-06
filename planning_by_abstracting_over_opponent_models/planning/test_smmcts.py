@@ -145,6 +145,7 @@ if __name__ == '__main__':
                       policy_estimator,
                       mcts_iterations)
             games.append(params)
+    print("Started evaluating..")
     if args.multiprocessing:
         with Pool(args.nb_processes) as pool:
             result = pool.starmap(play_game, games)
