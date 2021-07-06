@@ -31,13 +31,19 @@ class SoftAttentionHead(nn.Module):
         attention_opponent_latents = self.w_t(opponent_latents)
         # (batch_size, nb_opponents + 1)
         scores = torch.bmm(attention_opponent_latents, agent_latent).squeeze(2)
+        # (batch_size, nb_opponents + 1)
         scores = F.softmax(scores, dim=-1)
         # (batch_size, nb_opponents + 1)
         # scores = scores * hard_attention
         # (batch_size, nb_opponents + 1, embed_dim)
         opponent_latents = self.w_c(opponent_latents)
+        # (batch_size, nb_opponents + 1, embed_dim)
+        scores = scores.unsqueeze(2).repeat(1, 1, self.embed_dim)
+        # (batch_size, nb_opponents + 1, embed_dim)
+        result = scores * opponent_latents
         # (batch_size, embed_dim)
-        result = torch.bmm(scores.unsqueeze(1), opponent_latents).squeeze(1)
+        result = torch.prod(result, dim=1)
+        # result = torch.bmm(scores.unsqueeze(1), opponent_latents).squeeze(1)
         return result, scores
 
 
