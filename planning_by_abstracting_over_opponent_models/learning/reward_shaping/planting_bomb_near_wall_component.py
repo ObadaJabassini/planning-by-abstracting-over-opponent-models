@@ -25,7 +25,6 @@ class PlantingBombNearWallComponent(RewardShapingComponent):
                         break
                 assert found_the_bomb  # end of validation
                 nr_woods = 0
-                nr_enemies = 0
                 for p in wall_surroundings:
                     cell_pose = (mybomb_pose[0] + p[0], mybomb_pose[1] + p[1])
                     if cell_pose[0] > 10 or cell_pose[1] > 10:  # bigger than board size

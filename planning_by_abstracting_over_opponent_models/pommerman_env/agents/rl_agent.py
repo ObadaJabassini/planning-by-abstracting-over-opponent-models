@@ -15,7 +15,7 @@ class RLAgent(PommermanAgent):
         self.stochastic = stochastic
 
     def act(self, obs, action_space):
-        action_probs, _, _, _, _ = self.estimate(obs)
+        action_probs, _, _, _ = self.estimate(obs)
         action_probs = F.softmax(action_probs, dim=-1).view(-1)
         agent_action = action_probs.argmax() if not self.stochastic else action_probs.multinomial(num_samples=1)
         agent_action = agent_action.item()
