@@ -65,7 +65,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=8)
+parser.add_argument('--model-iteration', type=int, default=14)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True, render=True)
