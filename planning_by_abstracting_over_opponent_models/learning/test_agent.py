@@ -90,7 +90,7 @@ if __name__ == '__main__':
                                      nb_conv_layers=4,
                                      nb_filters=32,
                                      latent_dim=128,
-                                     nb_soft_attention_heads=1,
+                                     nb_soft_attention_heads=5,
                                      hard_attention_rnn_hidden_size=None,
                                      approximate_hard_attention=True,
                                      device=device,
