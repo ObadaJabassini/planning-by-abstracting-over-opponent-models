@@ -75,7 +75,7 @@ parser.add_argument('--opponent-classes',
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=10)
-parser.add_argument('--model-iterations', type=int, default=27)
+parser.add_argument('--model-iterations', type=int, default=14)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
                                      nb_conv_layers=4,
                                      nb_filters=32,
                                      latent_dim=128,
-                                     nb_soft_attention_heads=4,
+                                     nb_soft_attention_heads=None,
                                      hard_attention_rnn_hidden_size=None,
                                      approximate_hard_attention=True,
                                      device=cpu,
