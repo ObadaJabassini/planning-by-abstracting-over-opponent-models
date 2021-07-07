@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24
-#SBATCH --error=slurm_smmcts_neural_network__%A_%a.err
+#SBATCH --error=slurm_smmcts_neural_network_%A_%a.err
 #SBATCH --output=slurm_smmcts_neural_network_%A_%a.out
 #SBATCH --time=96:05:00
 #SBATCH --array=1-10
