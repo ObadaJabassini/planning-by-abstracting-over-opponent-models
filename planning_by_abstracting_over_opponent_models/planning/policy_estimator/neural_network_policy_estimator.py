@@ -23,7 +23,9 @@ class NeuralNetworkPolicyEstimator(PolicyEstimator):
         attentions = opponent_influence.view(-1).to(cpu).detach()
         attentions[attentions <= self.threshold] = 0
         pw_alphas = attentions.tolist().copy()
-        pw_cs = (attentions * self.nb_actions).tolist()
+        pw_alphas[0] = 0.9
+        pw_cs = [1] * 4
+        # pw_cs = (attentions * self.nb_actions).tolist()
         return action_probs, pw_cs, pw_alphas
 
     def estimate_action_probabilities(self, agent_action_log, opponent_action_log):
