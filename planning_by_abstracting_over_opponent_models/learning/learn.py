@@ -43,7 +43,9 @@ parser.add_argument('--reward-shapers',
                     default=d)
 parser.add_argument('--device', type=str, default="cpu")
 parser.add_argument('--check-point', type=str, default=None)
-parser.set_defaults(approximate_hard_attention=True)
+parser.add_argument('--include-opponent-loss', dest='include_opponent_loss', action='store_true')
+parser.add_argument('--ignore-opponent-loss', dest='include_opponent_loss', action='store_false')
+parser.set_defaults(approximate_hard_attention=True, include_opponent_loss=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -61,6 +63,7 @@ if __name__ == '__main__':
     nb_opponents = args.nb_players - 1
     nb_steps = args.nb_steps
     save_interval = args.save_interval
+    include_opponent_loss = args.include_opponent_loss
     model_spec = {
         "nb_conv_layers": args.nb_conv_layers,
         "nb_filters": args.nb_filters,
@@ -110,6 +113,7 @@ if __name__ == '__main__':
                 opponent_classes,
                 reward_shapers,
                 max_grad_norm,
+                include_opponent_loss,
                 device)
         p = mp.Process(target=train, args=args)
         p.start()

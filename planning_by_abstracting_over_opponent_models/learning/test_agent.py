@@ -25,7 +25,7 @@ def play_game(game_id,
               device,
               render=False):
     agents = [opponent_class() for opponent_class in opponent_classes]
-    agent = RLAgent(0, agent_model)
+    agent = RLAgent(0, agent_model, stochastic=True)
     agents.insert(0, agent)
     env = PommermanCythonEnv(agents, seed)
     action_space = env.action_space
@@ -34,17 +34,18 @@ def play_game(game_id,
     done = False
     while not done:
         obs = env.get_features(state).to(device)
-        action_probs, _, opponent_log_prob, opponent_influence = agent.estimate(obs)
-        action_probs = F.softmax(action_probs, dim=-1).view(-1)
-        agent_action = action_probs.argmax()
-        agent_action = agent_action.item()
-        opponent_log_prob = opponent_log_prob.view(nb_opponents, -1)
-        opponent_log_prob = F.softmax(opponent_log_prob, dim=-1)
+        # action_probs, _, opponent_log_prob, opponent_influence = agent.estimate(obs)
+        # action_probs = F.softmax(action_probs, dim=-1).view(-1)
+        # agent_action = action_probs.argmax()
+        # agent_action = agent_action.item()
+        # opponent_log_prob = opponent_log_prob.view(nb_opponents, -1)
+        # opponent_log_prob = F.softmax(opponent_log_prob, dim=-1)
+        agent_action = agent.act(obs, action_space)
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
-        if render:
-            ic(opponent_log_prob)
-            ic(opponent_influence)
+        # if render:
+            # ic(opponent_log_prob)
+            # ic(opponent_influence)
         state, rewards, done = env.step(actions)
         if render:
             # sleep(0.3)
@@ -61,11 +62,11 @@ parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_t
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
 parser.add_argument('--nb-games', type=int, default=10)
 parser.add_argument('--nb-plays', type=int, default=10)
-ss = "simple, simple, simple"
+ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=15)
+parser.add_argument('--model-iteration', type=int, default=20)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True, render=True)

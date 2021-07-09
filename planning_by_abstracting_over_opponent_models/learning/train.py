@@ -134,6 +134,7 @@ def train(rank,
           opponent_classes,
           reward_shapers,
           max_grad_norm,
+          include_opponent_loss,
           device):
     combined_opponent_classes = ",".join(opponent_classes)
     agents, env = create_env(rank,
@@ -195,7 +196,9 @@ def train(rank,
                 opponent_log_probs,
                 opponent_actions_ground_truths,
                 opponent_coefs)
-            total_loss = agent_policy_loss + agent_value_loss + opponent_policy_loss
+            total_loss = agent_policy_loss + agent_value_loss
+            if include_opponent_loss:
+                total_loss = total_loss + opponent_policy_loss
             total_loss.backward()
             if max_grad_norm is not None:
                 clip_grad_norm_(agent_model.parameters(), max_grad_norm)
