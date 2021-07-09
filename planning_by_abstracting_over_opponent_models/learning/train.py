@@ -214,7 +214,7 @@ def train(rank,
 
             if done:
                 episodes += 1
-                if summary_writer is not None and episodes % 10 == 0:
+                if summary_writer is not None:
                     summary_writer.add_scalar('total loss',
                                               running_total_loss / episode_batches,
                                               episodes)
