@@ -1,3 +1,5 @@
+import pandas as pd
+import altair as alt
 import argparse
 import os
 from random import randint
@@ -25,27 +27,28 @@ def play_game(game_id,
               device,
               render=False):
     agents = [opponent_class() for opponent_class in opponent_classes]
-    agent = RLAgent(0, agent_model, stochastic=True)
+    agent = RLAgent(0, agent_model)
     agents.insert(0, agent)
     env = PommermanCythonEnv(agents, seed)
     action_space = env.action_space
     state = env.reset()
     rewards = [0] * (nb_opponents + 1)
     done = False
+    result = []
     while not done:
         obs = env.get_features(state).to(device)
-        # action_probs, _, opponent_log_prob, opponent_influence = agent.estimate(obs)
-        # action_probs = F.softmax(action_probs, dim=-1).view(-1)
-        # agent_action = action_probs.argmax()
-        # agent_action = agent_action.item()
-        # opponent_log_prob = opponent_log_prob.view(nb_opponents, -1)
-        # opponent_log_prob = F.softmax(opponent_log_prob, dim=-1)
-        agent_action = agent.act(obs, action_space)
+        action_probs, _, opponent_log_prob, opponent_influence = agent.estimate(obs)
+        action_probs = F.softmax(action_probs, dim=-1).view(-1)
+        agent_action = action_probs.argmax()
+        agent_action = agent_action.item()
+        opponent_log_prob = opponent_log_prob.view(nb_opponents, -1)
+        opponent_log_prob = F.softmax(opponent_log_prob, dim=-1)
         opponents_action = env.act(state)
         actions = [agent_action, *opponents_action]
-        # if render:
-            # ic(opponent_log_prob)
-            # ic(opponent_influence)
+        if render:
+            ic(opponent_log_prob)
+            ic(opponent_influence)
+            result.append(opponent_influence.squeeze(0).tolist())
         state, rewards, done = env.step(actions)
         if render:
             # sleep(0.3)
@@ -53,6 +56,10 @@ def play_game(game_id,
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
     print(f"game {game_id}, play {play_id} finished.")
+    df = pd.DataFrame.from_records(result, columns=["Agent", "Opponent 1", "Opponent 2", "Opponent 3"])
+    chart = alt.Chart(df).mark_line().encode()
+    chart.save("result.png")
+
     return game_id, play_id, win, tie
 
 

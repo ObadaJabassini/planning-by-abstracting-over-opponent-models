@@ -74,13 +74,13 @@ parser.add_argument('--opponent-classes',
                     default=ss)
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=10)
+parser.add_argument('--mcts-iterations', type=int, default=500)
 parser.add_argument('--model-iterations', type=int, default=14)
 parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
 parser.add_argument('--pw-alpha', type=float, default=None)
-parser.add_argument('--policy-estimation', type=str, default="neural_network", choices=["uniform", "neural_network"])
+parser.add_argument('--policy-estimation', type=str, default="uniform", choices=["uniform", "neural_network"])
 parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
 if __name__ == '__main__':
@@ -100,22 +100,6 @@ if __name__ == '__main__':
     random_players = [False] + ([args.ignore_opponent_actions] * (nb_players - 1))
     pw_cs = [args.pw_c] * nb_players
     pw_alphas = [args.pw_alpha] * nb_players
-    agent_model = create_agent_model(rank=0,
-                                     seed=randint(1, 1000),
-                                     nb_actions=nb_actions,
-                                     nb_opponents=nb_players - 1,
-                                     nb_conv_layers=4,
-                                     nb_filters=32,
-                                     latent_dim=128,
-                                     nb_soft_attention_heads=None,
-                                     hard_attention_rnn_hidden_size=None,
-                                     approximate_hard_attention=True,
-                                     device=cpu,
-                                     train=False)
-    f = f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"
-    agent_model.load_state_dict(torch.load(f))
-    agent_model.eval()
-    agent_model.share_memory()
     value_estimator = RandomRolloutValueEstimator(nb_players=nb_players, nb_actions=nb_actions)
     if args.policy_estimation == "uniform":
         policy_estimator = UniformPolicyEstimator(nb_players=nb_players,
@@ -123,6 +107,22 @@ if __name__ == '__main__':
                                                   pw_cs=pw_cs,
                                                   pw_alphas=pw_alphas)
     else:
+        agent_model = create_agent_model(rank=0,
+                                         seed=randint(1, 1000),
+                                         nb_actions=nb_actions,
+                                         nb_opponents=nb_players - 1,
+                                         nb_conv_layers=4,
+                                         nb_filters=32,
+                                         latent_dim=128,
+                                         nb_soft_attention_heads=None,
+                                         hard_attention_rnn_hidden_size=None,
+                                         approximate_hard_attention=True,
+                                         device=cpu,
+                                         train=False)
+        f = f"../saved_models/{combined_opponent_classes}/agent_model_{args.model_iterations}.pt"
+        agent_model.load_state_dict(torch.load(f))
+        agent_model.eval()
+        agent_model.share_memory()
         policy_estimator = NeuralNetworkPolicyEstimator(agent_id=0,
                                                         agent_model=agent_model,
                                                         nb_actions=nb_actions)
