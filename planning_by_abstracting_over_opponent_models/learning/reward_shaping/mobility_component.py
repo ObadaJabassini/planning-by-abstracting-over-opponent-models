@@ -6,7 +6,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 
 class MobilityComponent(RewardShapingComponent):
 
-    def __init__(self, mobility_reward=0.05, buffer_length=30):
+    def __init__(self, mobility_reward=0.05, buffer_length=121):
         super().__init__()
         self.mobility_reward = mobility_reward
         self.buffer_length = buffer_length

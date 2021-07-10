@@ -65,8 +65,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--nb-processes', type=int, default=cpu_count() - 1)
 parser.add_argument('--multiprocessing', dest="multiprocessing", action="store_true")
 parser.add_argument('--no-multiprocessing', dest="multiprocessing", action="store_false")
-parser.add_argument('--nb-games', type=int, default=2)
-parser.add_argument('--nb-plays', type=int, default=2)
+parser.add_argument('--nb-games', type=int, default=200)
+parser.add_argument('--nb-plays', type=int, default=1)
 parser.add_argument('--nb-players', type=int, default=4, choices=[2, 4])
 ss = "simple, simple, simple"
 parser.add_argument('--opponent-classes',
@@ -76,7 +76,7 @@ parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions",
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=500)
 parser.add_argument('--model-iterations', type=int, default=14)
-parser.add_argument('--exploration-coef', type=float, default=math.sqrt(2))
+parser.add_argument('--exploration-coef', type=float, default=2)
 parser.add_argument('--fpu', type=float, default=0.25)
 parser.add_argument('--pw-c', type=float, default=None)
 parser.add_argument('--pw-alpha', type=float, default=None)
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     win_rate = wins / total_games
     tie_rate = ties / total_games
     lose_rate = losses / total_games
-    s1 = f"opponent classes = {combined_opponent_classes}, ignore = {args.ignore_opponent_actions}, fpu = {args.fpu}"
+    s1 = f"opponent classes = {combined_opponent_classes}, ignore = {args.ignore_opponent_actions}, fpu = {args.fpu}, C={args.exploration_coef}"
     s2 = f"wins = {wins}, ties = {ties}, losses = {losses}"
     s3 = f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
     print(s1)

@@ -48,7 +48,7 @@ def play_game(game_id,
         if render:
             ic(opponent_log_prob)
             ic(opponent_influence)
-            result.append(opponent_influence.squeeze(0).tolist())
+            # result.append(opponent_influence.squeeze(0).tolist())
         state, rewards, done = env.step(actions)
         if render:
             # sleep(0.3)
@@ -56,9 +56,7 @@ def play_game(game_id,
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
     print(f"game {game_id}, play {play_id} finished.")
-    df = pd.DataFrame.from_records(result, columns=["Agent", "Opponent 1", "Opponent 2", "Opponent 3"])
-    chart = alt.Chart(df).mark_line().encode()
-    chart.save("result.png")
+    # df = pd.DataFrame.from_records(result, columns=["Agent", "Opponent 1", "Opponent 2", "Opponent 3"])
 
     return game_id, play_id, win, tie
 
@@ -73,7 +71,7 @@ ss = "static, static, static"
 parser.add_argument('--opponent-classes',
                     type=lambda sss: [str(item).strip().lower() for item in sss.split(',')],
                     default=ss)
-parser.add_argument('--model-iteration', type=int, default=38)
+parser.add_argument('--model-iteration', type=int, default=10)
 parser.add_argument('--rendering', dest="render", action="store_true")
 parser.add_argument('--no-rendering', dest="render", action="store_false")
 parser.set_defaults(multiprocessing=True, render=True)
@@ -98,7 +96,7 @@ if __name__ == '__main__':
                                      nb_conv_layers=4,
                                      nb_filters=32,
                                      latent_dim=128,
-                                     nb_soft_attention_heads=5,
+                                     nb_soft_attention_heads=None,
                                      hard_attention_rnn_hidden_size=None,
                                      approximate_hard_attention=True,
                                      device=device,
