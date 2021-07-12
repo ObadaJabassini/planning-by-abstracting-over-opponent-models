@@ -83,11 +83,11 @@ parser.add_argument('--config_id', type=int)
 parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
 if __name__ == '__main__':
+    args = parser.parse_args()
     config_id = args.config_id - 1
     print(config_id)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
-    args = parser.parse_args()
     nb_actions = 6
     nb_players = args.nb_players
     nb_games = args.nb_games
