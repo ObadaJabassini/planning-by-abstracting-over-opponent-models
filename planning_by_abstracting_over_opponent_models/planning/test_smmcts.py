@@ -57,7 +57,7 @@ def play_game(game_id,
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
     elapsed_time = time.time() - start_time
-    print(f"game id: {game_id}, play id: {play_id}, elapsed_time: {elapsed_time}")
+    # print(f"game id: {game_id}, play id: {play_id}, elapsed_time: {elapsed_time}")
     return game_id, play_id, win, tie
 
 
@@ -85,7 +85,6 @@ parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 if __name__ == '__main__':
     args = parser.parse_args()
     config_id = args.config_id - 1
-    print(config_id)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     nb_actions = 6
