@@ -2,7 +2,7 @@ import argparse
 import math
 import os
 import time
-
+import itertools
 import torch.multiprocessing as mp
 from torch.multiprocessing import Pool, cpu_count
 from random import randint
@@ -76,11 +76,10 @@ parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions",
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=500)
 parser.add_argument('--model-iterations', type=int, default=14)
-parser.add_argument('--exploration-coef', type=float, default=2)
-parser.add_argument('--fpu', type=float, default=0.25)
-parser.add_argument('--pw-c', type=float, default=None)
-parser.add_argument('--pw-alpha', type=float, default=None)
+parser.add_argument('--use-pw', dest="use_pw", action="store_true")
+parser.add_argument('--no-pw', dest="use_pw", action="store_false")
 parser.add_argument('--policy-estimation', type=str, default="uniform", choices=["uniform", "neural_network"])
+parser.add_argument('--config_id', type=int)
 parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
 if __name__ == '__main__':
@@ -95,11 +94,22 @@ if __name__ == '__main__':
     opponent_classes = args.opponent_classes
     combined_opponent_classes = ",".join(opponent_classes)
     opponent_classes = [str_to_agent(cl) for cl in opponent_classes]
-    exploration_coefs = [args.exploration_coef] * nb_players
-    fpus = [args.fpu] * nb_players
+    exploration_coefs = [0.4, 0.8, math.sqrt(2)]
+    fpus = [0.25, 0.5, 10000]
+    if args.use_pw:
+        cs = [0.5, 1.5]
+        als = [0.25, 0.65]
+    else:
+        cs = [None]
+        als = [None]
+    configs = list(itertools.product(exploration_coefs, fpus, cs, als))
+    config = configs[args.config_id - 1]
+    exploration_coef, fpu, pw_c, pw_alpha = config
+    exploration_coefs = [exploration_coef] * nb_players
+    fpus = [fpu] * nb_players
     random_players = [False] + ([args.ignore_opponent_actions] * (nb_players - 1))
-    pw_cs = [args.pw_c] * nb_players
-    pw_alphas = [args.pw_alpha] * nb_players
+    pw_cs = [pw_c] * nb_players
+    pw_alphas = [pw_alpha] * nb_players
     value_estimator = RandomRolloutValueEstimator(nb_players=nb_players, nb_actions=nb_actions)
     if args.policy_estimation == "uniform":
         policy_estimator = UniformPolicyEstimator(nb_players=nb_players,
@@ -143,7 +153,6 @@ if __name__ == '__main__':
                       policy_estimator,
                       mcts_iterations)
             games.append(params)
-    print("Started evaluating..")
     if args.multiprocessing:
         with Pool(args.nb_processes) as pool:
             result = pool.starmap(play_game, games)
@@ -159,9 +168,11 @@ if __name__ == '__main__':
     win_rate = wins / total_games
     tie_rate = ties / total_games
     lose_rate = losses / total_games
-    s1 = f"opponent classes = {combined_opponent_classes}, ignore = {args.ignore_opponent_actions}, fpu = {args.fpu}, C={args.exploration_coef}"
-    s2 = f"wins = {wins}, ties = {ties}, losses = {losses}"
-    s3 = f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
+    s1 = f"opponent classes = {combined_opponent_classes}"
+    s2 = f"ignore = {args.ignore_opponent_actions}, fpu = {fpu}, C={exploration_coef}, pw_c = {pw_c}, pw_alpha = {pw_alpha}"
+    s3 = f"wins = {wins}, ties = {ties}, losses = {losses}"
+    s4 = f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
     print(s1)
     print(s2)
     print(s3)
+    print(s4)
