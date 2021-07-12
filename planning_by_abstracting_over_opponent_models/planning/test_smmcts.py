@@ -170,7 +170,7 @@ if __name__ == '__main__':
     tie_rate = ties / total_games
     lose_rate = losses / total_games
     s1 = f"opponent classes = {combined_opponent_classes}"
-    s2 = f"ignore = {args.ignore_opponent_actions}, fpu = {fpu}, C={exploration_coef}, pw_c = {pw_c}, pw_alpha = {pw_alpha}"
+    s2 = f"ignore = {args.ignore_opponent_actions}, fpu = {fpu}, exploration_coef={exploration_coef}, pw_c = {pw_c}, pw_alpha = {pw_alpha}"
     s3 = f"wins = {wins}, ties = {ties}, losses = {losses}"
     s4 = f"win rate = {win_rate * 100}%, tie rate = {tie_rate * 100}%, lose rate = {lose_rate * 100}%"
     print(s1)
