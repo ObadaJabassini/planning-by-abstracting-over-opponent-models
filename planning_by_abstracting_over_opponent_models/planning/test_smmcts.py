@@ -83,6 +83,8 @@ parser.add_argument('--config_id', type=int)
 parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
 if __name__ == '__main__':
+    config_id = args.config_id - 1
+    print(config_id)
     os.environ['OMP_NUM_THREADS'] = '1'
     mp.set_start_method('spawn')
     args = parser.parse_args()
@@ -103,7 +105,7 @@ if __name__ == '__main__':
         cs = [None]
         als = [None]
     configs = list(itertools.product(exploration_coefs, fpus, cs, als))
-    config = configs[args.config_id - 1]
+    config = configs[config_id]
     exploration_coef, fpu, pw_c, pw_alpha = config
     exploration_coefs = [exploration_coef] * nb_players
     fpus = [fpu] * nb_players
