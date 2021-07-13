@@ -75,11 +75,11 @@ parser.add_argument('--opponent-classes',
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
 parser.add_argument('--mcts-iterations', type=int, default=500)
-parser.add_argument('--model-iterations', type=int, default=14)
+parser.add_argument('--model-iterations', type=int, default=25)
 parser.add_argument('--use-pw', dest="use_pw", action="store_true")
 parser.add_argument('--no-pw', dest="use_pw", action="store_false")
 parser.add_argument('--policy-estimation', type=str, default="uniform", choices=["uniform", "neural_network"])
-parser.add_argument('--config_id', type=int)
+parser.add_argument('--config-id', type=int)
 parser.set_defaults(multiprocessing=True, ignore_opponent_actions=False)
 
 if __name__ == '__main__':
@@ -102,6 +102,9 @@ if __name__ == '__main__':
         als = [0.25, 0.65]
     else:
         cs = [None]
+        als = [None]
+    if args.policy_estimation:
+        cs = [0.5, 1.5]
         als = [None]
     configs = list(itertools.product(exploration_coefs, fpus, cs, als))
     config = configs[config_id]
@@ -136,6 +139,7 @@ if __name__ == '__main__':
         agent_model.share_memory()
         policy_estimator = NeuralNetworkPolicyEstimator(agent_id=0,
                                                         agent_model=agent_model,
+                                                        pw_cs=pw_cs,
                                                         nb_actions=nb_actions)
     games = []
     for game_id in range(1, nb_games + 1):

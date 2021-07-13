@@ -11,4 +11,4 @@
 
 export PYTHONPATH="$HOME/obada/planning-by-abstracting-over-opponent-models"
 cd "$HOME/obada/planning-by-abstracting-over-opponent-models/planning_by_abstracting_over_opponent_models/planning"
-python -u test_smmcts.py --config_id "${SLURM_ARRAY_TASK_ID}" --no-pw --search-opponent-actions --policy-estimation uniform --opponent-classes "simple, simple, simple" --nb-games 200 --nb-plays 1 --mcts-iterations 500
+python -u test_smmcts.py --config-id "${SLURM_ARRAY_TASK_ID}" --no-pw --search-opponent-actions --policy-estimation uniform --opponent-classes "simple, simple, simple" --nb-games 200 --nb-plays 1 --mcts-iterations 500
