@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=24
 #SBATCH --error=slurm_smmcts_neural_network_%A_%a.err
 #SBATCH --output=slurm_smmcts_neural_network_%A_%a.out
-#SBATCH --time=96:05:00
+#SBATCH --time=48:05:00
 #SBATCH --array=1-18
 
 export PYTHONPATH="$HOME/obada/planning-by-abstracting-over-opponent-models"
