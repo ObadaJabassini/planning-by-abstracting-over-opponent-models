@@ -37,15 +37,6 @@ class SoftAttentionHead(nn.Module):
         # scores = scores * hard_attention
         # (batch_size, nb_opponents + 1, embed_dim)
         opponent_latents = self.w_c(opponent_latents)
-
-
-        # (batch_size, nb_opponents + 1, embed_dim)
-        # repeated_scores = scores.unsqueeze(2).repeat(1, 1, self.embed_dim)
-        # (batch_size, nb_opponents + 1, embed_dim)
-        # result = repeated_scores * opponent_latents
-        # (batch_size, embed_dim)
-        # result = torch.prod(result, dim=1)
-
         result = torch.bmm(scores.unsqueeze(1), opponent_latents).squeeze(1)
         return result, scores
 

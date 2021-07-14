@@ -45,7 +45,7 @@ parser.add_argument('--device', type=str, default="cpu")
 parser.add_argument('--check-point', type=str, default=None)
 parser.add_argument('--include-opponent-loss', dest='include_opponent_loss', action='store_true')
 parser.add_argument('--ignore-opponent-loss', dest='include_opponent_loss', action='store_false')
-parser.set_defaults(approximate_hard_attention=True, include_opponent_loss=True)
+parser.set_defaults(approximate_hard_attention=True, include_opponent_loss=False)
 
 if __name__ == '__main__':
     args = parser.parse_args()
