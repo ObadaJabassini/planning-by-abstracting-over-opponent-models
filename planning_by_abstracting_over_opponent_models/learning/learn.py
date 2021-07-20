@@ -32,12 +32,13 @@ parser.add_argument('--save-interval', type=int, default=3600)
 parser.add_argument('--nb-conv-layers', type=int, default=4)
 parser.add_argument('--nb-filters', type=int, default=32)
 parser.add_argument('--latent-dim', type=int, default=128)
-parser.add_argument('--nb-soft-attention-heads', type=int, default=None)
-parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=None)
+parser.add_argument('--nb-soft-attention-heads', type=int, default=5)
+parser.add_argument('--hard-attention-rnn-hidden-size', type=int, default=128)
 parser.add_argument('--approximate-hard-attention', dest='approximate_hard_attention', action='store_true')
 parser.add_argument('--exact-hard-attention', dest='approximate_hard_attention', action='store_false')
-parser.add_argument('--max-grad-norm', type=float, default=0.5)
-d = "enemy_killed, mobility, picking_powerup, planting_bomb_near_enemy, catching_enemy, planting_bomb_near_wall, avoiding_illegal_moves"
+parser.add_argument('--max-grad-norm', type=float, default=0.8)
+# d = "enemy_killed, mobility, picking_powerup, planting_bomb_near_enemy, catching_enemy, planting_bomb_near_wall, avoiding_illegal_moves"
+d = "enemy_killed, mobility, picking_powerup, avoiding_illegal_moves"
 parser.add_argument('--reward-shapers',
                     type=lambda s: [str(item).strip().lower() for item in s.split(',')],
                     default=d)
@@ -45,7 +46,7 @@ parser.add_argument('--device', type=str, default="cpu")
 parser.add_argument('--check-point', type=str, default=None)
 parser.add_argument('--include-opponent-loss', dest='include_opponent_loss', action='store_true')
 parser.add_argument('--ignore-opponent-loss', dest='include_opponent_loss', action='store_false')
-parser.set_defaults(approximate_hard_attention=True, include_opponent_loss=False)
+parser.set_defaults(approximate_hard_attention=True, include_opponent_loss=True)
 
 if __name__ == '__main__':
     args = parser.parse_args()

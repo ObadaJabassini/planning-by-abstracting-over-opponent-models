@@ -1,3 +1,5 @@
+# a slightly modified version of https://github.com/haidertom/Pommerman/blob/master/demonstration.ipynb
+
 import numpy as np
 from pommerman.constants import Item
 

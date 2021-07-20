@@ -36,7 +36,7 @@ def play_game(game_id,
               value_estimator,
               policy_estimator,
               mcts_iterations):
-    start_time = time.time()
+    # start_time = time.time()
     smmcts = SMMCTS(nb_players=nb_players,
                     nb_actions=nb_actions,
                     exploration_coefs=exploration_coefs,
@@ -56,7 +56,7 @@ def play_game(game_id,
         state, rewards, done = env.step(actions)
     win = int(rewards[0] == 1)
     tie = int(np.all(rewards == rewards[0]))
-    elapsed_time = time.time() - start_time
+    # elapsed_time = time.time() - start_time
     # print(f"game id: {game_id}, play id: {play_id}, elapsed_time: {elapsed_time}")
     return game_id, play_id, win, tie
 
@@ -74,7 +74,7 @@ parser.add_argument('--opponent-classes',
                     default=ss)
 parser.add_argument('--ignore-opponent-actions', dest="ignore_opponent_actions", action="store_true")
 parser.add_argument('--search-opponent-actions', dest="ignore_opponent_actions", action="store_false")
-parser.add_argument('--mcts-iterations', type=int, default=500)
+parser.add_argument('--mcts-iterations', type=int, default=750)
 parser.add_argument('--model-iterations', type=int, default=25)
 parser.add_argument('--use-pw', dest="use_pw", action="store_true")
 parser.add_argument('--no-pw', dest="use_pw", action="store_false")
@@ -98,13 +98,13 @@ if __name__ == '__main__':
     exploration_coefs = [0.4, 0.8, math.sqrt(2)]
     fpus = [0.25, 0.5, 10000]
     if args.use_pw:
-        cs = [0.5, 1.5]
+        cs = [0.5, 1, 2]
         als = [0.25, 0.65]
     else:
         cs = [None]
         als = [None]
     if args.policy_estimation:
-        cs = [0.5, 1.5]
+        cs = [0.5, 1, 2]
         als = [None]
     configs = list(itertools.product(exploration_coefs, fpus, cs, als))
     config = configs[config_id]
@@ -142,8 +142,10 @@ if __name__ == '__main__':
                                                         pw_cs=pw_cs,
                                                         nb_actions=nb_actions)
     games = []
+    seeds = range(config_id * nb_games, (config_id + 1) * nb_games)
     for game_id in range(1, nb_games + 1):
         seed = randint(0, int(1e6))
+        # seed = seeds[game_id]
         for play_id in range(1, nb_plays + 1):
             params = (game_id,
                       play_id,

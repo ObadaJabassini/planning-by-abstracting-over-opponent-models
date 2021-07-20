@@ -1,5 +1,7 @@
+# a slightly modified version of https://github.com/haidertom/Pommerman/blob/master/demonstration.ipynb
+
+
 import numpy as np
-from pommerman.constants import Item
 
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaping_component import \
     RewardShapingComponent
@@ -7,7 +9,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 
 class PlantingBombNearEnemyComponent(RewardShapingComponent):
 
-    def __init__(self, plant_bomb_near_enemy_reward=0.1):
+    def __init__(self, plant_bomb_near_enemy_reward=0.05):
         super().__init__()
         self.plant_bomb_near_enemy_reward = plant_bomb_near_enemy_reward
 

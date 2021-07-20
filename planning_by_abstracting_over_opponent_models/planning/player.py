@@ -95,7 +95,7 @@ class MCTSPlayer(Player):
         probs = self.action_probs_estimate[:k]
         x, n = self.action_estimations[:k], self.nb_action_visits[:k]
         exploitation_term = x / n
-        exploration_term = self.exploration_coef * probs * torch.sqrt(math.log2(nb_visits) / n)
+        exploration_term = self.exploration_coef * torch.sqrt(math.log2(nb_visits) / n)
         uct = exploitation_term + exploration_term
         # when an action is not explored, assign fpu
         uct = torch.nan_to_num(uct, self.fpu, self.fpu, self.fpu)

@@ -1,3 +1,5 @@
+# a slightly modified version of https://github.com/haidertom/Pommerman/blob/master/demonstration.ipynb
+
 import numpy as np
 
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaping_component import \

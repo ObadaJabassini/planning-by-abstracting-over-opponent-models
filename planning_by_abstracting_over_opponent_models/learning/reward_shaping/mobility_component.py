@@ -1,3 +1,5 @@
+# a slightly modified version of https://github.com/haidertom/Pommerman/blob/master/demonstration.ipynb
+
 from collections import OrderedDict
 
 from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward_shaping_component import \
@@ -6,7 +8,7 @@ from planning_by_abstracting_over_opponent_models.learning.reward_shaping.reward
 
 class MobilityComponent(RewardShapingComponent):
 
-    def __init__(self, mobility_reward=0.05, buffer_length=50):
+    def __init__(self, mobility_reward=0.005, buffer_length=80):
         super().__init__()
         self.mobility_reward = mobility_reward
         self.buffer_length = buffer_length
